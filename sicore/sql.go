@@ -7,27 +7,52 @@ import (
 	"sync"
 )
 
-type RowScanner struct {
-	l      sync.RWMutex
-	sqlCol map[string]any
+var (
+	_rowScannerPool = sync.Pool{
+		New: func() interface{} {
+			return newRowScanner()
+		},
+	}
+)
+
+func getRowScanner() *RowScanner {
+	rs := _readerPool.Get().(*RowScanner)
+	rs.sqlCol = make(map[string]any)
+	return rs
+}
+func putRowScanner(rs *RowScanner) {
+	rs.sqlCol = nil
+	_readerPool.Put(rs)
 }
 
-func NewRowScanner() *RowScanner {
+type RowScanner struct {
+	sqlColLock sync.RWMutex
+	sqlCol     map[string]any
+}
+
+func newRowScanner() *RowScanner {
 	return &RowScanner{
 		sqlCol: make(map[string]any),
 	}
 }
 
+func GetRowScanner() *RowScanner {
+	return getRowScanner()
+}
+func PutRowScanner(rs *RowScanner) {
+	putRowScanner(rs)
+}
+
 func (rs *RowScanner) SetSqlColumn(name string, typ any) {
-	rs.l.Lock()
-	defer rs.l.Unlock()
+	rs.sqlColLock.Lock()
+	defer rs.sqlColLock.Unlock()
 
 	rs.sqlCol[name] = typ
 }
 
 func (rs *RowScanner) GetSqlColumn(name string) (any, bool) {
-	rs.l.RLock()
-	defer rs.l.RUnlock()
+	rs.sqlColLock.RLock()
+	defer rs.sqlColLock.RUnlock()
 
 	if v, ok := rs.sqlCol[name]; ok {
 		return v, ok
