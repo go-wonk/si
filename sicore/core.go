@@ -7,59 +7,6 @@ import (
 
 const defaultBufferSize = 4096
 
-// File, Tcp, Ftp
-type BytesReadWriter struct {
-	rw         io.ReadWriter
-	bufferSize int
-	validate   validateFunc
-}
-
-func NewBytesReadWriter(rw io.ReadWriter) *BytesReadWriter {
-	return NewBytesReadWriterSize(rw, defaultBufferSize)
-}
-
-func NewBytesReadWriterSize(rw io.ReadWriter, bufferSize int) *BytesReadWriter {
-	return &BytesReadWriter{rw, bufferSize, defaultValidate}
-}
-
-func (rw *BytesReadWriter) SetValidateFunc(validate validateFunc) {
-	rw.validate = validate
-}
-
-func readAll(r io.Reader, bufferSize int, validate validateFunc) ([]byte, error) {
-	br := getBufioReader(r)
-	defer putBufioReader(br)
-
-	b := make([]byte, 0, bufferSize)
-	for {
-		if len(b) == cap(b) {
-			if err := growCap(&b, bufferSize); err != nil {
-				return nil, err
-			}
-		}
-
-		n, err := r.Read(b[len(b):cap(b)])
-		b = b[:len(b)+n]
-
-		ended, err := validate(b, err)
-		if err != nil {
-			return b, err
-		}
-		if ended {
-			return b, nil
-		}
-	}
-}
-
-func (rw *BytesReadWriter) Read(p []byte) (n int, err error) {
-	return rw.rw.Read(p)
-}
-
-func (rw *BytesReadWriter) ReadAllBytes() ([]byte, error) {
-	return readAll(rw.rw, rw.bufferSize, rw.validate)
-
-}
-
 const maxInt = int(^uint(0) >> 1)
 
 var ErrTooLarge = errors.New("buf too large")
@@ -113,6 +60,31 @@ func growCap(b *[]byte, n int) error {
 	return nil
 }
 
+func readAll(r io.Reader, bufferSize int, validate validateFunc) ([]byte, error) {
+	br := getBufioReader(r)
+	defer putBufioReader(br)
+
+	b := make([]byte, 0, bufferSize)
+	for {
+		if len(b) == cap(b) {
+			if err := growCap(&b, bufferSize); err != nil {
+				return nil, err
+			}
+		}
+
+		n, err := r.Read(b[len(b):cap(b)])
+		b = b[:len(b)+n]
+
+		ended, err := validate(b, err)
+		if err != nil {
+			return b, err
+		}
+		if ended {
+			return b, nil
+		}
+	}
+}
+
 func write(w io.Writer, p []byte) (int, error) {
 	bw := getBufioWriter(w)
 	defer putBufioWriter(bw)
@@ -126,6 +98,34 @@ func write(w io.Writer, p []byte) (int, error) {
 	}
 
 	return n, nil
+}
+
+// File, Tcp, Ftp
+type BytesReadWriter struct {
+	rw         io.ReadWriter
+	bufferSize int
+	validate   validateFunc
+}
+
+func NewBytesReadWriter(rw io.ReadWriter) *BytesReadWriter {
+	return NewBytesReadWriterSize(rw, defaultBufferSize)
+}
+
+func NewBytesReadWriterSize(rw io.ReadWriter, bufferSize int) *BytesReadWriter {
+	return &BytesReadWriter{rw, bufferSize, defaultValidate}
+}
+
+func (rw *BytesReadWriter) SetValidateFunc(validate validateFunc) {
+	rw.validate = validate
+}
+
+func (rw *BytesReadWriter) Read(p []byte) (n int, err error) {
+	return rw.rw.Read(p)
+}
+
+func (rw *BytesReadWriter) ReadAllBytes() ([]byte, error) {
+	return readAll(rw.rw, rw.bufferSize, rw.validate)
+
 }
 
 func (rw *BytesReadWriter) Write(p []byte) (n int, err error) {
