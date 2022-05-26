@@ -9,25 +9,35 @@ const defaultBufferSize = 4096
 
 // File, Tcp, Ftp
 type ReadWriter struct {
-	rw         io.ReadWriter
+	r io.Reader
+	w io.Writer
+	// rw         io.ReadWriter
 	bufferSize int
 	validator  ReadValidator
 }
 
-func NewBytesReadWriter(rw io.ReadWriter) *ReadWriter {
-	return NewBytesReadWriterSize(rw, defaultBufferSize)
+func NewReadWriter(rw io.ReadWriter) *ReadWriter {
+	return NewReadWriterSize(rw, defaultBufferSize)
 }
 
-func NewBytesReadWriterSize(rw io.ReadWriter, bufferSize int) *ReadWriter {
-	return &ReadWriter{rw, bufferSize, defaultValidate()}
+func NewReadWriterWithValidator(rw io.ReadWriter, validator ReadValidator) *ReadWriter {
+	return NewReadWriterSizeWithValidator(rw, defaultBufferSize, validator)
 }
 
-func (rw *ReadWriter) SetValidator(validator ReadValidator) {
-	rw.validator = validator
+func NewReadWriterSize(rw io.ReadWriter, bufferSize int) *ReadWriter {
+	return NewReadWriterSizeWithValidator(rw, bufferSize, defaultValidate())
 }
+
+func NewReadWriterSizeWithValidator(rw io.ReadWriter, bufferSize int, validator ReadValidator) *ReadWriter {
+	return &ReadWriter{rw, rw, bufferSize, validator}
+}
+
+// func (rw *ReadWriter) SetValidator(validator ReadValidator) {
+// 	rw.validator = validator
+// }
 
 func (rw *ReadWriter) Read(p []byte) (n int, err error) {
-	br := getBufioReader(rw.rw)
+	br := getBufioReader(rw.r)
 	defer putBufioReader(br)
 	return br.Read(p)
 }
@@ -52,7 +62,7 @@ func (rw *ReadWriter) WriteAndRead(p []byte) ([]byte, error) {
 }
 
 func (rw *ReadWriter) readAll() ([]byte, error) {
-	br := getBufioReader(rw.rw)
+	br := getBufioReader(rw.r)
 	defer putBufioReader(br)
 
 	b := make([]byte, 0, rw.bufferSize)
@@ -77,7 +87,7 @@ func (rw *ReadWriter) readAll() ([]byte, error) {
 }
 
 func (rw *ReadWriter) write(p []byte) (int, error) {
-	bw := getBufioWriter(rw.rw)
+	bw := getBufioWriter(rw.w)
 	defer putBufioWriter(bw)
 	n, err := bw.Write(p)
 	if err != nil {

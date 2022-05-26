@@ -47,8 +47,7 @@ func TestTcp_WriteAndRead(t *testing.T) {
 		t.FailNow()
 	}
 
-	s := sicore.NewBytesReadWriter(conn)
-	s.SetValidator(tcpValidator())
+	s := sicore.NewReadWriterWithValidator(conn, tcpValidator())
 	received, err := s.WriteAndRead(createDataToSend())
 	if !assert.Nil(t, err) {
 		t.FailNow()
