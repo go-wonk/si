@@ -43,7 +43,7 @@ func TestBytesReadWriter_readAll(t *testing.T) {
 	siutils.NilFail(t, err)
 
 	brw := NewReadWriter(f)
-	byt, err := brw.ReadAllBytes()
+	byt, err := brw.ReadAll()
 	siutils.NilFail(t, err)
 
 	assert.Equal(t, `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`+"\n", string(bytes.ReplaceAll(byt, []byte("\r\n"), []byte("\n"))))
@@ -56,7 +56,7 @@ func BenchmarkBytesReadWriter_readAll_4096(b *testing.B) {
 	brw := NewReadWriterSize(f, 4096)
 
 	for i := 0; i < b.N; i++ {
-		_, err := brw.readAll()
+		_, err := brw.ReadAll()
 		siutils.NilFailB(b, err)
 	}
 }
@@ -67,7 +67,7 @@ func BenchmarkBytesReadWriter_readAll_1024(b *testing.B) {
 
 	brw := NewReadWriterSize(f, 1024)
 	for i := 0; i < b.N; i++ {
-		_, err := brw.readAll()
+		_, err := brw.ReadAll()
 		siutils.NilFailB(b, err)
 	}
 }

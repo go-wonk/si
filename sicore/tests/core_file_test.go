@@ -19,7 +19,7 @@ func TestReadWriter_ReadAllBytes(t *testing.T) {
 	expected := `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`
 	expected += "\n"
 
-	b, err := s.ReadAllBytes()
+	b, err := s.ReadAll()
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
