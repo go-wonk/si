@@ -3,7 +3,6 @@ package sql_test
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/go-wonk/si/sicore"
@@ -19,10 +18,6 @@ func TestSqlDB_QueryRow(t *testing.T) {
 	siutils.NotNilFail(t, db)
 
 	sqldb := siwrapper.NewSqlDB(db)
-	// sqldb.AddSqlColumn(sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-	// 	sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-	// 	sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
-	// )
 
 	query := `
 		select 
@@ -46,8 +41,7 @@ func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
 	}
 	siutils.NotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
-	sqldb.AddSqlColumn(sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 	)
@@ -80,8 +74,7 @@ func TestSqlDB_QueryIntoAny_Slice(t *testing.T) {
 	}
 	siutils.NotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
-	sqldb.AddSqlColumn(sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 	)
@@ -125,8 +118,7 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 	}
 	siutils.NotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
-	sqldb.AddSqlColumn(sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 	)
@@ -145,12 +137,12 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 	`
 
 	m := make([]map[string]interface{}, 0)
-	_, err := sqldb.QueryIntoMap(query, &m)
+	_, err := sqldb.QueryIntoMapSlice(query, &m)
 	siutils.NilFail(t, err)
 
 	expected := `[{"bigint_":123,"bytea_":"MDEyMw==","char_arr_":"e2FiY2RlLGx1bmNofQ==","decimal_":123,"int2_":123,"nil":null,"numeric_":123,"str":"123","time_":"2022-01-01T12:12:12Z","varchar_arr_":"e2FiY2RlLGx1bmNofQ=="}]`
 	mb, _ := json.Marshal(m)
-	fmt.Println(string(mb))
+	// fmt.Println(string(mb))
 	assert.Equal(t, expected, string(mb))
 
 }
@@ -174,13 +166,13 @@ func TestSqlDB_QueryIntoMap_Bool(t *testing.T) {
 	`
 
 	m := make([]map[string]interface{}, 0)
-	_, err := sqldb.QueryIntoMap(query, &m)
+	_, err := sqldb.QueryIntoMapSlice(query, &m)
 	siutils.NilFail(t, err)
 
-	// expected := `[{"bigint_":123,"bytea_":"MDEyMw==","char_arr_":"e2FiY2RlLGx1bmNofQ==","decimal_":123,"int2_":123,"nil":null,"numeric_":123,"str":"123","time_":"2022-01-01T12:12:12Z","varchar_arr_":"e2FiY2RlLGx1bmNofQ=="}]`
+	expected := `[{"false_1":0,"false_2":"0","false_3":"N","nil":null,"true_1":null,"true_2":"1","true_3":"Y"},{"false_1":0,"false_2":"0","false_3":"N","nil":"abcdef","true_1":1,"true_2":"1","true_3":"Y"}]`
 	mb, _ := json.Marshal(m)
-	fmt.Println(string(mb))
-	// assert.Equal(t, expected, string(mb))
+	// fmt.Println(string(mb))
+	assert.Equal(t, expected, string(mb))
 
 }
 
@@ -190,9 +182,7 @@ func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
 	}
 	siutils.NotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
-	sqldb.AddSqlColumn(
-		sicore.SqlColumn{"true_1", sicore.SqlColTypeBool},
+	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"true_1", sicore.SqlColTypeBool},
 		sicore.SqlColumn{"true_2", sicore.SqlColTypeBool},
 		sicore.SqlColumn{"false_1", sicore.SqlColTypeBool},
 		sicore.SqlColumn{"false_2", sicore.SqlColTypeBool},
@@ -215,20 +205,16 @@ func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
 	`
 
 	m := make([]map[string]interface{}, 0)
-	_, err := sqldb.QueryIntoMap(query, &m)
+	_, err := sqldb.QueryIntoMapSlice(query, &m)
 	siutils.NilFail(t, err)
 
-	for k, v := range m {
-		fmt.Printf("%p == %p\n", m[k], v)
-	}
-
-	// expected := `[{"bigint_":123,"bytea_":"MDEyMw==","char_arr_":"e2FiY2RlLGx1bmNofQ==","decimal_":123,"int2_":123,"nil":null,"numeric_":123,"str":"123","time_":"2022-01-01T12:12:12Z","varchar_arr_":"e2FiY2RlLGx1bmNofQ=="}]`
+	expected := `[{"false_1":false,"false_2":false,"nil":null,"true_1":null,"true_2":true},{"false_1":false,"false_2":false,"nil":null,"true_1":true,"true_2":true}]`
 	mb, _ := json.Marshal(m)
-	fmt.Println(string(mb))
+	// fmt.Println(string(mb))
+	assert.Equal(t, expected, string(mb))
 
 	bt := make([]BoolTest, 0)
 	err = siutils.DecodeAny(m, &bt)
 	siutils.NilFail(t, err)
-	// assert.Equal(t, expected, string(mb))
 
 }

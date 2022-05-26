@@ -60,7 +60,7 @@ func (rs *RowScanner) GetSqlColumn(name string) (any, bool) {
 	return nil, false
 }
 
-func (rs *RowScanner) ScanTypes(rows *sql.Rows) ([]interface{}, []string, error) {
+func (rs *RowScanner) ScanTypes(rows *sql.Rows, sc ...SqlColumn) ([]interface{}, []string, error) {
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, nil, err
@@ -68,6 +68,10 @@ func (rs *RowScanner) ScanTypes(rows *sql.Rows) ([]interface{}, []string, error)
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, nil, err
+	}
+
+	for _, c := range sc {
+		c.SetType(rs)
 	}
 
 	scannedRow := make([]interface{}, len(columns))
@@ -106,11 +110,35 @@ func (rs *RowScanner) scanValuesIntoMap(columns []string, values []interface{}, 
 			} else if b, ok := (*dest)[columns[idx]].(sql.RawBytes); ok {
 				(*dest)[columns[idx]] = string(b)
 			}
-			// else {
-			// 	(*dest)[columns[idx]] = rv.Interface()
-			// }
 		} else {
 			(*dest)[columns[idx]] = nil
 		}
 	}
+}
+
+func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc ...SqlColumn) (int, error) {
+	scannedRow, columns, err := rs.ScanTypes(rows, sc...)
+	if err != nil {
+		return 0, err
+	}
+
+	n := 0
+	for rows.Next() {
+		err = rows.Scan(scannedRow...)
+		if err != nil {
+			return 0, err
+		}
+
+		m := make(map[string]interface{})
+		rs.ScanValuesIntoMap(columns, scannedRow, &m)
+		*output = append(*output, m)
+		n++
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
 }

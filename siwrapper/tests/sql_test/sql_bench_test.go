@@ -16,8 +16,7 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 	siutils.NotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrapper.NewSqlDB(db)
-		sqldb.AddSqlColumn(sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 			sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 		)
@@ -36,7 +35,7 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 		`
 
 		m := make([]map[string]interface{}, 0)
-		_, err := sqldb.QueryIntoMap(query, &m)
+		_, err := sqldb.QueryIntoMapSlice(query, &m)
 		siutils.NilFailB(b, err)
 	}
 
@@ -60,8 +59,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 	siutils.NotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrapper.NewSqlDB(db)
-		sqldb.AddSqlColumn(sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 			sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 		)
