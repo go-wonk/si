@@ -1,6 +1,7 @@
 package siwrapper
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/go-wonk/si/sicore"
@@ -70,4 +71,31 @@ func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// func replaceByBufioReader(r io.Reader) io.Reader {
+// 	if r != nil {
+// 		var br *bufio.Reader
+// 		if _, ok := r.(io.ByteReader); !ok {
+// 			br = sicore.GetBufioReader(r)
+// 			return br
+// 		}
+// 	}
+// 	return r
+// }
+
+func NewGetRequest(url string, body io.Reader) (*http.Request, error) {
+	r, err := http.NewRequest(http.MethodGet, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func NewPostRequest(url string, body io.Reader) (*http.Request, error) {
+	r, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }

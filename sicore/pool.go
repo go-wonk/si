@@ -26,7 +26,15 @@ func getBufioReader(r io.Reader) *bufio.Reader {
 	return br
 }
 func putBufioReader(br *bufio.Reader) {
+	br.Reset(nil)
 	_bioReaderPool.Put(br)
+}
+
+func GetBufioReader(r io.Reader) *bufio.Reader {
+	return getBufioReader(r)
+}
+func PutBufioReader(br *bufio.Reader) {
+	putBufioReader(br)
 }
 
 func getBufioWriter(w io.Writer) *bufio.Writer {
@@ -35,7 +43,15 @@ func getBufioWriter(w io.Writer) *bufio.Writer {
 	return bw
 }
 func putBufioWriter(bw *bufio.Writer) {
+	bw.Reset(nil)
 	_bioWriterPool.Put(bw)
+}
+
+func GetBufioWriter(w io.Writer) *bufio.Writer {
+	return getBufioWriter(w)
+}
+func PutBufioWriter(bw *bufio.Writer) {
+	putBufioWriter(bw)
 }
 
 var (
@@ -71,9 +87,10 @@ var (
 	}
 )
 
-func getReader() *Reader {
-	r := _readerPool.Get().(*Reader)
-	return r
+func getReader(r io.Reader, bufferSize int) *Reader {
+	rd := _readerPool.Get().(*Reader)
+	rd.Reset(r, bufferSize, defaultValidate())
+	return rd
 }
 func putReader(r *Reader) {
 	r.Reset(nil, defaultBufferSize, nil)
@@ -84,9 +101,7 @@ func GetReader(r io.Reader) *Reader {
 	return GetReaderSize(r, defaultBufferSize)
 }
 func GetReaderSize(r io.Reader, bufferSize int) *Reader {
-	rd := getReader()
-	rd.Reset(r, bufferSize, defaultValidate())
-	return rd
+	return getReader(r, bufferSize)
 }
 func PutReader(r *Reader) {
 	putReader(r)
