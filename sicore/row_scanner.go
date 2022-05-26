@@ -7,50 +7,25 @@ import (
 	"sync"
 )
 
-var (
-	_rowScannerPool = sync.Pool{
-		New: func() interface{} {
-			return newRowScanner()
-		},
-	}
-)
-
-func getRowScanner() *RowScanner {
-	rs := _rowScannerPool.Get().(*RowScanner)
-	rs.sqlCol = make(map[string]any)
-	return rs
-}
-func putRowScanner(rs *RowScanner) {
-	rs.sqlCol = nil
-	_rowScannerPool.Put(rs)
-}
-
-type RowScanner struct {
+type rowScanner struct {
 	sqlColLock sync.RWMutex
 	sqlCol     map[string]any
 }
 
-func newRowScanner() *RowScanner {
-	return &RowScanner{
+func newRowScanner() *rowScanner {
+	return &rowScanner{
 		sqlCol: make(map[string]any),
 	}
 }
 
-func GetRowScanner() *RowScanner {
-	return getRowScanner()
-}
-func PutRowScanner(rs *RowScanner) {
-	putRowScanner(rs)
-}
-
-func (rs *RowScanner) SetSqlColumn(name string, typ any) {
+func (rs *rowScanner) SetSqlColumn(name string, typ any) {
 	rs.sqlColLock.Lock()
 	defer rs.sqlColLock.Unlock()
 
 	rs.sqlCol[name] = typ
 }
 
-func (rs *RowScanner) GetSqlColumn(name string) (any, bool) {
+func (rs *rowScanner) GetSqlColumn(name string) (any, bool) {
 	rs.sqlColLock.RLock()
 	defer rs.sqlColLock.RUnlock()
 
@@ -60,7 +35,7 @@ func (rs *RowScanner) GetSqlColumn(name string) (any, bool) {
 	return nil, false
 }
 
-func (rs *RowScanner) ScanTypes(rows *sql.Rows, sc ...SqlColumn) ([]interface{}, []string, error) {
+func (rs *rowScanner) ScanTypes(rows *sql.Rows, sc ...SqlColumn) ([]interface{}, []string, error) {
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, nil, err
@@ -80,12 +55,12 @@ func (rs *RowScanner) ScanTypes(rows *sql.Rows, sc ...SqlColumn) ([]interface{},
 	return scannedRow, columns, nil
 }
 
-func (rs *RowScanner) ScanValuesIntoMap(columns []string, values []interface{}, dest *map[string]interface{}) {
+func (rs *rowScanner) ScanValuesIntoMap(columns []string, values []interface{}, dest *map[string]interface{}) {
 	// scanIntoMap(columns, values, dest)
 	rs.scanValuesIntoMap(columns, values, dest)
 }
 
-func (rs *RowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnType, columns []string) {
+func (rs *rowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnType, columns []string) {
 	for i, ct := range columnTypes {
 		if c, ok := rs.GetSqlColumn(columns[i]); ok {
 			values[i] = reflect.New(reflect.PtrTo(reflect.TypeOf(c))).Interface()
@@ -100,7 +75,7 @@ func (rs *RowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnT
 	}
 }
 
-func (rs *RowScanner) scanValuesIntoMap(columns []string, values []interface{}, dest *map[string]interface{}) {
+func (rs *rowScanner) scanValuesIntoMap(columns []string, values []interface{}, dest *map[string]interface{}) {
 	for idx, v := range values {
 		if rv := reflect.Indirect(reflect.Indirect(reflect.ValueOf(v))); rv.IsValid() {
 			(*dest)[columns[idx]] = rv.Interface()
@@ -116,7 +91,7 @@ func (rs *RowScanner) scanValuesIntoMap(columns []string, values []interface{}, 
 	}
 }
 
-func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc ...SqlColumn) (int, error) {
+func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc ...SqlColumn) (int, error) {
 	scannedRow, columns, err := rs.ScanTypes(rows, sc...)
 	if err != nil {
 		return 0, err

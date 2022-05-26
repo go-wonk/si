@@ -8,21 +8,34 @@ type ReadValidator interface {
 }
 
 // validateFunc wraps a function that conforms to ReadValidator interface
-type validateFunc func([]byte, error) (bool, error)
+type ValidateFunc func([]byte, error) (bool, error)
 
 // implements ReadValidator's validate method
-func (v validateFunc) validate(b []byte, errIn error) (bool, error) {
+func (v ValidateFunc) validate(b []byte, errIn error) (bool, error) {
 	return v(b, errIn)
 }
 
 // defaultValidate simply checks EOF
-func defaultValidate(b []byte, errIn error) (bool, error) {
-	if errIn != nil {
-		if errIn == io.EOF {
-			return true, nil
+func defaultValidate() ReadValidator {
+	return ValidateFunc(func(b []byte, errIn error) (bool, error) {
+		if errIn != nil {
+			if errIn == io.EOF {
+				return true, nil
+			}
+			return false, errIn
 		}
-		return false, errIn
-	}
 
-	return false, nil
+		return false, nil
+	})
 }
+
+// func defaultValidate(b []byte, errIn error) (bool, error) {
+// 	if errIn != nil {
+// 		if errIn == io.EOF {
+// 			return true, nil
+// 		}
+// 		return false, errIn
+// 	}
+
+// 	return false, nil
+// }

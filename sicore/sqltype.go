@@ -88,7 +88,7 @@ type SqlColumn struct {
 	Type SqlColType
 }
 
-func (sc SqlColumn) SetType(rs *RowScanner) {
+func (sc SqlColumn) SetType(rs *rowScanner) {
 	switch sc.Type {
 	case SqlColTypeBool:
 		rs.SetSqlColumn(sc.Name, sqlNullBoolTypeValue)

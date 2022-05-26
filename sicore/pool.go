@@ -37,3 +37,28 @@ func getBufioWriter(w io.Writer) *bufio.Writer {
 func putBufioWriter(bw *bufio.Writer) {
 	_writerPool.Put(bw)
 }
+
+var (
+	_rowScannerPool = sync.Pool{
+		New: func() interface{} {
+			return newRowScanner()
+		},
+	}
+)
+
+func getRowScanner() *rowScanner {
+	rs := _rowScannerPool.Get().(*rowScanner)
+	rs.sqlCol = make(map[string]any)
+	return rs
+}
+func putRowScanner(rs *rowScanner) {
+	rs.sqlCol = nil
+	_rowScannerPool.Put(rs)
+}
+
+func GetRowScanner() *rowScanner {
+	return getRowScanner()
+}
+func PutRowScanner(rs *rowScanner) {
+	putRowScanner(rs)
+}
