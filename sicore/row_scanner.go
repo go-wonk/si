@@ -9,6 +9,9 @@ import (
 
 const defaultUseSqlNullType = true
 
+// rowScanner scans data from sql.Rows when data type is unknown.
+// By default all column type is mapped with sql.NullXXX type to be safe.
+// `sqlCol` is a map to assign a data type to specific column.
 type rowScanner struct {
 	sqlColLock     sync.RWMutex
 	sqlCol         map[string]any

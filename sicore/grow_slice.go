@@ -6,6 +6,7 @@ const maxInt = int(^uint(0) >> 1)
 
 var ErrTooLarge = errors.New("buf too large")
 
+// grow a byte slice's capacity or allocate more space(len) by n
 func grow(b *[]byte, n int) (int, error) {
 	c := cap(*b)
 	l := len(*b)
@@ -31,6 +32,7 @@ func grow(b *[]byte, n int) (int, error) {
 	return l, nil
 }
 
+// growCap grows the capacity of byte slice by n
 func growCap(b *[]byte, n int) error {
 	c := cap(*b)
 	l := len(*b)

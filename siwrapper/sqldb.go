@@ -8,11 +8,13 @@ import (
 	"github.com/go-wonk/si/siutils"
 )
 
+// SqlDB is a wrapper of sql.DB
 type SqlDB struct {
 	db         *sql.DB
 	sqlColumns []sicore.SqlColumn
 }
 
+// NewSqlDB returns SqlDB
 func NewSqlDB(db *sql.DB, sc ...sicore.SqlColumn) *SqlDB {
 	return &SqlDB{
 		db:         db,
@@ -20,6 +22,7 @@ func NewSqlDB(db *sql.DB, sc ...sicore.SqlColumn) *SqlDB {
 	}
 }
 
+// Begin begins a transaction
 func (o *SqlDB) Begin() (*sql.Tx, error) {
 	tx, err := o.db.Begin()
 	if err != nil {
@@ -60,6 +63,7 @@ func (o *SqlDB) ExecContext(ctx context.Context, query string, args ...any) (sql
 	return o.db.ExecContext(ctx, query, args...)
 }
 
+// QueryIntoMapSlice queries a database then scan resultset into output(slice of map)
 func (o *SqlDB) QueryIntoMapSlice(query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
 	if err != nil {
@@ -73,6 +77,7 @@ func (o *SqlDB) QueryIntoMapSlice(query string, output *[]map[string]interface{}
 	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
+// QueryIntoAny queries a database then scan resultset into output of any type
 func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
 	if err != nil {
@@ -97,6 +102,7 @@ func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error)
 	return n, nil
 }
 
+// QueryIntoMapSlice queries a database with context then scan resultset into output(slice of map)
 func (o *SqlDB) QueryContenxtIntoMapSlice(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -110,6 +116,7 @@ func (o *SqlDB) QueryContenxtIntoMapSlice(ctx context.Context, query string, out
 	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
+// QueryIntoAny queries a database with context then scan resultset into output of any type
 func (o *SqlDB) QueryContextIntoAny(ctx context.Context, query string, output any, args ...any) (int, error) {
 	rows, err := o.db.QueryContext(ctx, query, args...)
 	if err != nil {

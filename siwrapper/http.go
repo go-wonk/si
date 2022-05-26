@@ -8,23 +8,29 @@ import (
 
 const defaultBufferSize = 4096
 
+// HttpClient is a wrapper of http.Client
 type HttpClient struct {
 	client         *http.Client
 	defaultHeaders map[string]string
 	bufferSize     int
 }
 
+// NewHttpClient returns default HttpClient
 func NewHttpClient(client *http.Client) *HttpClient {
 	return NewHttpClientSizeWithHeader(client, defaultBufferSize, nil)
 }
+
+// NewHttpClientSize returns HttpClient with specified bufferSize
 func NewHttpClientSize(client *http.Client, bufferSize int) *HttpClient {
 	return NewHttpClientSizeWithHeader(client, bufferSize, nil)
 }
 
+// NewHttpClientWithHeader returns HttpClient with specified defaultHeaders that will be set on every request
 func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]string) *HttpClient {
 	return NewHttpClientSizeWithHeader(client, defaultBufferSize, defaultHeaders)
 }
 
+// NewHttpClientSizeWithHeader returns HttpClient with specified bufferSize and defaultHeaders that will be set on every request
 func NewHttpClientSizeWithHeader(client *http.Client, bufferSize int, defaultHeaders map[string]string) *HttpClient {
 	return &HttpClient{
 		client:         client,
@@ -33,6 +39,7 @@ func NewHttpClientSizeWithHeader(client *http.Client, bufferSize int, defaultHea
 	}
 }
 
+// Do is a wrapper of http.Client.Do
 func (hc *HttpClient) Do(request *http.Request) (*http.Response, error) {
 	hc.setDefaultHeader(request)
 
@@ -48,7 +55,8 @@ func (hc *HttpClient) setDefaultHeader(request *http.Request) {
 	}
 }
 
-func (hc *HttpClient) Get(request *http.Request) ([]byte, error) {
+// DoReadBody sends Do request and read all data from response.Body
+func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
 	resp, err := hc.Do(request)
 	if err != nil {
 		return nil, err

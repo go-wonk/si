@@ -7,7 +7,9 @@ import (
 
 const defaultBufferSize = 4096
 
-// File, Tcp, Ftp
+// ReadWriter uses bufio package to read and write more efficiently.
+// It is designed to read/write data from/to a storage that implements ReadWriter interface.
+// `validator` determines when to finish reading, and defaultValidator is to finish when io.EOF is met.
 type ReadWriter struct {
 	r io.Reader
 	w io.Writer
@@ -16,40 +18,44 @@ type ReadWriter struct {
 	validator  ReadValidator
 }
 
+// NewReadWriter with default bufferSize
 func NewReadWriter(rw io.ReadWriter) *ReadWriter {
 	return NewReadWriterSize(rw, defaultBufferSize)
 }
 
+// NewReadWriterWithValidator with defaultBufferSize and specified validator
 func NewReadWriterWithValidator(rw io.ReadWriter, validator ReadValidator) *ReadWriter {
 	return NewReadWriterSizeWithValidator(rw, defaultBufferSize, validator)
 }
 
+// NewReadWriterSize with specified bufferSize
 func NewReadWriterSize(rw io.ReadWriter, bufferSize int) *ReadWriter {
 	return NewReadWriterSizeWithValidator(rw, bufferSize, defaultValidate())
 }
 
+// NewReadWriterSizeWithValidator with specified bufferSize and validator
 func NewReadWriterSizeWithValidator(rw io.ReadWriter, bufferSize int, validator ReadValidator) *ReadWriter {
 	return &ReadWriter{rw, rw, bufferSize, validator}
 }
 
-// func (rw *ReadWriter) SetValidator(validator ReadValidator) {
-// 	rw.validator = validator
-// }
-
+// Read reads data into p.
 func (rw *ReadWriter) Read(p []byte) (n int, err error) {
 	br := getBufioReader(rw.r)
 	defer putBufioReader(br)
 	return br.Read(p)
 }
 
+// Write writes p into rw.w
 func (rw *ReadWriter) Write(p []byte) (n int, err error) {
 	return rw.write(p)
 }
 
+// ReadAll reads all data in rw.r and returns it.
 func (rw *ReadWriter) ReadAll() ([]byte, error) {
 	return readAll(rw.r, rw.bufferSize, rw.validator)
 }
 
+// WriteAndRead writes p into rw.w then reads all data from rw.r then returns it.
 func (rw *ReadWriter) WriteAndRead(p []byte) ([]byte, error) {
 	if n, err := rw.write(p); err != nil {
 		return nil, err
@@ -60,6 +66,7 @@ func (rw *ReadWriter) WriteAndRead(p []byte) ([]byte, error) {
 	return readAll(rw.r, rw.bufferSize, rw.validator)
 }
 
+// readAll reads all data from r and returns it
 func readAll(r io.Reader, bufferSize int, validator ReadValidator) ([]byte, error) {
 	br := getBufioReader(r)
 	defer putBufioReader(br)
@@ -100,6 +107,7 @@ func (rw *ReadWriter) write(p []byte) (int, error) {
 	return n, nil
 }
 
+// Reader
 type Reader struct {
 	r          io.Reader
 	bufferSize int

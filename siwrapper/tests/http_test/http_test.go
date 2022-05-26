@@ -22,7 +22,7 @@ func TestHttpClient_Get(t *testing.T) {
 
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-	b, err := hc.Get(request)
+	b, err := hc.DoReadBody(request)
 	siutils.NilFail(t, err)
 
 	fmt.Println(string(b))

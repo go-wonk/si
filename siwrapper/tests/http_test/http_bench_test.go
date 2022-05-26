@@ -53,7 +53,7 @@ func BenchmarkHttpClient_Get(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, err := hc.Get(request)
+		body, err := hc.DoReadBody(request)
 		siutils.NilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -75,7 +75,7 @@ func BenchmarkHttpClient_GetSize(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, err := hc.Get(request)
+		body, err := hc.DoReadBody(request)
 		siutils.NilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
