@@ -12,35 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestSqlDB_Query(t *testing.T) {
-// 	if onlinetest != "1" {
-// 		t.Skip("skipping online tests")
-// 	}
-// 	siutils.AssertNotNilAndFilaNow(db, t)
-
-// 	sqldb := siwrapper.NewSqlDB(db)
-
-// 	tx, err := sqldb.Begin()
-// 	siutils.AssertNilAndFilaNow(err, t)
-
-// 	sqltx := siwrapper.NewSqlTx(tx)
-// 	defer sqltx.Rollback()
-
-// 	insertQuery := `
-// 		insert into m_user(id, email_address, mobile_number, user_id, user_name)
-// 		values((select coalesce(max(id), 0)+1 from m_user), $1, $2, $3, $4)
-// 	`
-// 	sqlResult, err := sqltx.Exec(insertQuery, "new@mail.com", "000", "id", "name")
-// 	siutils.AssertNilAndFilaNow(err, t)
-
-// 	sqltx.Commit()
-
-// 	n, err := sqlResult.RowsAffected()
-// 	siutils.AssertNilAndFilaNow(err, t)
-
-// 	assert.Equal(t, int64(1), n)
-// }
-
 func TestSqlDB_QueryRow(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
@@ -181,5 +152,83 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 	mb, _ := json.Marshal(m)
 	fmt.Println(string(mb))
 	assert.Equal(t, expected, string(mb))
+
+}
+
+func TestSqlDB_QueryIntoMap_Bool(t *testing.T) {
+	if onlinetest != "1" {
+		t.Skip("skipping online tests")
+	}
+	siutils.NotNilFail(t, db)
+
+	sqldb := siwrapper.NewSqlDB(db)
+
+	query := `
+		select null as nil,
+			null as true_1, '1' as true_2, 'Y' as true_3,
+			0 as false_1, '0' as false_2, 'N' as false_3
+		union all
+		select 'abcdef' as nil,
+			1 as true_1, '1' as true_2, 'Y' as true_3,
+			0 as false_1, '0' as false_2, 'N' as false_3
+	`
+
+	m := make([]map[string]interface{}, 0)
+	_, err := sqldb.QueryIntoMap(query, &m)
+	siutils.NilFail(t, err)
+
+	// expected := `[{"bigint_":123,"bytea_":"MDEyMw==","char_arr_":"e2FiY2RlLGx1bmNofQ==","decimal_":123,"int2_":123,"nil":null,"numeric_":123,"str":"123","time_":"2022-01-01T12:12:12Z","varchar_arr_":"e2FiY2RlLGx1bmNofQ=="}]`
+	mb, _ := json.Marshal(m)
+	fmt.Println(string(mb))
+	// assert.Equal(t, expected, string(mb))
+
+}
+
+func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
+	if onlinetest != "1" {
+		t.Skip("skipping online tests")
+	}
+	siutils.NotNilFail(t, db)
+
+	sqldb := siwrapper.NewSqlDB(db)
+	sqldb.AddSqlColumn(
+		sicore.SqlColumn{"true_1", sicore.SqlColTypeBool},
+		sicore.SqlColumn{"true_2", sicore.SqlColTypeBool},
+		sicore.SqlColumn{"false_1", sicore.SqlColTypeBool},
+		sicore.SqlColumn{"false_2", sicore.SqlColTypeBool},
+	)
+
+	type BoolTest struct {
+		true_1  bool
+		true_2  bool
+		false_1 bool
+		false_2 bool
+	}
+	query := `
+		select null as nil,
+			null as true_1, '1' as true_2, 
+			0 as false_1, '0' as false_2
+		union all
+		select null as nil,
+			1 as true_1, '1' as true_2,
+			0 as false_1, '0' as false_2
+	`
+
+	m := make([]map[string]interface{}, 0)
+	_, err := sqldb.QueryIntoMap(query, &m)
+	siutils.NilFail(t, err)
+
+	for k, v := range m {
+		fmt.Printf("%p == %p\n", m[k], v)
+	}
+
+	// expected := `[{"bigint_":123,"bytea_":"MDEyMw==","char_arr_":"e2FiY2RlLGx1bmNofQ==","decimal_":123,"int2_":123,"nil":null,"numeric_":123,"str":"123","time_":"2022-01-01T12:12:12Z","varchar_arr_":"e2FiY2RlLGx1bmNofQ=="}]`
+	mb, _ := json.Marshal(m)
+	fmt.Println(string(mb))
+
+	bt := make([]BoolTest, 0)
+	err = siutils.DecodeAny(m, &bt)
+	siutils.NilFail(t, err)
+	// assert.Equal(t, expected, string(mb))
 
 }

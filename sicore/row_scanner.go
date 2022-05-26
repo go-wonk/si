@@ -16,13 +16,13 @@ var (
 )
 
 func getRowScanner() *RowScanner {
-	rs := _readerPool.Get().(*RowScanner)
+	rs := _rowScannerPool.Get().(*RowScanner)
 	rs.sqlCol = make(map[string]any)
 	return rs
 }
 func putRowScanner(rs *RowScanner) {
 	rs.sqlCol = nil
-	_readerPool.Put(rs)
+	_rowScannerPool.Put(rs)
 }
 
 type RowScanner struct {
@@ -100,15 +100,15 @@ func (rs *RowScanner) scanValuesIntoMap(columns []string, values []interface{}, 
 	for idx, v := range values {
 		if rv := reflect.Indirect(reflect.Indirect(reflect.ValueOf(v))); rv.IsValid() {
 			(*dest)[columns[idx]] = rv.Interface()
-			// fmt.Printf("%v: %p, %T, %v\n", columns[idx], (*dest)[columns[idx]], (*dest)[columns[idx]], (*dest)[columns[idx]])
 
 			if valuer, ok := (*dest)[columns[idx]].(driver.Valuer); ok {
 				(*dest)[columns[idx]], _ = valuer.Value()
 			} else if b, ok := (*dest)[columns[idx]].(sql.RawBytes); ok {
 				(*dest)[columns[idx]] = string(b)
-			} else {
-				(*dest)[columns[idx]] = rv.Interface()
 			}
+			// else {
+			// 	(*dest)[columns[idx]] = rv.Interface()
+			// }
 		} else {
 			(*dest)[columns[idx]] = nil
 		}

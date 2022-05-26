@@ -9,21 +9,18 @@ import (
 )
 
 type SqlDB struct {
-	db *sql.DB
-	rs *sicore.RowScanner
+	db         *sql.DB
+	sqlColumns []sicore.SqlColumn
 }
 
 func NewSqlDB(db *sql.DB) *SqlDB {
 	return &SqlDB{
 		db: db,
-		rs: sicore.NewRowScanner(),
 	}
 }
 
 func (o *SqlDB) AddSqlColumn(sc ...sicore.SqlColumn) {
-	for _, v := range sc {
-		v.SetType(o.rs)
-	}
+	o.sqlColumns = sc
 }
 
 func (o *SqlDB) Begin() (*sql.Tx, error) {
@@ -70,9 +67,13 @@ func (o *SqlDB) QueryIntoMap(query string, output *[]map[string]interface{}, arg
 	}
 	defer rows.Close()
 
-	// scannedRow, columns, err := sicore.ScanTypes(rows,
-	// 	sicore.SqlDataTypeString, sicore.SqlDataTypeString)
-	scannedRow, columns, err := o.rs.ScanTypes(rows)
+	rs := sicore.GetRowScanner()
+	defer sicore.PutRowScanner(rs)
+	for _, c := range o.sqlColumns {
+		c.SetType(rs)
+	}
+
+	scannedRow, columns, err := rs.ScanTypes(rows)
 	if err != nil {
 		return 0, err
 	}
@@ -85,7 +86,7 @@ func (o *SqlDB) QueryIntoMap(query string, output *[]map[string]interface{}, arg
 		}
 
 		m := make(map[string]interface{})
-		o.rs.ScanValuesIntoMap(columns, scannedRow, &m)
+		rs.ScanValuesIntoMap(columns, scannedRow, &m)
 		*output = append(*output, m)
 		n++
 	}
@@ -105,10 +106,14 @@ func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error)
 	}
 	defer rows.Close()
 
+	rs := sicore.GetRowScanner()
+	defer sicore.PutRowScanner(rs)
+	for _, c := range o.sqlColumns {
+		c.SetType(rs)
+	}
+
 	list := make([]map[string]interface{}, 0)
-	// scannedRow, columns, err := sicore.ScanTypes(rows,
-	// 	sicore.SqlDataTypeString, sicore.SqlDataTypeString)
-	scannedRow, columns, err := o.rs.ScanTypes(rows)
+	scannedRow, columns, err := rs.ScanTypes(rows)
 	if err != nil {
 		return 0, err
 	}
@@ -120,7 +125,7 @@ func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error)
 		}
 
 		m := make(map[string]interface{})
-		o.rs.ScanValuesIntoMap(columns, scannedRow, &m)
+		rs.ScanValuesIntoMap(columns, scannedRow, &m)
 		list = append(list, m)
 
 	}
