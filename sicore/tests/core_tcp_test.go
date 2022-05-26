@@ -15,6 +15,9 @@ import (
 )
 
 func TestTcp_WriteAndRead(t *testing.T) {
+	if onlinetest != "1" {
+		t.Skip("skipping online tests")
+	}
 	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
 	if !assert.Nil(t, err) {
 		t.FailNow()

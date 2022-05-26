@@ -118,17 +118,21 @@ func newReader() *Reader {
 	return &Reader{}
 }
 
+// Reset r, bufferSize and validator of Reader
 func (rd *Reader) Reset(r io.Reader, bufferSize int, validator ReadValidator) {
 	rd.r = r
 	rd.bufferSize = bufferSize
 	rd.validator = validator
 }
+
+// Read reads the data of underlying io.Reader into p
 func (r *Reader) Read(p []byte) (n int, err error) {
 	br := getBufioReader(r.r)
 	defer putBufioReader(br)
 	return br.Read(p)
 }
 
+// ReadAll reads all data from r.r and returns it.
 func (r *Reader) ReadAll() ([]byte, error) {
 	return readAll(r.r, r.bufferSize, r.validator)
 }

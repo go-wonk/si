@@ -156,6 +156,7 @@ func (rs *rowScanner) scanValuesIntoMap(columns []string, values []interface{}, 
 	}
 }
 
+// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
 func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc ...SqlColumn) (int, error) {
 	scannedRow, columns, err := rs.ScanTypes(rows, sc...)
 	if err != nil {

@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	// onlinetest = os.Getenv("ONLINE_TEST")
-	onlinetest = "1"
+	onlinetest = os.Getenv("ONLINE_TEST")
+	// onlinetest = "1"
 
 	db *sql.DB
 )
