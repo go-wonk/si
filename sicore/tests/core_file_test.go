@@ -12,11 +12,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadWriter_ReadAllBytes(t *testing.T) {
+func TestReader_Read(t *testing.T) {
 	f, _ := os.OpenFile("./data/readonly.txt", os.O_RDONLY, 0644)
 	defer f.Close()
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetReader(f)
+	defer sicore.PutReader(s)
+
+	expected := `{"name":"w`
+
+	byt := make([]byte, 10)
+	n, err := s.Read(byt)
+	siutils.NilFail(t, err)
+
+	assert.Equal(t, expected, string(byt))
+	assert.Equal(t, 10, n)
+}
+
+func TestReader_ReadAll(t *testing.T) {
+	f, _ := os.OpenFile("./data/readonly.txt", os.O_RDONLY, 0644)
+	defer f.Close()
+
+	s := sicore.GetReader(f)
+	defer sicore.PutReader(s)
 
 	expected := `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`
 	expected += "\n"
@@ -29,37 +47,24 @@ func TestReadWriter_ReadAllBytes(t *testing.T) {
 	assert.Equal(t, expected, str)
 }
 
-func TestReadWriter_Read(t *testing.T) {
-	f, _ := os.OpenFile("./data/readonly.txt", os.O_RDONLY, 0644)
-	defer f.Close()
-
-	expected := `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`
-
-	s := sicore.NewReadWriter(f)
-	b := make([]byte, len(expected))
-	n, err := s.Read(b)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
-	assert.Equal(t, len(expected), n)
-}
-
 func TestReadWriter_ReadSmall(t *testing.T) {
 	f, _ := os.OpenFile("./data/readonly.txt", os.O_RDONLY, 0644)
 	defer f.Close()
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetReader(f)
+	defer sicore.PutReader(s)
 	b := make([]byte, 1)
 	n, err := s.Read(b)
 	siutils.NilFail(t, err)
 	assert.Equal(t, 1, n)
 }
 
-func TestReadWriter_ReadZeroCase1(t *testing.T) {
+func TestReader_ReadZeroCase1(t *testing.T) {
 	f, _ := os.OpenFile("./data/readonly.txt", os.O_RDONLY, 0644)
 	defer f.Close()
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetReader(f)
+	defer sicore.PutReader(s)
 	var b []byte
 	n, err := s.Read(b)
 	if !assert.Nil(t, err) {
@@ -68,13 +73,14 @@ func TestReadWriter_ReadZeroCase1(t *testing.T) {
 	assert.Equal(t, 0, n)
 }
 
-func TestReadWriter_ReadZeroCase2(t *testing.T) {
+func TestReader_ReadZeroCase2(t *testing.T) {
 	f, _ := os.OpenFile("./data/readonly.txt", os.O_RDONLY, 0644)
 	defer f.Close()
 
 	expected := `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetReader(f)
+	defer sicore.PutReader(s)
 	b := make([]byte, 0, len(expected))
 	n, err := s.Read(b)
 	if !assert.Nil(t, err) {
@@ -83,11 +89,27 @@ func TestReadWriter_ReadZeroCase2(t *testing.T) {
 	assert.Equal(t, 0, n)
 }
 
-func TestReadWriter_Write(t *testing.T) {
-	f, _ := os.OpenFile("./data/write.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_Write(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_Write.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	siutils.NilFail(t, err)
+
+	s := sicore.GetWriter(f)
+	defer sicore.PutWriter(s)
+
+	expected := `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`
+	expected += "\n"
+	n, err := s.Write([]byte(expected))
+	siutils.NilFail(t, err)
+
+	assert.EqualValues(t, len(expected), n)
+}
+
+func TestWriter_WriteMany(t *testing.T) {
+	f, _ := os.OpenFile("./data/TestWriter_WriteMany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer f.Close()
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetWriter(f)
+	defer sicore.PutWriter(s)
 	line := `{"name":"wonk","age":20,"email":"wonk@wonk.org"}`
 	line += "\n"
 	expected := bytes.Repeat([]byte(line), 1000)
@@ -108,11 +130,12 @@ type Person struct {
 	NumChildren    uint8  `json:"num_children"`
 }
 
-func TestReadWriter_WriteAnyBytes(t *testing.T) {
+func TestWriter_WriteAnyBytes(t *testing.T) {
 	f, _ := os.OpenFile("./data/writeany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer f.Close()
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetWriter(f)
+	defer sicore.PutWriter(s)
 	byt := []byte(`{"name":"wonk","age":20,"email":"wonk@wonk.wonk","gender":"M","marriage_status":"Yes","num_children":10}`)
 
 	n, err := s.WriteAny(byt)
@@ -124,11 +147,12 @@ func TestReadWriter_WriteAnyBytes(t *testing.T) {
 	assert.Equal(t, 1, n)
 
 }
-func TestReadWriter_WriteAnyString(t *testing.T) {
+func TestWriter_WriteAnyString(t *testing.T) {
 	f, _ := os.OpenFile("./data/writeany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer f.Close()
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetWriter(f)
+	defer sicore.PutWriter(s)
 	str := `{"name":"wonk","age":20,"email":"wonk@wonk.wonk","gender":"M","marriage_status":"Yes","num_children":10}`
 
 	n, err := s.WriteAny(str)
@@ -140,44 +164,44 @@ func TestReadWriter_WriteAnyString(t *testing.T) {
 	assert.Equal(t, 1, n)
 
 }
-func TestReadWriter_WriteAnyStruct(t *testing.T) {
+func TestWriter_WriteAnyStruct(t *testing.T) {
 	f, _ := os.OpenFile("./data/writeany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer f.Close()
 
 	p := &Person{"wonk", 20, "wonk@wonk.wonk", "M", "Yes", 10}
 
-	s := sicore.NewReadWriterWithEncoder(f, sicore.JsonEncoder(f))
+	s := sicore.GetWriterWithEncoder(f, sicore.JsonEncoder(f))
+	defer sicore.PutWriter(s)
+
 	n, err := s.WriteAny(p)
 	siutils.NilFail(t, err)
 
 	assert.Equal(t, 1, n)
 }
 
-func TestReadWriter_WriteAnyStructFlush(t *testing.T) {
+func TestWriter_WriteAnyStructFlush(t *testing.T) {
 	f, _ := os.OpenFile("./data/writeany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer f.Close()
 
 	// bufio readwriter wrap around f
-	br := bufio.NewReader(f)
 	bw := bufio.NewWriter(f)
-	brw := bufio.NewReadWriter(br, bw)
+	s := sicore.GetWriterSizeWithEncoder(bw, 1024, sicore.JsonEncoder(bw))
+	defer sicore.PutWriter(s)
 
 	p := &Person{"wonk", 20, "wonk@wonk.wonk", "M", "Yes", 10}
-
-	s := sicore.NewReadWriterWithEncoder(brw, sicore.JsonEncoder(brw))
 	n, err := s.WriteAny(p)
 	siutils.NilFail(t, err)
 
 	assert.Equal(t, 1, n)
 }
 
-func TestReadWriter_WriteAnyStructFail(t *testing.T) {
+func TestWriter_WriteAnyStructFail(t *testing.T) {
 	f, _ := os.OpenFile("./data/writeany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer f.Close()
 
 	p := &Person{"wonk", 20, "wonk@wonk.wonk", "M", "Yes", 10}
 
-	s := sicore.NewReadWriter(f)
+	s := sicore.GetWriter(f)
 	n, err := s.WriteAny(p)
 	siutils.NotNilFail(t, err)
 

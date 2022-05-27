@@ -80,6 +80,18 @@ func PutRowScanner(rs *rowScanner) {
 }
 
 var (
+	_readWriterPool = sync.Pool{
+		New: func() interface{} {
+			return NewReadWriter(nil, nil)
+		},
+	}
+)
+
+// func getReadWriter(r io.Reader, w io.Writer) *ReadWriter {
+
+// }
+
+var (
 	_readerPool = sync.Pool{
 		New: func() interface{} {
 			return newReader()
@@ -94,7 +106,7 @@ func getReader(r io.Reader, bufferSize int) *Reader {
 }
 func putReader(r *Reader) {
 	r.Reset(nil, defaultBufferSize, nil)
-	_rowScannerPool.Put(r)
+	_readerPool.Put(r)
 }
 
 func GetReader(r io.Reader) *Reader {
@@ -105,4 +117,39 @@ func GetReaderSize(r io.Reader, bufferSize int) *Reader {
 }
 func PutReader(r *Reader) {
 	putReader(r)
+}
+
+var (
+	_writerPool = sync.Pool{
+		New: func() interface{} {
+			return newWriter()
+		},
+	}
+)
+
+func getWriter(w io.Writer, bufferSize int, enc Encoder) *Writer {
+	wr := _writerPool.Get().(*Writer)
+	wr.Reset(w, bufferSize, enc)
+	return wr
+}
+
+func putWriter(w *Writer) {
+	w.Reset(nil, defaultBufferSize, nil)
+	_writerPool.Put(w)
+}
+
+func GetWriter(w io.Writer) *Writer {
+	return getWriter(w, defaultBufferSize, DefaultEncoder(w))
+}
+func GetWriterSize(w io.Writer, bufferSize int) *Writer {
+	return getWriter(w, bufferSize, DefaultEncoder(w))
+}
+func GetWriterWithEncoder(w io.Writer, enc Encoder) *Writer {
+	return getWriter(w, defaultBufferSize, enc)
+}
+func GetWriterSizeWithEncoder(w io.Writer, bufferSize int, enc Encoder) *Writer {
+	return getWriter(w, bufferSize, enc)
+}
+func PutWriter(w *Writer) {
+	putWriter(w)
 }

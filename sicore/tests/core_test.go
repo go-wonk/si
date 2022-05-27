@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	onlinetest = os.Getenv("ONLINE_TEST")
-	// onlinetest = "1"
+	// onlinetest = os.Getenv("ONLINE_TEST")
+	onlinetest = "1"
 
 	listener       net.Listener
 	listenerClosed bool
@@ -58,9 +58,9 @@ func startTcpServer(waitChannel chan bool) error {
 				//입력
 				count, err := connection.Read(buffer)
 				if nil != err {
-					//입력이 종료되면 중료
+					//입력이 종료되면
 					if io.EOF == err {
-						log.Printf("연결 종료: %v", connection.RemoteAddr().String())
+						// log.Printf("연결 종료: %v", connection.RemoteAddr().String())
 					} else {
 						log.Printf("수신 실패: %v", err)
 					}
@@ -88,12 +88,12 @@ func startTcpServer(waitChannel chan bool) error {
 }
 
 func setup() error {
-	waitChannel := make(chan bool)
-	go startTcpServer(waitChannel)
+	// waitChannel := make(chan bool)
+	// go startTcpServer(waitChannel)
 
-	for range waitChannel {
-		break
-	}
+	// for range waitChannel {
+	// 	break
+	// }
 	if onlinetest == "1" {
 	}
 

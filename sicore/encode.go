@@ -50,9 +50,9 @@ func JsonEncoder(w io.Writer) Encoder {
 		if err != nil {
 			return err
 		}
-		if f, ok := w.(Flusher); ok {
-			return f.Flush()
-		}
+		// if f, ok := w.(Flusher); ok {
+		// 	return f.Flush()
+		// }
 		return nil
 	})
 }

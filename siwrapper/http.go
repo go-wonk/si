@@ -65,6 +65,7 @@ func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
 	defer resp.Body.Close()
 
 	r := sicore.GetReaderSize(resp.Body, hc.bufferSize)
+	defer sicore.PutReader(r)
 	b, err := r.ReadAll()
 	if err != nil {
 		return nil, err
@@ -99,18 +100,3 @@ func NewPostRequest(url string, body io.Reader) (*http.Request, error) {
 	}
 	return r, nil
 }
-
-// func NewPostRequestJson(url string, body any) (*http.Request, error) {
-// 	b := make([]byte, 0, 4096)
-// 	buf := bytes.NewBuffer(b)
-// 	rw := sicore.NewReadWriter(buf)
-// 	if err := json.NewEncoder(rw).Encode(body); err != nil {
-// 		return nil, err
-// 	}
-
-// 	r, err := http.NewRequest(http.MethodPost, url, rw)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return r, nil
-// }

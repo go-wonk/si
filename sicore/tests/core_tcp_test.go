@@ -50,7 +50,7 @@ func TestTcp_WriteAndRead(t *testing.T) {
 		t.FailNow()
 	}
 
-	s := sicore.NewReadWriterWithValidator(conn, tcpValidator())
+	s := sicore.NewReadWriterWithValidator(conn, conn, tcpValidator())
 	received, err := s.WriteAndRead(createDataToSend())
 	if !assert.Nil(t, err) {
 		t.FailNow()
@@ -66,6 +66,13 @@ func TestTcp_WriteAndRead(t *testing.T) {
 func createDataToSend() []byte {
 
 	dataToSend := strings.Repeat("a", 900000)
+	dataLength := len(dataToSend) + 7
+	dataLengthStr := fmt.Sprintf("%07d", dataLength)
+	return []byte(dataLengthStr + dataToSend)
+}
+
+func createSmallDataToSend() []byte {
+	dataToSend := strings.Repeat("a", 10)
 	dataLength := len(dataToSend) + 7
 	dataLengthStr := fmt.Sprintf("%07d", dataLength)
 	return []byte(dataLengthStr + dataToSend)

@@ -17,43 +17,41 @@ type Flusher interface {
 // It is designed to read/write data from/to a storage that implements ReadWriter interface.
 // `validator` determines when to finish reading, and defaultValidator is to finish when io.EOF is met.
 type ReadWriter struct {
-	r io.Reader
-	w io.Writer
-	// rw         io.ReadWriter
+	r          io.Reader
+	w          io.Writer
 	bufferSize int
 	validator  ReadValidator
-
-	enc Encoder
+	enc        Encoder
 }
 
 // NewReadWriter with default bufferSize
-func NewReadWriter(rw io.ReadWriter) *ReadWriter {
-	return NewReadWriterSizeWithValidatorAndEncoder(rw, defaultBufferSize, defaultValidate(), DefaultEncoder(rw))
+func NewReadWriter(r io.Reader, w io.Writer) *ReadWriter {
+	return NewReadWriterSizeWithValidatorAndEncoder(r, w, defaultBufferSize, defaultValidate(), DefaultEncoder(w))
 }
 
 // NewReadWriterWithEncoder with default bufferSize
-func NewReadWriterWithEncoder(rw io.ReadWriter, enc Encoder) *ReadWriter {
-	return NewReadWriterSizeWithValidatorAndEncoder(rw, defaultBufferSize, defaultValidate(), enc)
+func NewReadWriterWithEncoder(r io.Reader, w io.Writer, enc Encoder) *ReadWriter {
+	return NewReadWriterSizeWithValidatorAndEncoder(r, w, defaultBufferSize, defaultValidate(), enc)
 }
 
 // NewReadWriterWithValidator with defaultBufferSize and specified validator
-func NewReadWriterWithValidator(rw io.ReadWriter, validator ReadValidator) *ReadWriter {
-	return NewReadWriterSizeWithValidatorAndEncoder(rw, defaultBufferSize, validator, DefaultEncoder(rw))
+func NewReadWriterWithValidator(r io.Reader, w io.Writer, validator ReadValidator) *ReadWriter {
+	return NewReadWriterSizeWithValidatorAndEncoder(r, w, defaultBufferSize, validator, DefaultEncoder(w))
 }
 
 // NewReadWriterSize with specified bufferSize
-func NewReadWriterSize(rw io.ReadWriter, bufferSize int) *ReadWriter {
-	return NewReadWriterSizeWithValidatorAndEncoder(rw, bufferSize, defaultValidate(), DefaultEncoder(rw))
+func NewReadWriterSize(r io.Reader, w io.Writer, bufferSize int) *ReadWriter {
+	return NewReadWriterSizeWithValidatorAndEncoder(r, w, bufferSize, defaultValidate(), DefaultEncoder(w))
 }
 
 // NewReadWriterSizeWithValidator with specified bufferSize and validator
-func NewReadWriterSizeWithValidator(rw io.ReadWriter, bufferSize int, validator ReadValidator) *ReadWriter {
-	return NewReadWriterSizeWithValidatorAndEncoder(rw, bufferSize, validator, DefaultEncoder(rw))
+func NewReadWriterSizeWithValidator(r io.Reader, w io.Writer, bufferSize int, validator ReadValidator) *ReadWriter {
+	return NewReadWriterSizeWithValidatorAndEncoder(r, w, bufferSize, validator, DefaultEncoder(w))
 }
 
-// NewReadWriterSizeWithValidator with specified bufferSize and validator
-func NewReadWriterSizeWithValidatorAndEncoder(rw io.ReadWriter, bufferSize int, validator ReadValidator, enc Encoder) *ReadWriter {
-	return &ReadWriter{rw, rw, bufferSize, validator, enc}
+// NewReadWriterSizeWithValidatorAndEncoder with specified bufferSize and validator
+func NewReadWriterSizeWithValidatorAndEncoder(r io.Reader, w io.Writer, bufferSize int, validator ReadValidator, enc Encoder) *ReadWriter {
+	return &ReadWriter{r, w, bufferSize, validator, enc}
 }
 
 // Read reads data into p.
@@ -88,6 +86,12 @@ func (rw *ReadWriter) WriteAny(p any) (n int, err error) {
 	if err = rw.enc.Encode(p); err != nil {
 		n = 0
 		return
+	}
+	if f, ok := rw.w.(Flusher); ok {
+		if err = f.Flush(); err != nil {
+			n = 0
+			return
+		}
 	}
 	n = 1
 	return
@@ -143,7 +147,7 @@ type Reader struct {
 }
 
 func newReader() *Reader {
-	return &Reader{}
+	return &Reader{nil, defaultBufferSize, nil}
 }
 
 // Reset r, bufferSize and validator of Reader
@@ -157,10 +161,50 @@ func (rd *Reader) Reset(r io.Reader, bufferSize int, validator ReadValidator) {
 func (r *Reader) Read(p []byte) (n int, err error) {
 	br := getBufioReader(r.r)
 	defer putBufioReader(br)
-	return br.Read(p)
+	n, err = br.Read(p)
+	if err != nil {
+		return
+	}
+	return
 }
 
 // ReadAll reads all data from r.r and returns it.
 func (r *Reader) ReadAll() ([]byte, error) {
 	return readAll(r.r, r.bufferSize, r.validator)
+}
+
+// Writer writes data to underlying Writer
+type Writer struct {
+	w          io.Writer
+	bufferSize int
+	enc        Encoder
+}
+
+func newWriter() *Writer {
+	return &Writer{nil, defaultBufferSize, nil}
+}
+
+func (wr *Writer) Reset(w io.Writer, bufferSize int, enc Encoder) {
+	wr.w = w
+	wr.bufferSize = bufferSize
+	wr.enc = enc
+}
+
+func (wr *Writer) Write(p []byte) (n int, err error) {
+	return write(wr.w, p)
+}
+
+func (wr *Writer) WriteAny(p any) (n int, err error) {
+	if err = wr.enc.Encode(p); err != nil {
+		n = 0
+		return
+	}
+	if f, ok := wr.w.(Flusher); ok {
+		if err = f.Flush(); err != nil {
+			n = 0
+			return
+		}
+	}
+	n = 1
+	return
 }
