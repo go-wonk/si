@@ -87,6 +87,12 @@ func requestTcpWithConn2(b *testing.B, s *sicore.ReadWriter, conn net.Conn) {
 	// siutils.NilFailB(b, err)
 	// assert.Equal(b, l, len(received))
 }
+
+func tcpValidatorDummy() sicore.ReadValidator {
+	return sicore.ValidateFunc(func(b []byte, errIn error) (bool, error) {
+		return true, nil
+	})
+}
 func BenchmarkReadWriter_Tcp_WriteAndReadReuseConn2(b *testing.B) {
 	if onlinetest != "1" {
 		b.Skip("skipping online tests")
@@ -95,17 +101,17 @@ func BenchmarkReadWriter_Tcp_WriteAndReadReuseConn2(b *testing.B) {
 	siutils.NilFailB(b, err)
 	defer conn.Close()
 
-	// err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
-	// siutils.NilFailB(b, err)
-	// err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
-	// siutils.NilFailB(b, err)
+	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
+	siutils.NilFailB(b, err)
+	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
+	siutils.NilFailB(b, err)
 
 	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
 	siutils.NilFailB(b, err)
 	err = conn.(*net.TCPConn).SetReadBuffer(4096)
 	siutils.NilFailB(b, err)
 
-	s := sicore.NewReadWriterSizeWithValidator(conn, conn, 1024, tcpValidator())
+	s := sicore.NewReadWriterSizeWithValidator(conn, conn, 4096, tcpValidator())
 	for i := 0; i < b.N; i++ {
 		requestTcpWithConn2(b, s, conn)
 	}
