@@ -1,14 +1,11 @@
 package http_test
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwrapper"
 	"github.com/stretchr/testify/assert"
@@ -48,20 +45,22 @@ func TestNewGetRequest(t *testing.T) {
 	siutils.NilFail(t, err)
 
 	assert.EqualValues(t, "post request wrapper", string(body))
-
-	type Person struct {
-		Name string `json:"name"`
-		Age  uint8  `json:"age"`
-	}
-
-	var buf bytes.Buffer
-	bw := sicore.GetBufioWriter(&buf)
-	defer sicore.PutBufioWriter(bw)
-
-	enc := json.NewEncoder(bw)
-	siutils.NilFail(t, err)
-	err = enc.Encode(&Person{"wonk", 20})
-	siutils.NilFail(t, err)
-	bw.Flush()
-	fmt.Println(buf.String())
 }
+
+// func TestNewPostRequestJson(t *testing.T) {
+// 	type Person struct {
+// 		Name string `json:"name"`
+// 		Age  uint8  `json:"age"`
+// 	}
+
+// 	hc := siwrapper.NewHttpClient(client)
+
+// 	pr, err := siwrapper.NewPostRequestJson("http://127.0.0.1:8080/test/echo", &Person{"wonk", 20})
+// 	siutils.NilFail(t, err)
+
+// 	body, err := hc.DoReadBody(pr)
+// 	siutils.NilFail(t, err)
+
+// 	assert.EqualValues(t, `{"name":"wonk","age":20}`+"\n", string(body))
+
+// }

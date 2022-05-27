@@ -99,3 +99,18 @@ func NewPostRequest(url string, body io.Reader) (*http.Request, error) {
 	}
 	return r, nil
 }
+
+// func NewPostRequestJson(url string, body any) (*http.Request, error) {
+// 	b := make([]byte, 0, 4096)
+// 	buf := bytes.NewBuffer(b)
+// 	rw := sicore.NewReadWriter(buf)
+// 	if err := json.NewEncoder(rw).Encode(body); err != nil {
+// 		return nil, err
+// 	}
+
+// 	r, err := http.NewRequest(http.MethodPost, url, rw)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return r, nil
+// }

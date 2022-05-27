@@ -7,6 +7,12 @@ import (
 
 const defaultBufferSize = 4096
 
+// Flusher interface has Flush method to check if a writer has a flush method like bufio.Writer.
+// json.Encoder doesn't flush after write.
+type Flusher interface {
+	Flush() error
+}
+
 // ReadWriter uses bufio package to read and write more efficiently.
 // It is designed to read/write data from/to a storage that implements ReadWriter interface.
 // `validator` determines when to finish reading, and defaultValidator is to finish when io.EOF is met.
@@ -16,26 +22,38 @@ type ReadWriter struct {
 	// rw         io.ReadWriter
 	bufferSize int
 	validator  ReadValidator
+
+	enc Encoder
 }
 
 // NewReadWriter with default bufferSize
 func NewReadWriter(rw io.ReadWriter) *ReadWriter {
-	return NewReadWriterSize(rw, defaultBufferSize)
+	return NewReadWriterSizeWithValidatorAndEncoder(rw, defaultBufferSize, defaultValidate(), DefaultEncoder(rw))
+}
+
+// NewReadWriterWithEncoder with default bufferSize
+func NewReadWriterWithEncoder(rw io.ReadWriter, enc Encoder) *ReadWriter {
+	return NewReadWriterSizeWithValidatorAndEncoder(rw, defaultBufferSize, defaultValidate(), enc)
 }
 
 // NewReadWriterWithValidator with defaultBufferSize and specified validator
 func NewReadWriterWithValidator(rw io.ReadWriter, validator ReadValidator) *ReadWriter {
-	return NewReadWriterSizeWithValidator(rw, defaultBufferSize, validator)
+	return NewReadWriterSizeWithValidatorAndEncoder(rw, defaultBufferSize, validator, DefaultEncoder(rw))
 }
 
 // NewReadWriterSize with specified bufferSize
 func NewReadWriterSize(rw io.ReadWriter, bufferSize int) *ReadWriter {
-	return NewReadWriterSizeWithValidator(rw, bufferSize, defaultValidate())
+	return NewReadWriterSizeWithValidatorAndEncoder(rw, bufferSize, defaultValidate(), DefaultEncoder(rw))
 }
 
 // NewReadWriterSizeWithValidator with specified bufferSize and validator
 func NewReadWriterSizeWithValidator(rw io.ReadWriter, bufferSize int, validator ReadValidator) *ReadWriter {
-	return &ReadWriter{rw, rw, bufferSize, validator}
+	return NewReadWriterSizeWithValidatorAndEncoder(rw, bufferSize, validator, DefaultEncoder(rw))
+}
+
+// NewReadWriterSizeWithValidator with specified bufferSize and validator
+func NewReadWriterSizeWithValidatorAndEncoder(rw io.ReadWriter, bufferSize int, validator ReadValidator, enc Encoder) *ReadWriter {
+	return &ReadWriter{rw, rw, bufferSize, validator, enc}
 }
 
 // Read reads data into p.
@@ -47,7 +65,7 @@ func (rw *ReadWriter) Read(p []byte) (n int, err error) {
 
 // Write writes p into rw.w
 func (rw *ReadWriter) Write(p []byte) (n int, err error) {
-	return rw.write(p)
+	return write(rw.w, p)
 }
 
 // ReadAll reads all data in rw.r and returns it.
@@ -57,13 +75,22 @@ func (rw *ReadWriter) ReadAll() ([]byte, error) {
 
 // WriteAndRead writes p into rw.w then reads all data from rw.r then returns it.
 func (rw *ReadWriter) WriteAndRead(p []byte) ([]byte, error) {
-	if n, err := rw.write(p); err != nil {
+	if n, err := write(rw.w, p); err != nil {
 		return nil, err
 	} else if n != len(p) {
 		return nil, errors.New("bytes to write differ from what has been written")
 	}
 
 	return readAll(rw.r, rw.bufferSize, rw.validator)
+}
+
+func (rw *ReadWriter) WriteAny(p any) (n int, err error) {
+	if err = rw.enc.Encode(p); err != nil {
+		n = 0
+		return
+	}
+	n = 1
+	return
 }
 
 // readAll reads all data from r and returns it
@@ -92,8 +119,9 @@ func readAll(r io.Reader, bufferSize int, validator ReadValidator) ([]byte, erro
 	}
 }
 
-func (rw *ReadWriter) write(p []byte) (int, error) {
-	bw := getBufioWriter(rw.w)
+func write(w io.Writer, p []byte) (int, error) {
+
+	bw := getBufioWriter(w)
 	defer putBufioWriter(bw)
 	n, err := bw.Write(p)
 	if err != nil {
