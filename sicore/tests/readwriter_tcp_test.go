@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTcp_WriteAndRead(t *testing.T) {
+func TestReader_Writer_Tcp_WriteRead(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
@@ -54,7 +54,7 @@ func TestTcp_WriteAndRead(t *testing.T) {
 	r := sicore.GetReaderWithValidator(conn, tcpValidator())
 	w := sicore.GetWriter(conn)
 
-	_, err = w.Write(createDataToSend())
+	_, err = w.WriteFlush(createDataToSend())
 	siutils.NilFail(t, err)
 
 	received, err := r.ReadAll()
@@ -67,6 +67,48 @@ func TestTcp_WriteAndRead(t *testing.T) {
 		t.FailNow()
 	}
 	assert.Equal(t, l, len(received))
+}
+
+func TestReadWriter_Tcp_Request(t *testing.T) {
+	if onlinetest != "1" {
+		t.Skip("skipping online tests")
+	}
+	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	defer conn.Close()
+
+	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+
+	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	err = conn.(*net.TCPConn).SetReadBuffer(4096)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+
+	r := sicore.GetReaderWithValidator(conn, tcpValidator())
+	w := sicore.GetWriter(conn)
+	rw := sicore.NewReadWriter(r, w)
+
+	recv, err := rw.Request(createDataToSend())
+	siutils.NilFail(t, err)
+
+	l, err := strconv.Atoi(string(recv[:7]))
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	assert.Equal(t, l, len(recv))
 }
 
 func createDataToSend() []byte {

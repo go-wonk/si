@@ -89,6 +89,8 @@ func startTcpServer(waitChannel chan bool) error {
 }
 
 func setup() error {
+	os.Mkdir("./data", 0644)
+
 	if onlinetest == "1" {
 		waitChannel := make(chan bool)
 		go startTcpServer(waitChannel)
@@ -96,7 +98,6 @@ func setup() error {
 			break
 		}
 
-		os.Mkdir("./data", 0644)
 	}
 
 	return nil

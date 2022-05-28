@@ -31,6 +31,9 @@ func TestHttpClient_Get(t *testing.T) {
 }
 
 func TestNewGetRequest(t *testing.T) {
+	if onlinetest != "1" {
+		t.Skip("skipping online tests")
+	}
 	// r, err := siwrapper.NewGetRequest("/test/hello", nil)
 	// siutils.NilFail(t, err)
 

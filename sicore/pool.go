@@ -1,58 +1,57 @@
 package sicore
 
 import (
-	"bufio"
 	"io"
 	"sync"
 )
 
-var (
-	_bioReaderPool = sync.Pool{
-		New: func() interface{} {
-			return new(bufio.Reader)
-		},
-	}
+// var (
+// 	_bioReaderPool = sync.Pool{
+// 		New: func() interface{} {
+// 			return new(bufio.Reader)
+// 		},
+// 	}
 
-	_bioWriterPool = sync.Pool{
-		New: func() interface{} {
-			return new(bufio.Writer)
-		},
-	}
-)
+// 	_bioWriterPool = sync.Pool{
+// 		New: func() interface{} {
+// 			return new(bufio.Writer)
+// 		},
+// 	}
+// )
 
-func getBufioReader(r io.Reader) *bufio.Reader {
-	br := _bioReaderPool.Get().(*bufio.Reader)
-	br.Reset(r)
-	return br
-}
-func putBufioReader(br *bufio.Reader) {
-	br.Reset(nil)
-	_bioReaderPool.Put(br)
-}
+// func getBufioReader(r io.Reader) *bufio.Reader {
+// 	br := _bioReaderPool.Get().(*bufio.Reader)
+// 	br.Reset(r)
+// 	return br
+// }
+// func putBufioReader(br *bufio.Reader) {
+// 	br.Reset(nil)
+// 	_bioReaderPool.Put(br)
+// }
 
-func GetBufioReader(r io.Reader) *bufio.Reader {
-	return getBufioReader(r)
-}
-func PutBufioReader(br *bufio.Reader) {
-	putBufioReader(br)
-}
+// func GetBufioReader(r io.Reader) *bufio.Reader {
+// 	return getBufioReader(r)
+// }
+// func PutBufioReader(br *bufio.Reader) {
+// 	putBufioReader(br)
+// }
 
-func getBufioWriter(w io.Writer) *bufio.Writer {
-	bw := _bioWriterPool.Get().(*bufio.Writer)
-	bw.Reset(w)
-	return bw
-}
-func putBufioWriter(bw *bufio.Writer) {
-	bw.Reset(nil)
-	_bioWriterPool.Put(bw)
-}
+// func getBufioWriter(w io.Writer) *bufio.Writer {
+// 	bw := _bioWriterPool.Get().(*bufio.Writer)
+// 	bw.Reset(w)
+// 	return bw
+// }
+// func putBufioWriter(bw *bufio.Writer) {
+// 	bw.Reset(nil)
+// 	_bioWriterPool.Put(bw)
+// }
 
-func GetBufioWriter(w io.Writer) *bufio.Writer {
-	return getBufioWriter(w)
-}
-func PutBufioWriter(bw *bufio.Writer) {
-	putBufioWriter(bw)
-}
+// func GetBufioWriter(w io.Writer) *bufio.Writer {
+// 	return getBufioWriter(w)
+// }
+// func PutBufioWriter(bw *bufio.Writer) {
+// 	putBufioWriter(bw)
+// }
 
 var (
 	_rowScannerPool = sync.Pool{
