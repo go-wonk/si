@@ -15,17 +15,17 @@ func TestHttpClient_Get(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
-	siutils.NotNilFail(t, client)
+	siutils.AssertNotNilFail(t, client)
 
 	hc := siwrapper.NewHttpClient(client)
 
 	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/test/hello", nil)
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
 	b, err := hc.DoReadBody(request)
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	fmt.Println(string(b))
 }
@@ -42,10 +42,10 @@ func TestNewGetRequest(t *testing.T) {
 	// hc.Do(r)
 
 	pr, err := siwrapper.NewPostRequest("http://127.0.0.1:8080/test/echo", strings.NewReader("post request wrapper"))
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	body, err := hc.DoReadBody(pr)
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, "post request wrapper", string(body))
 }

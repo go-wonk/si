@@ -18,7 +18,7 @@ func TestDecodeAny(t *testing.T) {
 	}
 	p := Person{}
 	err := siutils.DecodeAny(m, &p)
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, Person{"wonk", 20}, p)
 }

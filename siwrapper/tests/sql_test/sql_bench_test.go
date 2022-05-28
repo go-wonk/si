@@ -13,7 +13,7 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 	if onlinetest != "1" {
 		b.Skip("skipping online tests")
 	}
-	siutils.NotNilFailB(b, db)
+	siutils.AssertNotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
 		sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
@@ -36,7 +36,7 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 
 		m := make([]map[string]interface{}, 0)
 		_, err := sqldb.QueryIntoMapSlice(query, &m)
-		siutils.NilFailB(b, err)
+		siutils.AssertNilFailB(b, err)
 	}
 
 }
@@ -56,7 +56,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 	if onlinetest != "1" {
 		b.Skip("skipping online tests")
 	}
-	siutils.NotNilFailB(b, db)
+	siutils.AssertNotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
 		sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
@@ -80,7 +80,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 		// tl := Table{}
 		tl := TableList{}
 		_, err := sqldb.QueryIntoAny(query, &tl)
-		siutils.NilFailB(b, err)
+		siutils.AssertNilFailB(b, err)
 
 		expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"MDEyMw==","time_":"2022-01-01T12:12:12Z"}]`
 		assert.Equal(b, expected, tl.String())

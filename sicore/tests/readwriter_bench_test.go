@@ -116,7 +116,7 @@ func Benchmark_Tcp_Basic(b *testing.B) {
 		b.Skip("skipping online tests")
 	}
 	conn, err := net.DialTimeout("tcp", "127.0.0.1:10000", 6*time.Second)
-	siutils.NilFailB(b, err)
+	siutils.AssertNilFailB(b, err)
 	defer conn.Close()
 
 	// err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
@@ -125,9 +125,9 @@ func Benchmark_Tcp_Basic(b *testing.B) {
 	// siutils.NilFailB(b, err)
 
 	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
-	siutils.NilFailB(b, err)
+	siutils.AssertNilFailB(b, err)
 	err = conn.(*net.TCPConn).SetReadBuffer(4096)
-	siutils.NilFailB(b, err)
+	siutils.AssertNilFailB(b, err)
 
 	for i := 0; i < b.N; i++ {
 		buf := make([]byte, 1024)

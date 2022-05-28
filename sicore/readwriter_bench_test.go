@@ -23,14 +23,14 @@ func testCreateFileToRead(fileName, data string) error {
 
 func Benchmark_readAll(b *testing.B) {
 	fileName := "./tests/data/Benchmark_readAll.txt"
-	siutils.NilFailB(b, testCreateFileToRead(fileName, testDataFile))
+	siutils.AssertNilFailB(b, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
-	siutils.NilFailB(b, err)
+	siutils.AssertNilFailB(b, err)
 	defer f.Close()
 
 	for i := 0; i < b.N; i++ {
 		_, err := readAll(f, DefaultValidator())
-		siutils.NilFailB(b, err)
+		siutils.AssertNilFailB(b, err)
 	}
 }

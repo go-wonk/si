@@ -55,7 +55,7 @@ func TestReader_Writer_Tcp_WriteRead(t *testing.T) {
 	w := sicore.GetWriter(conn)
 
 	_, err = w.WriteFlush(createDataToSend())
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	received, err := r.ReadAll()
 	if !assert.Nil(t, err) {
@@ -102,7 +102,7 @@ func TestReadWriter_Tcp_Request(t *testing.T) {
 	rw := sicore.NewReadWriter(r, w)
 
 	recv, err := rw.Request(createDataToSend())
-	siutils.NilFail(t, err)
+	siutils.AssertNilFail(t, err)
 
 	l, err := strconv.Atoi(string(recv[:7]))
 	if !assert.Nil(t, err) {

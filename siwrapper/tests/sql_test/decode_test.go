@@ -20,13 +20,13 @@ func BenchmarkDecode_Json(b *testing.B) {
 		table := Table{}
 		byt, _ := json.Marshal(bmap)
 		err := json.Unmarshal(byt, &table)
-		siutils.NilFailB(b, err)
+		siutils.AssertNilFailB(b, err)
 	}
 }
 func BenchmarkDecode_Mapstructure(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		table := Table{}
 		err := mapstructure.Decode(bmap, &table)
-		siutils.NilFailB(b, err)
+		siutils.AssertNilFailB(b, err)
 	}
 }

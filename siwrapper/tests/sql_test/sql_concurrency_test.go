@@ -14,7 +14,7 @@ func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
-	siutils.NotNilFail(t, db)
+	siutils.AssertNotNilFail(t, db)
 
 	sqldb := siwrapper.NewSqlDB(db,
 		sicore.SqlColumn{"id", sicore.SqlColTypeInt},

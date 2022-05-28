@@ -10,23 +10,23 @@ import (
 func TestNilFail(t *testing.T) {
 	tt := &testing.T{}
 
-	siutils.NilFail(tt, nil)
+	siutils.AssertNilFail(tt, nil)
 }
 
 func TestNotNilFail(t *testing.T) {
 	tt := &testing.T{}
 
-	siutils.NotNilFail(tt, errors.New("error"))
+	siutils.AssertNotNilFail(tt, errors.New("error"))
 }
 
 func TestNilFailB(t *testing.T) {
 	tt := &testing.B{}
 
-	siutils.NilFailB(tt, nil)
+	siutils.AssertNilFailB(tt, nil)
 }
 
 func TestNotNilFailB(t *testing.T) {
 	tt := &testing.B{}
 
-	siutils.NotNilFailB(tt, errors.New("error"))
+	siutils.AssertNotNilFailB(tt, errors.New("error"))
 }
