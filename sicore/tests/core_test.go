@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	// onlinetest = os.Getenv("ONLINE_TEST")
-	onlinetest = "1"
+	onlinetest = os.Getenv("ONLINE_TEST")
+	// onlinetest = "1"
 
 	listener       net.Listener
 	listenerClosed bool
@@ -89,13 +89,14 @@ func startTcpServer(waitChannel chan bool) error {
 }
 
 func setup() error {
-	// waitChannel := make(chan bool)
-	// go startTcpServer(waitChannel)
-
-	// for range waitChannel {
-	// 	break
-	// }
 	if onlinetest == "1" {
+		waitChannel := make(chan bool)
+		go startTcpServer(waitChannel)
+		for range waitChannel {
+			break
+		}
+
+		os.Mkdir("./data", 0644)
 	}
 
 	return nil

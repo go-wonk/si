@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/siutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,8 +51,13 @@ func TestTcp_WriteAndRead(t *testing.T) {
 		t.FailNow()
 	}
 
-	s := sicore.NewReadWriterWithValidator(conn, conn, tcpValidator())
-	received, err := s.WriteAndRead(createDataToSend())
+	r := sicore.GetReaderWithValidator(conn, tcpValidator())
+	w := sicore.GetWriter(conn)
+
+	_, err = w.Write(createDataToSend())
+	siutils.NilFail(t, err)
+
+	received, err := r.ReadAll()
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}

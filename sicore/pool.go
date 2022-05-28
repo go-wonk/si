@@ -80,75 +80,57 @@ func PutRowScanner(rs *rowScanner) {
 }
 
 var (
-	_readWriterPool = sync.Pool{
-		New: func() interface{} {
-			return NewReadWriter(nil, nil)
-		},
-	}
+	_readerPool = sync.Pool{}
 )
 
-// func getReadWriter(r io.Reader, w io.Writer) *ReadWriter {
-
-// }
-
-var (
-	_readerPool = sync.Pool{
-		New: func() interface{} {
-			return newReader()
-		},
+func getReader(r io.Reader, val ReadValidator) *Reader {
+	g := _readerPool.Get()
+	if g == nil {
+		return newReader(r, val)
 	}
-)
-
-func getReader(r io.Reader, bufferSize int) *Reader {
-	rd := _readerPool.Get().(*Reader)
-	rd.Reset(r, bufferSize, defaultValidate())
+	rd := g.(*Reader)
+	rd.Reset(r, val)
 	return rd
 }
 func putReader(r *Reader) {
-	r.Reset(nil, defaultBufferSize, nil)
+	r.Reset(nil, nil)
 	_readerPool.Put(r)
 }
 
 func GetReader(r io.Reader) *Reader {
-	return GetReaderSize(r, defaultBufferSize)
+	return getReader(r, DefaultValidator())
 }
-func GetReaderSize(r io.Reader, bufferSize int) *Reader {
-	return getReader(r, bufferSize)
+func GetReaderWithValidator(r io.Reader, val ReadValidator) *Reader {
+	return getReader(r, val)
 }
 func PutReader(r *Reader) {
 	putReader(r)
 }
 
 var (
-	_writerPool = sync.Pool{
-		New: func() interface{} {
-			return newWriter()
-		},
-	}
+	_writerPool = sync.Pool{}
 )
 
-func getWriter(w io.Writer, bufferSize int, enc Encoder) *Writer {
-	wr := _writerPool.Get().(*Writer)
-	wr.Reset(w, bufferSize, enc)
+func getWriter(w io.Writer, enc EncoderSetter) *Writer {
+	g := _writerPool.Get()
+	if g == nil {
+		return newWriter(w, enc)
+	}
+	wr := g.(*Writer)
+	wr.Reset(w, enc)
 	return wr
 }
 
 func putWriter(w *Writer) {
-	w.Reset(nil, defaultBufferSize, nil)
+	w.Reset(nil, nil)
 	_writerPool.Put(w)
 }
 
 func GetWriter(w io.Writer) *Writer {
-	return getWriter(w, defaultBufferSize, DefaultEncoder(w))
+	return getWriter(w, nil)
 }
-func GetWriterSize(w io.Writer, bufferSize int) *Writer {
-	return getWriter(w, bufferSize, DefaultEncoder(w))
-}
-func GetWriterWithEncoder(w io.Writer, enc Encoder) *Writer {
-	return getWriter(w, defaultBufferSize, enc)
-}
-func GetWriterSizeWithEncoder(w io.Writer, bufferSize int, enc Encoder) *Writer {
-	return getWriter(w, bufferSize, enc)
+func GetWriterWithEncoder(w io.Writer, enc EncoderSetter) *Writer {
+	return getWriter(w, enc)
 }
 func PutWriter(w *Writer) {
 	putWriter(w)

@@ -42,7 +42,7 @@ func Benchmark_readAll_4096(b *testing.B) {
 	siutils.NilFailB(b, err)
 
 	for i := 0; i < b.N; i++ {
-		_, err := readAll(f, 4096, defaultValidate())
+		_, err := readAll(f, DefaultValidator())
 		siutils.NilFailB(b, err)
 	}
 }
@@ -52,7 +52,7 @@ func BenchmarkBytesReadWriter_readAll_1024(b *testing.B) {
 	siutils.NilFailB(b, err)
 
 	for i := 0; i < b.N; i++ {
-		_, err := readAll(f, 1024, defaultValidate())
+		_, err := readAll(f, DefaultValidator())
 		siutils.NilFailB(b, err)
 	}
 }

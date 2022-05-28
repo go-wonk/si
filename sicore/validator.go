@@ -15,8 +15,8 @@ func (v ValidateFunc) validate(b []byte, errIn error) (bool, error) {
 	return v(b, errIn)
 }
 
-// defaultValidate simply checks EOF
-func defaultValidate() ReadValidator {
+// DefaultValidator simply checks EOF
+func DefaultValidator() ReadValidator {
 	return ValidateFunc(func(b []byte, errIn error) (bool, error) {
 		if errIn != nil {
 			if errIn == io.EOF {

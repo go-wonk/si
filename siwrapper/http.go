@@ -64,7 +64,7 @@ func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	r := sicore.GetReaderSize(resp.Body, hc.bufferSize)
+	r := sicore.GetReader(resp.Body)
 	defer sicore.PutReader(r)
 	b, err := r.ReadAll()
 	if err != nil {
