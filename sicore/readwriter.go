@@ -179,12 +179,18 @@ func (wr *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 var ErrNoEncoder = errors.New("no encoder was provided")
 
 // Encode writes encoded data into underlying Writer.
-// It flushes any remaining buffer right away.
 func (wr *Writer) Encode(p any) (err error) {
 	if wr.enc == nil {
 		return ErrNoEncoder
 	}
-	if err = wr.enc.Encode(p); err != nil {
+	err = wr.enc.Encode(p)
+	return
+}
+
+// EncodeFlush writes encoded data into underlying Writer.
+// It flushes any data remaining in the buffer right away.
+func (wr *Writer) EncodeFlush(p any) (err error) {
+	if err = wr.Encode(p); err != nil {
 		return
 	}
 	err = wr.Flush()
@@ -216,7 +222,7 @@ func (rw *ReadWriter) Request(p []byte) ([]byte, error) {
 }
 
 func (rw *ReadWriter) RequestEncoded(v any) ([]byte, error) {
-	if err := rw.Encode(v); err != nil {
+	if err := rw.EncodeFlush(v); err != nil {
 		return nil, err
 	}
 	b, err := rw.ReadAll()

@@ -10,12 +10,15 @@ var (
 	onlinetest = os.Getenv("ONLINE_TEST")
 	// onlinetest = "1"
 
+)
+
+const (
 	testDataFile = `{"name":"wonk","age":20,"email":"wonk@wonk.org"}` + "\n"
 )
 
 func setup() error {
 
-	os.Mkdir("./tests/data", 0644)
+	os.Mkdir("./tests/data", 0777)
 	if onlinetest == "1" {
 
 	}

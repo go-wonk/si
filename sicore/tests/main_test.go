@@ -17,8 +17,11 @@ var (
 
 	listener       net.Listener
 	listenerClosed bool
+)
 
-	testDataFile = `{"name":"wonk","age":20,"email":"wonk@wonk.org"}` + "\n"
+const (
+	testDataFile  = `{"name":"wonk","age":20,"email":"wonk@wonk.org"}` + "\n"
+	testDataFile2 = `{"name":"mink","age":40,"email":"mink@wonk.org"}` + "\n"
 )
 
 func startTcpServer(waitChannel chan bool) error {
@@ -91,7 +94,7 @@ func startTcpServer(waitChannel chan bool) error {
 }
 
 func setup() error {
-	os.Mkdir("./data", 0644)
+	os.Mkdir("./data", 0777)
 
 	if onlinetest == "1" {
 		waitChannel := make(chan bool)
