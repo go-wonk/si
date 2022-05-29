@@ -1,7 +1,7 @@
 package http_test
 
 import (
-	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHttpClient_Get(t *testing.T) {
+func TestHttpClient_Do(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
@@ -24,10 +24,14 @@ func TestHttpClient_Get(t *testing.T) {
 
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-	b, err := hc.DoReadBody(request)
+	resp, err := hc.Do(request)
+	siutils.AssertNilFail(t, err)
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
 	siutils.AssertNilFail(t, err)
 
-	fmt.Println(string(b))
+	assert.EqualValues(t, "hello", string(b))
 }
 
 func TestNewGetRequest(t *testing.T) {

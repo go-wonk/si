@@ -51,7 +51,7 @@ func TestReader_Writer_Tcp_WriteRead(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := sicore.GetReader(conn, SetTcpEOFChecker())
+	r := sicore.GetReader(conn, SetTcpEofChecker())
 	w := sicore.GetWriter(conn)
 
 	_, err = w.WriteFlush(createDataToSend())
@@ -97,18 +97,28 @@ func TestReadWriter_Tcp_Request(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := sicore.GetReader(conn, SetTcpEOFChecker())
-	w := sicore.GetWriter(conn)
-	rw := sicore.NewReadWriter(r, w)
+	// r := sicore.GetReader(conn, SetTcpEofChecker())
+	// w := sicore.GetWriter(conn)
+	// rw := sicore.NewReadWriter(r, w)
+
+	rw := sicore.GetReadWriter(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
 
 	recv, err := rw.Request(createDataToSend())
 	siutils.AssertNilFail(t, err)
 
 	l, err := strconv.Atoi(string(recv[:7]))
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	siutils.AssertNilFail(t, err)
 	assert.Equal(t, l, len(recv))
+	sicore.PutReadWriter(rw)
+
+	rw = sicore.GetReadWriter(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+	recv, err = rw.Request(createSmallDataToSend())
+	siutils.AssertNilFail(t, err)
+
+	l, err = strconv.Atoi(string(recv[:7]))
+	siutils.AssertNilFail(t, err)
+	assert.Equal(t, l, len(recv))
+	sicore.PutReadWriter(rw)
 }
 
 func createDataToSend() []byte {
@@ -150,7 +160,7 @@ func (c TcpEOFChecker) Check(b []byte, errIn error) (bool, error) {
 	return false, errIn
 }
 
-func SetTcpEOFChecker() sicore.ReaderOption {
+func SetTcpEofChecker() sicore.ReaderOption {
 	return sicore.ReaderOptionFunc(func(r *sicore.Reader) {
 		r.SetEofChecker(&TcpEOFChecker{})
 	})
