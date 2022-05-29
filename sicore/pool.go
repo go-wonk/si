@@ -5,54 +5,6 @@ import (
 	"sync"
 )
 
-// var (
-// 	_bioReaderPool = sync.Pool{
-// 		New: func() interface{} {
-// 			return new(bufio.Reader)
-// 		},
-// 	}
-
-// 	_bioWriterPool = sync.Pool{
-// 		New: func() interface{} {
-// 			return new(bufio.Writer)
-// 		},
-// 	}
-// )
-
-// func getBufioReader(r io.Reader) *bufio.Reader {
-// 	br := _bioReaderPool.Get().(*bufio.Reader)
-// 	br.Reset(r)
-// 	return br
-// }
-// func putBufioReader(br *bufio.Reader) {
-// 	br.Reset(nil)
-// 	_bioReaderPool.Put(br)
-// }
-
-// func GetBufioReader(r io.Reader) *bufio.Reader {
-// 	return getBufioReader(r)
-// }
-// func PutBufioReader(br *bufio.Reader) {
-// 	putBufioReader(br)
-// }
-
-// func getBufioWriter(w io.Writer) *bufio.Writer {
-// 	bw := _bioWriterPool.Get().(*bufio.Writer)
-// 	bw.Reset(w)
-// 	return bw
-// }
-// func putBufioWriter(bw *bufio.Writer) {
-// 	bw.Reset(nil)
-// 	_bioWriterPool.Put(bw)
-// }
-
-// func GetBufioWriter(w io.Writer) *bufio.Writer {
-// 	return getBufioWriter(w)
-// }
-// func PutBufioWriter(bw *bufio.Writer) {
-// 	putBufioWriter(bw)
-// }
-
 var (
 	_rowScannerPool = sync.Pool{
 		New: func() interface{} {
@@ -110,13 +62,13 @@ var (
 	_writerPool = sync.Pool{}
 )
 
-func getWriter(w io.Writer, enc EncoderSetter) *Writer {
+func getWriter(w io.Writer, opt ...Option) *Writer {
 	g := _writerPool.Get()
 	if g == nil {
-		return newWriter(w, enc)
+		return newWriter(w, opt...)
 	}
 	wr := g.(*Writer)
-	wr.Reset(w, enc)
+	wr.Reset(w, opt...)
 	return wr
 }
 
@@ -125,11 +77,8 @@ func putWriter(w *Writer) {
 	_writerPool.Put(w)
 }
 
-func GetWriter(w io.Writer) *Writer {
-	return getWriter(w, nil)
-}
-func GetWriterWithEncoder(w io.Writer, enc EncoderSetter) *Writer {
-	return getWriter(w, enc)
+func GetWriter(w io.Writer, opt ...Option) *Writer {
+	return getWriter(w, opt...)
 }
 func PutWriter(w *Writer) {
 	putWriter(w)

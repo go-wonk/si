@@ -11,18 +11,18 @@ type Encoder interface {
 	Encode(v any) error
 }
 
-type EncoderSetter interface {
-	SetEncoder(w *Writer)
+type Option interface {
+	Apply(w *Writer)
 }
 
-type SetEncoderFunc func(*Writer)
+type OptionFunc func(*Writer)
 
-func (s SetEncoderFunc) SetEncoder(w *Writer) {
+func (s OptionFunc) Apply(w *Writer) {
 	s(w)
 }
 
-func SetJsonEncoder() EncoderSetter {
-	return SetEncoderFunc(func(w *Writer) {
+func SetJsonEncoder() Option {
+	return OptionFunc(func(w *Writer) {
 		w.enc = json.NewEncoder(w)
 	})
 }
@@ -51,8 +51,8 @@ func (de *DefaultEncoder) Encode(v any) error {
 
 }
 
-func SetDefaultEncoder() EncoderSetter {
-	return SetEncoderFunc(func(w *Writer) {
+func SetDefaultEncoder() Option {
+	return OptionFunc(func(w *Writer) {
 		w.enc = &DefaultEncoder{w}
 	})
 }

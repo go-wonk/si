@@ -75,28 +75,33 @@ type Writer struct {
 	enc Encoder
 }
 
-func newWriter(w io.Writer, enc EncoderSetter) *Writer {
+func newWriter(w io.Writer, opt ...Option) *Writer {
 	if bw, ok := w.(*bufio.Writer); ok {
 		b := &Writer{bw: bw}
-		if enc != nil {
-			enc.SetEncoder(b)
+		for _, o := range opt {
+			o.Apply(b)
 		}
 		return b
 	}
 	bw := bufio.NewWriter(w)
 	b := &Writer{bw: bw}
-	if enc != nil {
-		enc.SetEncoder(b)
+	for _, o := range opt {
+		o.Apply(b)
 	}
 	return b
 }
 
-func (wr *Writer) Reset(w io.Writer, enc EncoderSetter) {
+func (wr *Writer) Reset(w io.Writer, opt ...Option) {
 	wr.bw.Reset(w)
-	if enc != nil {
-		enc.SetEncoder(wr)
-	} else {
+
+	if len(opt) == 0 {
 		wr.enc = nil
+	} else {
+		if w != nil {
+			for _, o := range opt {
+				o.Apply(wr)
+			}
+		}
 	}
 }
 

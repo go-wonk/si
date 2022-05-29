@@ -155,7 +155,7 @@ func TestWriter_EncodeDefaultEncoderByte(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
-	s := sicore.GetWriterWithEncoder(f, sicore.SetDefaultEncoder())
+	s := sicore.GetWriter(f, sicore.SetDefaultEncoder())
 	defer sicore.PutWriter(s)
 	byt := []byte(`{"name":"wonk","age":20,"email":"wonk@wonk.wonk","gender":"M","marriage_status":"Yes","num_children":10}`)
 
@@ -171,7 +171,7 @@ func TestWriter_EncodeDefaultEncoderString(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
-	s := sicore.GetWriterWithEncoder(f, sicore.SetDefaultEncoder())
+	s := sicore.GetWriter(f, sicore.SetDefaultEncoder())
 	defer sicore.PutWriter(s)
 	str := `{"name":"wonk","age":20,"email":"wonk@wonk.wonk","gender":"M","marriage_status":"Yes","num_children":10}`
 
@@ -188,7 +188,7 @@ func TestWriter_WriteAnyStruct(t *testing.T) {
 
 	p := &Person{"wonk", 20, "wonk@wonk.wonk", "M", "Yes", 10}
 
-	s := sicore.GetWriterWithEncoder(f, sicore.SetJsonEncoder())
+	s := sicore.GetWriter(f, sicore.SetJsonEncoder())
 	defer sicore.PutWriter(s)
 
 	err = s.Encode(p)
@@ -202,7 +202,7 @@ func TestWriter_EncodeJsonEncodeStruct(t *testing.T) {
 
 	// bufio readwriter wrap around f
 	bw := bufio.NewWriter(f)
-	s := sicore.GetWriterWithEncoder(bw, sicore.SetJsonEncoder())
+	s := sicore.GetWriter(bw, sicore.SetJsonEncoder())
 	defer sicore.PutWriter(s)
 
 	p := &Person{"wonk", 20, "wonk@wonk.wonk", "M", "Yes", 10}
