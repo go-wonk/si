@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/siwrapper"
+	"github.com/go-wonk/si/siwrap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestSqlDB_QueryRow(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db)
 
 	query := `
 		select 
@@ -41,7 +41,7 @@ func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 	)
@@ -74,7 +74,7 @@ func TestSqlDB_QueryIntoAny_Slice(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 	)
@@ -118,7 +118,7 @@ func TestSqlDB_QueryIntoAny_SliceUseSqlNullType(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db)
 
 	query := `
 		select null as nil, 
@@ -159,7 +159,7 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 	)
@@ -194,7 +194,7 @@ func TestSqlDB_QueryIntoMap_Bool(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db)
 
 	query := `
 		select null as nil,
@@ -223,7 +223,7 @@ func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrapper.NewSqlDB(db, sicore.SqlColumn{"true_1", sicore.SqlColTypeBool},
+	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"true_1", sicore.SqlColTypeBool},
 		sicore.SqlColumn{"true_2", sicore.SqlColTypeBool},
 		sicore.SqlColumn{"false_1", sicore.SqlColTypeBool},
 		sicore.SqlColumn{"false_2", sicore.SqlColTypeBool},

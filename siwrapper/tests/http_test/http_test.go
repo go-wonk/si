@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/siwrapper"
+	"github.com/go-wonk/si/siwrap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestHttpClient_Get(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, client)
 
-	hc := siwrapper.NewHttpClient(client)
+	hc := siwrap.NewHttpClient(client)
 
 	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/test/hello", nil)
 	siutils.AssertNilFail(t, err)
@@ -34,14 +34,14 @@ func TestNewGetRequest(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
-	// r, err := siwrapper.NewGetRequest("/test/hello", nil)
+	// r, err := siwrap.NewGetRequest("/test/hello", nil)
 	// siutils.NilFail(t, err)
 
-	hc := siwrapper.NewHttpClient(client)
+	hc := siwrap.NewHttpClient(client)
 
 	// hc.Do(r)
 
-	pr, err := siwrapper.NewPostRequest("http://127.0.0.1:8080/test/echo", strings.NewReader("post request wrapper"))
+	pr, err := siwrap.NewPostRequest("http://127.0.0.1:8080/test/echo", strings.NewReader("post request wrapper"))
 	siutils.AssertNilFail(t, err)
 
 	body, err := hc.DoReadBody(pr)
@@ -56,9 +56,9 @@ func TestNewGetRequest(t *testing.T) {
 // 		Age  uint8  `json:"age"`
 // 	}
 
-// 	hc := siwrapper.NewHttpClient(client)
+// 	hc := siwrap.NewHttpClient(client)
 
-// 	pr, err := siwrapper.NewPostRequestJson("http://127.0.0.1:8080/test/echo", &Person{"wonk", 20})
+// 	pr, err := siwrap.NewPostRequestJson("http://127.0.0.1:8080/test/echo", &Person{"wonk", 20})
 // 	siutils.NilFail(t, err)
 
 // 	body, err := hc.DoReadBody(pr)

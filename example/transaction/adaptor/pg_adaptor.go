@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-wonk/si/example/transaction/core"
-	"github.com/go-wonk/si/siwrapper"
+	"github.com/go-wonk/si/siwrap"
 )
 
 type pgStudentRepo struct {
@@ -19,7 +19,7 @@ func NewPgStudentRepo(db *sql.DB) *pgStudentRepo {
 }
 
 func (o *pgStudentRepo) Add(student *core.Student, tx core.TxController) error {
-	sqlTx := siwrapper.NewSqlTx(tx.(*sql.Tx))
+	sqlTx := siwrap.NewSqlTx(tx.(*sql.Tx))
 	if sqlTx == nil {
 		return errors.New("invalid tx")
 	}
@@ -45,7 +45,7 @@ func NewPgBookRepo(db *sql.DB) *pgBookRepo {
 }
 
 func (o *pgBookRepo) Add(book *core.Book, tx core.TxController) error {
-	sqlTx := siwrapper.NewSqlTx(tx.(*sql.Tx))
+	sqlTx := siwrap.NewSqlTx(tx.(*sql.Tx))
 	if sqlTx == nil {
 		return errors.New("invalid tx")
 	}
@@ -71,7 +71,7 @@ func NewPgBorrowingRepo(db *sql.DB) *pgBorrowingRepo {
 }
 
 func (o *pgBorrowingRepo) Add(student *core.Student, book *core.Book, tx core.TxController) error {
-	sqlTx := siwrapper.NewSqlTx(tx.(*sql.Tx))
+	sqlTx := siwrap.NewSqlTx(tx.(*sql.Tx))
 	if sqlTx == nil {
 		return errors.New("invalid tx")
 	}
