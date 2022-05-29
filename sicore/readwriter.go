@@ -205,7 +205,7 @@ type ReadWriter struct {
 	*Writer
 }
 
-func NewReadWriter(r *Reader, w *Writer) *ReadWriter {
+func newReadWriter(r *Reader, w *Writer) *ReadWriter {
 	return &ReadWriter{r, w}
 }
 

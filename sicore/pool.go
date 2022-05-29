@@ -90,7 +90,7 @@ func getReadWriter(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOptio
 	if g == nil {
 		rd := GetReader(r, ro...)
 		wr := GetWriter(w, wo...)
-		return NewReadWriter(rd, wr)
+		return newReadWriter(rd, wr)
 	}
 	rw := g.(*ReadWriter)
 	rw.Reader.Reset(r, ro...)
