@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 )
 
@@ -132,5 +133,31 @@ func Benchmark_Tcp_Basic(b *testing.B) {
 		buf := make([]byte, 1024)
 		conn.Write(createSmallDataToSend())
 		conn.Read(buf)
+	}
+}
+
+func Benchmark_Tcp_Request(b *testing.B) {
+	if onlinetest != "1" {
+		b.Skip("skipping online tests")
+	}
+	conn, err := net.DialTimeout("tcp", "127.0.0.1:10000", 6*time.Second)
+	siutils.AssertNilFailB(b, err)
+	defer conn.Close()
+
+	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
+	siutils.AssertNilFailB(b, err)
+	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
+	siutils.AssertNilFailB(b, err)
+
+	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
+	siutils.AssertNilFailB(b, err)
+	err = conn.(*net.TCPConn).SetReadBuffer(4096)
+	siutils.AssertNilFailB(b, err)
+
+	for i := 0; i < b.N; i++ {
+		rw := sicore.GetReadWriter(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+		rw.Request(createSmallDataToSend())
+		sicore.PutReadWriter(rw)
+
 	}
 }

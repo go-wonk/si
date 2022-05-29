@@ -80,3 +80,35 @@ func GetWriter(w io.Writer, opt ...WriterOption) *Writer {
 func PutWriter(w *Writer) {
 	putWriter(w)
 }
+
+var (
+	_readwriterPool = sync.Pool{}
+)
+
+func getReadWriter(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
+	g := _readwriterPool.Get()
+	if g == nil {
+		rd := GetReader(r, ro...)
+		wr := GetWriter(w, wo...)
+		return NewReadWriter(rd, wr)
+	}
+	rw := g.(*ReadWriter)
+	rw.Reader.Reset(r, ro...)
+	rw.Writer.Reset(w, wo...)
+
+	return rw
+}
+
+func putReadWriter(rw *ReadWriter) {
+	rw.Reader.Reset(nil)
+	rw.Writer.Reset(nil)
+	_readwriterPool.Put(rw)
+}
+
+func GetReadWriter(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
+	return getReadWriter(r, ro, w, wo)
+}
+
+func PutReadWriter(rw *ReadWriter) {
+	putReadWriter(rw)
+}
