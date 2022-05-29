@@ -28,4 +28,4 @@ debug
 
 /example/auser/data/*.txt
 /example/auser/data/user/*.json
-sicore/tests/data/
+/sicore/tests/data/*
