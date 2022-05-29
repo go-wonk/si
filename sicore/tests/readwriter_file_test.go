@@ -26,8 +26,8 @@ func testCreateFileToRead(fileName, data string) error {
 	return nil
 }
 
-func TestReader_Read(t *testing.T) {
-	fileName := "./data/TestReader_Read.txt"
+func TestReader_File_Read(t *testing.T) {
+	fileName := "./data/TestReader_File_Read.txt"
 	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -65,8 +65,8 @@ func TestReader_Read(t *testing.T) {
 	assert.Equal(t, 10, n)
 }
 
-func TestReader_ReadAll(t *testing.T) {
-	fileName := "./data/TestReader_ReadAll.txt"
+func TestReader_File_ReadAll(t *testing.T) {
+	fileName := "./data/TestReader_File_ReadAll.txt"
 	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -83,8 +83,8 @@ func TestReader_ReadAll(t *testing.T) {
 	assert.Equal(t, testDataFile, str)
 }
 
-func TestReadWriter_ReadSmall(t *testing.T) {
-	fileName := "./data/TestReader_ReadSmall.txt"
+func TestReader_File_ReadSmall(t *testing.T) {
+	fileName := "./data/TestReader_File_ReadSmall.txt"
 	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -101,8 +101,8 @@ func TestReadWriter_ReadSmall(t *testing.T) {
 	assert.Equal(t, 1, n)
 }
 
-func TestReader_ReadZeroCase1(t *testing.T) {
-	fileName := "./data/TestReader_ReadZeroCase1.txt"
+func TestReader_File_ReadZeroCase1(t *testing.T) {
+	fileName := "./data/TestReader_File_ReadZeroCase1.txt"
 	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -119,8 +119,8 @@ func TestReader_ReadZeroCase1(t *testing.T) {
 	assert.Equal(t, 0, n)
 }
 
-func TestReader_ReadZeroCase2(t *testing.T) {
-	fileName := "./data/TestReader_ReadZeroCase2.txt"
+func TestReader_File_ReadZeroCase2(t *testing.T) {
+	fileName := "./data/TestReader_File_ReadZeroCase2.txt"
 	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -137,8 +137,8 @@ func TestReader_ReadZeroCase2(t *testing.T) {
 
 }
 
-func TestReader_Decode(t *testing.T) {
-	fileName := "./data/TestReader_Decode.txt"
+func TestReader_File_Decode(t *testing.T) {
+	fileName := "./data/TestReader_File_Decode.txt"
 	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
 
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -153,8 +153,8 @@ func TestReader_Decode(t *testing.T) {
 	assert.EqualValues(t, Person{Name: "wonk", Age: 20, Email: "wonk@wonk.org"}, p)
 }
 
-func TestWriter_Write(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_Write.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_Write(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_Write.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 
 	s := sicore.GetWriter(f)
@@ -169,8 +169,8 @@ func TestWriter_Write(t *testing.T) {
 	assert.EqualValues(t, len(expected), n)
 }
 
-func TestWriter_WriteMany(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_WriteMany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_WriteMany(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_WriteMany.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
@@ -195,8 +195,8 @@ type Person struct {
 	NumChildren    uint8  `json:"num_children"`
 }
 
-func TestWriter_EncodeDefaultEncoderByte(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_EncodeDefaultEncoderByte.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_EncodeDefaultEncoderByte(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_EncodeDefaultEncoderByte.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
@@ -213,8 +213,8 @@ func TestWriter_EncodeDefaultEncoderByte(t *testing.T) {
 	siutils.AssertNilFail(t, s.Flush())
 
 }
-func TestWriter_EncodeDefaultEncoderString(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_EncodeDefaultEncoderString.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_EncodeDefaultEncoderString(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_EncodeDefaultEncoderString.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
@@ -230,8 +230,8 @@ func TestWriter_EncodeDefaultEncoderString(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	siutils.AssertNilFail(t, s.Flush())
 }
-func TestWriter_WriteAnyStruct(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_WriteAnyStruct.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_WriteAnyStruct(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_WriteAnyStruct.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
@@ -245,8 +245,8 @@ func TestWriter_WriteAnyStruct(t *testing.T) {
 	siutils.AssertNilFail(t, s.Flush())
 }
 
-func TestWriter_EncodeJsonEncodeStruct(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_EncodeJsonEncodeStruct.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_EncodeJsonEncodeStruct(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_EncodeJsonEncodeStruct.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 
@@ -261,8 +261,8 @@ func TestWriter_EncodeJsonEncodeStruct(t *testing.T) {
 	siutils.AssertNilFail(t, s.Flush())
 }
 
-func TestWriter_EncodeNoEncoderFail(t *testing.T) {
-	f, err := os.OpenFile("./data/TestWriter_EncodeNoEncoderFail.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func TestWriter_File_EncodeNoEncoderFail(t *testing.T) {
+	f, err := os.OpenFile("./data/TestWriter_File_EncodeNoEncoderFail.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	siutils.AssertNilFail(t, err)
 	defer f.Close()
 

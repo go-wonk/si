@@ -15,6 +15,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_Basic_Tcp(t *testing.T) {
+	if onlinetest != "1" {
+		t.Skip("skipping online tests")
+	}
+	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	defer conn.Close()
+
+	// tcpConn := conn.(*net.TCPConn)
+	// addr, _ := net.ResolveTCPAddr("tcp4", ":10000")
+	// conn, err := net.DialTCP("tcp", nil, addr)
+	// if !assert.Nil(t, err) {
+	// 	t.FailNow()
+	// }
+	// defer conn.Close()
+
+	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+
+	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	err = conn.(*net.TCPConn).SetReadBuffer(4096)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+
+	buf := make([]byte, 1024)
+	conn.Write(createSmallDataToSend())
+	conn.Read(buf)
+}
+
 func TestReader_Writer_Tcp_WriteRead(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")

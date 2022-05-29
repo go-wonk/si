@@ -1,150 +1,57 @@
 package sicore_test
 
 import (
-	"net"
+	"bufio"
+	"bytes"
 	"testing"
-	"time"
 
+	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/siutils"
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestReadWriter_Tcp_WriteAndRead(t *testing.T) {
-// 	if onlinetest != "1" {
-// 		t.Skip("skipping online tests")
-// 	}
-// 	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	defer conn.Close()
+func TestReader_Buffer_Read(t *testing.T) {
+	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	buf.Write([]byte(testDataFile))
 
-// 	// tcpConn := conn.(*net.TCPConn)
-// 	// addr, _ := net.ResolveTCPAddr("tcp4", ":10000")
-// 	// conn, err := net.DialTCP("tcp", nil, addr)
-// 	// if !assert.Nil(t, err) {
-// 	// 	t.FailNow()
-// 	// }
-// 	// defer conn.Close()
+	r := sicore.GetReader(buf)
+	defer sicore.PutReader(r)
 
-// 	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
+	expected := testDataFile[:10]
+	byt := make([]byte, 10)
+	n, err := r.Read(byt)
+	siutils.AssertNilFail(t, err)
+	assert.Equal(t, expected, string(byt))
+	assert.Equal(t, 10, n)
+}
 
-// 	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	err = conn.(*net.TCPConn).SetReadBuffer(4096)
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
+func TestReader_Buffer_ReadBufio(t *testing.T) {
+	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	buf.Write([]byte(testDataFile))
 
-// 	s := sicore.NewReadWriterWithValidator(conn, conn, tcpValidator())
-// 	received, err := s.WriteAndRead(createDataToSend())
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
+	br := bufio.NewReader(buf)
 
-// 	l, err := strconv.Atoi(string(received[:7]))
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	assert.Equal(t, l, len(received))
-// }
+	r := sicore.GetReader(br)
+	defer sicore.PutReader(r)
 
-// func TestReadWriter_Tcp_WriteAndRead2(t *testing.T) {
-// 	if onlinetest != "1" {
-// 		t.Skip("skipping online tests")
-// 	}
-// 	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	defer conn.Close()
+	expected := testDataFile[:10]
+	byt := make([]byte, 10)
+	n, err := r.Read(byt)
+	siutils.AssertNilFail(t, err)
+	assert.Equal(t, expected, string(byt))
+	assert.Equal(t, 10, n)
+}
 
-// 	// tcpConn := conn.(*net.TCPConn)
-// 	// addr, _ := net.ResolveTCPAddr("tcp4", ":10000")
-// 	// conn, err := net.DialTCP("tcp", nil, addr)
-// 	// if !assert.Nil(t, err) {
-// 	// 	t.FailNow()
-// 	// }
-// 	// defer conn.Close()
+func TestReader_Buffer_ReadAll(t *testing.T) {
+	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	buf.Write([]byte(testDataFile))
 
-// 	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
+	r := sicore.GetReader(buf)
+	defer sicore.PutReader(r)
 
-// 	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
-// 	err = conn.(*net.TCPConn).SetReadBuffer(4096)
-// 	if !assert.Nil(t, err) {
-// 		t.FailNow()
-// 	}
+	expected := testDataFile
 
-// 	s := sicore.NewReadWriterWithValidator(conn, conn, tcpValidator())
-// 	for i := 0; i < 2; i++ {
-// 		received, err := s.WriteAndRead(createSmallDataToSend())
-// 		if !assert.Nil(t, err) {
-// 			t.FailNow()
-// 		}
-
-// 		l, err := strconv.Atoi(string(received[:7]))
-// 		if !assert.Nil(t, err) {
-// 			t.FailNow()
-// 		}
-// 		assert.Equal(t, l, len(received))
-// 	}
-// }
-
-func Test_Basic_Tcp(t *testing.T) {
-	if onlinetest != "1" {
-		t.Skip("skipping online tests")
-	}
-	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
-	defer conn.Close()
-
-	// tcpConn := conn.(*net.TCPConn)
-	// addr, _ := net.ResolveTCPAddr("tcp4", ":10000")
-	// conn, err := net.DialTCP("tcp", nil, addr)
-	// if !assert.Nil(t, err) {
-	// 	t.FailNow()
-	// }
-	// defer conn.Close()
-
-	err = conn.SetWriteDeadline(time.Now().Add(6 * time.Second))
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
-	err = conn.SetReadDeadline(time.Now().Add(12 * time.Second))
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
-
-	err = conn.(*net.TCPConn).SetWriteBuffer(4096)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
-	err = conn.(*net.TCPConn).SetReadBuffer(4096)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
-
-	buf := make([]byte, 1024)
-	conn.Write(createSmallDataToSend())
-	conn.Read(buf)
+	byt, err := r.ReadAll()
+	siutils.AssertNilFail(t, err)
+	assert.Equal(t, expected, string(byt))
 }
