@@ -28,3 +28,4 @@ debug
 
 /example/auser/data/*.txt
 /example/auser/data/user/*.json
+tests/data/
