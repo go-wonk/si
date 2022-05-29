@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 )
 
@@ -81,11 +80,11 @@ import (
 // 	s.WriteAndRead(createSmallDataToSend())
 // }
 
-func tcpValidatorDummy() sicore.ReadValidator {
-	return sicore.ValidateFunc(func(b []byte, errIn error) (bool, error) {
-		return true, nil
-	})
-}
+// func tcpValidatorDummy() sicore.ReadValidator {
+// 	return sicore.ValidateFunc(func(b []byte, errIn error) (bool, error) {
+// 		return true, nil
+// 	})
+// }
 
 // func BenchmarkReadWriter_Tcp_WriteAndReadReuseConn2(b *testing.B) {
 // 	if onlinetest != "1" {

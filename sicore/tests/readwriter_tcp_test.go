@@ -51,7 +51,7 @@ func TestReader_Writer_Tcp_WriteRead(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := sicore.GetReaderWithValidator(conn, tcpValidator())
+	r := sicore.GetReader(conn, SetTcpEOFChecker())
 	w := sicore.GetWriter(conn)
 
 	_, err = w.WriteFlush(createDataToSend())
@@ -97,7 +97,7 @@ func TestReadWriter_Tcp_Request(t *testing.T) {
 		t.FailNow()
 	}
 
-	r := sicore.GetReaderWithValidator(conn, tcpValidator())
+	r := sicore.GetReader(conn, SetTcpEOFChecker())
 	w := sicore.GetWriter(conn)
 	rw := sicore.NewReadWriter(r, w)
 
@@ -126,26 +126,56 @@ func createSmallDataToSend() []byte {
 	return []byte(dataLengthStr + dataToSend)
 }
 
-func tcpValidator() sicore.ReadValidator {
-	return sicore.ValidateFunc(func(b []byte, errIn error) (bool, error) {
-		if errIn == nil || errIn == io.EOF {
-			lenStr := string(b[:7])
-			lenProt, err := strconv.ParseInt(lenStr, 10, 64)
-			if err != nil {
-				return false, errors.New("cannot find data length")
-			}
+type TcpEOFChecker struct{}
 
-			receivedAll := int(lenProt) == len(b)
-			if receivedAll {
-				return true, nil
-			}
-
-			if errIn == io.EOF {
-				return false, errors.New("not received all but EOF")
-			}
-			return false, nil
+func (c TcpEOFChecker) Check(b []byte, errIn error) (bool, error) {
+	if errIn == nil || errIn == io.EOF {
+		lenStr := string(b[:7])
+		lenProt, err := strconv.ParseInt(lenStr, 10, 64)
+		if err != nil {
+			return false, errors.New("cannot find data length")
 		}
 
-		return false, errIn
+		receivedAll := int(lenProt) == len(b)
+		if receivedAll {
+			return true, nil
+		}
+
+		if errIn == io.EOF {
+			return false, errors.New("not received all but EOF")
+		}
+		return false, nil
+	}
+
+	return false, errIn
+}
+
+func SetTcpEOFChecker() sicore.ReaderOption {
+	return sicore.ReaderOptionFunc(func(r *sicore.Reader) {
+		r.SetEofChecker(&TcpEOFChecker{})
 	})
 }
+
+// func tcpValidator() sicore.ReadValidator {
+// 	return sicore.ValidateFunc(func(b []byte, errIn error) (bool, error) {
+// 		if errIn == nil || errIn == io.EOF {
+// 			lenStr := string(b[:7])
+// 			lenProt, err := strconv.ParseInt(lenStr, 10, 64)
+// 			if err != nil {
+// 				return false, errors.New("cannot find data length")
+// 			}
+
+// 			receivedAll := int(lenProt) == len(b)
+// 			if receivedAll {
+// 				return true, nil
+// 			}
+
+// 			if errIn == io.EOF {
+// 				return false, errors.New("not received all but EOF")
+// 			}
+// 			return false, nil
+// 		}
+
+// 		return false, errIn
+// 	})
+// }

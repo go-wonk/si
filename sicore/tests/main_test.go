@@ -17,6 +17,8 @@ var (
 
 	listener       net.Listener
 	listenerClosed bool
+
+	testDataFile = `{"name":"wonk","age":20,"email":"wonk@wonk.org"}` + "\n"
 )
 
 func startTcpServer(waitChannel chan bool) error {

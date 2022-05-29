@@ -34,25 +34,22 @@ var (
 	_readerPool = sync.Pool{}
 )
 
-func getReader(r io.Reader, val ReadValidator) *Reader {
+func getReader(r io.Reader, opt ...ReaderOption) *Reader {
 	g := _readerPool.Get()
 	if g == nil {
-		return newReader(r, val)
+		return newReader(r, opt...)
 	}
 	rd := g.(*Reader)
-	rd.Reset(r, val)
+	rd.Reset(r, opt...)
 	return rd
 }
 func putReader(r *Reader) {
-	r.Reset(nil, nil)
+	r.Reset(nil)
 	_readerPool.Put(r)
 }
 
-func GetReader(r io.Reader) *Reader {
-	return getReader(r, DefaultValidator())
-}
-func GetReaderWithValidator(r io.Reader, val ReadValidator) *Reader {
-	return getReader(r, val)
+func GetReader(r io.Reader, opt ...ReaderOption) *Reader {
+	return getReader(r, opt...)
 }
 func PutReader(r *Reader) {
 	putReader(r)
@@ -62,7 +59,7 @@ var (
 	_writerPool = sync.Pool{}
 )
 
-func getWriter(w io.Writer, opt ...Option) *Writer {
+func getWriter(w io.Writer, opt ...WriterOption) *Writer {
 	g := _writerPool.Get()
 	if g == nil {
 		return newWriter(w, opt...)
@@ -77,7 +74,7 @@ func putWriter(w *Writer) {
 	_writerPool.Put(w)
 }
 
-func GetWriter(w io.Writer, opt ...Option) *Writer {
+func GetWriter(w io.Writer, opt ...WriterOption) *Writer {
 	return getWriter(w, opt...)
 }
 func PutWriter(w *Writer) {

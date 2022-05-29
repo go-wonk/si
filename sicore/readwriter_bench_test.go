@@ -30,7 +30,7 @@ func Benchmark_readAll(b *testing.B) {
 	defer f.Close()
 
 	for i := 0; i < b.N; i++ {
-		_, err := readAll(f, DefaultValidator())
+		_, err := readAll(f, &DefaultEofChecker{})
 		siutils.AssertNilFailB(b, err)
 	}
 }

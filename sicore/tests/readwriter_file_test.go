@@ -3,6 +3,7 @@ package sicore_test
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -11,6 +12,20 @@ import (
 	"github.com/go-wonk/si/siutils"
 	"github.com/stretchr/testify/assert"
 )
+
+func testCreateFileToRead(fileName, data string) error {
+	fr, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer fr.Close()
+
+	_, err = fr.Write([]byte(data))
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func TestReader_Read(t *testing.T) {
 	f, err := os.OpenFile("./data/TestReader_Read.txt", os.O_RDONLY, 0644)
@@ -33,7 +48,7 @@ func TestReader_Read(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	defer f2.Close()
 
-	s.Reset(f2, sicore.DefaultValidator())
+	s.Reset(f2, sicore.SetDefaultEOFChecker())
 
 	expected = `{"name":"m`
 
@@ -106,6 +121,22 @@ func TestReader_ReadZeroCase2(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	assert.Equal(t, 0, n)
 
+}
+
+func TestReader_Decode(t *testing.T) {
+	fileName := "./data/TestReader_Decode.txt"
+	siutils.AssertNilFail(t, testCreateFileToRead(fileName, testDataFile))
+
+	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
+	siutils.AssertNilFail(t, err)
+	defer f.Close()
+
+	r := sicore.GetReader(f, sicore.SetJsonDecoder())
+	defer sicore.PutReader(r)
+
+	var p Person
+	siutils.AssertNilFail(t, r.Decode(&p))
+	fmt.Println(p)
 }
 
 func TestWriter_Write(t *testing.T) {

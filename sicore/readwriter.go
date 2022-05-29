@@ -16,22 +16,57 @@ type Flusher interface {
 
 // Reader
 type Reader struct {
-	br        *bufio.Reader
-	validator ReadValidator
+	br  *bufio.Reader
+	dec Decoder
+	chk EofChecker
 }
 
-func newReader(r io.Reader, val ReadValidator) *Reader {
+func newReader(r io.Reader, opt ...ReaderOption) *Reader {
 	if br, ok := r.(*bufio.Reader); ok {
-		return &Reader{br, val}
+		b := &Reader{br: br}
+		for _, o := range opt {
+			o.apply(b)
+		}
+		if b.chk == nil {
+			b.chk = &DefaultEofChecker{}
+		}
+		return b
 	}
 	br := bufio.NewReader(r)
-	return &Reader{br, val}
+	b := &Reader{br: br}
+	for _, o := range opt {
+		o.apply(b)
+	}
+	if b.chk == nil {
+		b.chk = &DefaultEofChecker{}
+	}
+	return b
+}
+
+func (rd *Reader) SetEofChecker(chk EofChecker) {
+	rd.chk = chk
 }
 
 // Reset r, bufferSize and validator of Reader
-func (rd *Reader) Reset(r io.Reader, validator ReadValidator) {
+func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 	rd.br.Reset(r)
-	rd.validator = validator
+
+	if len(opt) == 0 {
+		rd.dec = nil
+		rd.chk = nil
+	} else {
+		for _, o := range opt {
+			if o == nil {
+				continue
+			}
+			o.apply(rd)
+		}
+	}
+	if r != nil && rd.chk == nil {
+		if rd.chk == nil {
+			rd.chk = &DefaultEofChecker{}
+		}
+	}
 }
 
 // Read reads the data of underlying io.Reader into p
@@ -42,11 +77,11 @@ func (rd *Reader) Read(p []byte) (n int, err error) {
 
 // ReadAll reads all data from r.r and returns it.
 func (rd *Reader) ReadAll() ([]byte, error) {
-	return readAll(rd.br, rd.validator)
+	return readAll(rd.br, rd.chk)
 }
 
 // readAll reads all data from r and returns it
-func readAll(r io.Reader, validator ReadValidator) ([]byte, error) {
+func readAll(r io.Reader, chk EofChecker) ([]byte, error) {
 
 	b := make([]byte, 0, defaultBufferSize)
 	for {
@@ -59,7 +94,7 @@ func readAll(r io.Reader, validator ReadValidator) ([]byte, error) {
 		n, err := r.Read(b[len(b):cap(b)])
 		b = b[:len(b)+n]
 
-		ended, err := validator.validate(b, err)
+		ended, err := chk.Check(b, err)
 		if err != nil {
 			return b, err
 		}
@@ -69,13 +104,22 @@ func readAll(r io.Reader, validator ReadValidator) ([]byte, error) {
 	}
 }
 
+var ErrNoDecoder = errors.New("no decoder was provided")
+
+func (rd *Reader) Decode(v any) error {
+	if rd.dec == nil {
+		return ErrNoDecoder
+	}
+	return rd.dec.Decode(v)
+}
+
 // Writer writes data to underlying Writer
 type Writer struct {
 	bw  *bufio.Writer
 	enc Encoder
 }
 
-func newWriter(w io.Writer, opt ...Option) *Writer {
+func newWriter(w io.Writer, opt ...WriterOption) *Writer {
 	if bw, ok := w.(*bufio.Writer); ok {
 		b := &Writer{bw: bw}
 		for _, o := range opt {
@@ -91,7 +135,7 @@ func newWriter(w io.Writer, opt ...Option) *Writer {
 	return b
 }
 
-func (wr *Writer) Reset(w io.Writer, opt ...Option) {
+func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	wr.bw.Reset(w)
 
 	if len(opt) == 0 {
