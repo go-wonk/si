@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/siwrapper"
+	"github.com/go-wonk/si/siwrap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ func BenchmarkBasicClient_Get(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrapper.NewHttpClient(client)
+	hc := siwrap.NewHttpClient(client)
 
 	for i := 0; i < b.N; i++ {
 
@@ -44,7 +44,7 @@ func BenchmarkHttpClient_Get(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrapper.NewHttpClient(client)
+	hc := siwrap.NewHttpClient(client)
 
 	for i := 0; i < b.N; i++ {
 
@@ -66,7 +66,7 @@ func BenchmarkHttpClient_GetSize(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrapper.NewHttpClientSize(client, 512)
+	hc := siwrap.NewHttpClientSize(client, 512)
 
 	for i := 0; i < b.N; i++ {
 

@@ -1,4 +1,4 @@
-package siwrapper
+package siwrap
 
 import (
 	"context"
