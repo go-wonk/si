@@ -97,10 +97,11 @@ func (wr *Writer) Reset(w io.Writer, opt ...Option) {
 	if len(opt) == 0 {
 		wr.enc = nil
 	} else {
-		if w != nil {
-			for _, o := range opt {
-				o.Apply(wr)
+		for _, o := range opt {
+			if o == nil {
+				continue
 			}
+			o.Apply(wr)
 		}
 	}
 }

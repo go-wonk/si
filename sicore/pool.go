@@ -73,7 +73,7 @@ func getWriter(w io.Writer, opt ...Option) *Writer {
 }
 
 func putWriter(w *Writer) {
-	w.Reset(nil, nil)
+	w.Reset(nil)
 	_writerPool.Put(w)
 }
 
