@@ -11,16 +11,6 @@ type Encoder interface {
 	Encode(v any) error
 }
 
-type WriterOption interface {
-	Apply(w *Writer)
-}
-
-type WriterOptionFunc func(*Writer)
-
-func (s WriterOptionFunc) Apply(w *Writer) {
-	s(w)
-}
-
 func SetJsonEncoder() WriterOption {
 	return WriterOptionFunc(func(w *Writer) {
 		w.enc = json.NewEncoder(w)
@@ -59,15 +49,6 @@ func SetDefaultEncoder() WriterOption {
 
 type Decoder interface {
 	Decode(v any) error
-}
-
-type ReaderOption interface {
-	apply(r *Reader)
-}
-type ReaderOptionFunc func(*Reader)
-
-func (o ReaderOptionFunc) apply(r *Reader) {
-	o(r)
 }
 
 func SetJsonDecoder() ReaderOption {

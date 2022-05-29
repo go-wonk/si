@@ -123,14 +123,14 @@ func newWriter(w io.Writer, opt ...WriterOption) *Writer {
 	if bw, ok := w.(*bufio.Writer); ok {
 		b := &Writer{bw: bw}
 		for _, o := range opt {
-			o.Apply(b)
+			o.apply(b)
 		}
 		return b
 	}
 	bw := bufio.NewWriter(w)
 	b := &Writer{bw: bw}
 	for _, o := range opt {
-		o.Apply(b)
+		o.apply(b)
 	}
 	return b
 }
@@ -145,7 +145,7 @@ func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 			if o == nil {
 				continue
 			}
-			o.Apply(wr)
+			o.apply(wr)
 		}
 	}
 }
