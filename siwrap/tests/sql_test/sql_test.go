@@ -41,9 +41,10 @@ func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
+	sqldb := siwrap.NewSqlDB(db,
+		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 	)
 
 	query := `
@@ -74,9 +75,10 @@ func TestSqlDB_QueryIntoAny_Slice(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
+	sqldb := siwrap.NewSqlDB(db,
+		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 	)
 
 	query := `
@@ -159,9 +161,10 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
+	sqldb := siwrap.NewSqlDB(db,
+		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 	)
 
 	query := `
@@ -223,17 +226,18 @@ func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"true_1", sicore.SqlColTypeBool},
-		sicore.SqlColumn{"true_2", sicore.SqlColTypeBool},
-		sicore.SqlColumn{"false_1", sicore.SqlColTypeBool},
-		sicore.SqlColumn{"false_2", sicore.SqlColTypeBool},
+	sqldb := siwrap.NewSqlDB(db,
+		sicore.SqlColumn{Name: "true_1", Type: sicore.SqlColTypeBool},
+		sicore.SqlColumn{Name: "true_2", Type: sicore.SqlColTypeBool},
+		sicore.SqlColumn{Name: "false_1", Type: sicore.SqlColTypeBool},
+		sicore.SqlColumn{Name: "false_2", Type: sicore.SqlColTypeBool},
 	)
 
 	type BoolTest struct {
-		true_1  bool
-		true_2  bool
-		false_1 bool
-		false_2 bool
+		True_1  bool `json:"true_1"`
+		True_2  bool `json:"true_2"`
+		False_1 bool `json:"false_1"`
+		False_2 bool `json:"false_2"`
 	}
 	query := `
 		select null as nil,
