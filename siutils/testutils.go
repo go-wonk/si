@@ -6,23 +6,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func NilFail(t *testing.T, v any) {
+func AssertNilFail(t *testing.T, v any) {
 	if !assert.Nil(t, v) {
 		t.FailNow()
 	}
 }
-func NotNilFail(t *testing.T, v any) {
+func AssertNotNilFail(t *testing.T, v any) {
 	if !assert.NotNil(t, v) {
 		t.FailNow()
 	}
 }
 
-func NilFailB(t *testing.B, v any) {
+func AssertNilFailB(t *testing.B, v any) {
 	if !assert.Nil(t, v) {
 		t.FailNow()
 	}
 }
-func NotNilFailB(t *testing.B, v any) {
+func AssertNotNilFailB(t *testing.B, v any) {
 	if !assert.NotNil(t, v) {
 		t.FailNow()
 	}

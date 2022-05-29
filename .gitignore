@@ -28,3 +28,5 @@ debug
 
 /example/auser/data/*.txt
 /example/auser/data/user/*.json
+/sicore/tests/data/*.txt
+/sicore/tests/data/*.json

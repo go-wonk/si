@@ -8,24 +8,21 @@ import (
 	"github.com/go-wonk/si/siutils"
 )
 
+// SqlDB is a wrapper of sql.DB
 type SqlDB struct {
-	db *sql.DB
-	rs *sicore.RowScanner
+	db         *sql.DB
+	sqlColumns []sicore.SqlColumn
 }
 
-func NewSqlDB(db *sql.DB) *SqlDB {
+// NewSqlDB returns SqlDB
+func NewSqlDB(db *sql.DB, sc ...sicore.SqlColumn) *SqlDB {
 	return &SqlDB{
-		db: db,
-		rs: sicore.NewRowScanner(),
+		db:         db,
+		sqlColumns: sc,
 	}
 }
 
-func (o *SqlDB) AddSqlColumn(sc ...sicore.SqlColumn) {
-	for _, v := range sc {
-		v.SetType(o.rs)
-	}
-}
-
+// Begin begins a transaction
 func (o *SqlDB) Begin() (*sql.Tx, error) {
 	tx, err := o.db.Begin()
 	if err != nil {
@@ -58,46 +55,29 @@ func (o *SqlDB) Exec(query string, args ...any) (sql.Result, error) {
 func (o *SqlDB) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	return o.db.QueryContext(ctx, query, args...)
 }
+func (o *SqlDB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	return o.db.QueryRowContext(ctx, query, args...)
+}
 
 func (o *SqlDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return o.db.ExecContext(ctx, query, args...)
 }
 
-func (o *SqlDB) QueryIntoMap(query string, output *[]map[string]interface{}, args ...any) (int, error) {
+// QueryIntoMapSlice queries a database then scan resultset into output(slice of map)
+func (o *SqlDB) QueryIntoMapSlice(query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
 	if err != nil {
 		return 0, err
 	}
 	defer rows.Close()
 
-	// scannedRow, columns, err := sicore.ScanTypes(rows,
-	// 	sicore.SqlDataTypeString, sicore.SqlDataTypeString)
-	scannedRow, columns, err := o.rs.ScanTypes(rows)
-	if err != nil {
-		return 0, err
-	}
+	rs := sicore.GetRowScanner()
+	defer sicore.PutRowScanner(rs)
 
-	n := 0
-	for rows.Next() {
-		err = rows.Scan(scannedRow...)
-		if err != nil {
-			return 0, err
-		}
-
-		m := make(map[string]interface{})
-		o.rs.ScanValuesIntoMap(columns, scannedRow, &m)
-		*output = append(*output, m)
-		n++
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return 0, err
-	}
-
-	return n, nil
+	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
+// QueryIntoAny queries a database then scan resultset into output of any type
 func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
 	if err != nil {
@@ -105,39 +85,58 @@ func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error)
 	}
 	defer rows.Close()
 
+	rs := sicore.GetRowScanner()
+	defer sicore.PutRowScanner(rs)
+
 	list := make([]map[string]interface{}, 0)
-	// scannedRow, columns, err := sicore.ScanTypes(rows,
-	// 	sicore.SqlDataTypeString, sicore.SqlDataTypeString)
-	scannedRow, columns, err := o.rs.ScanTypes(rows)
+	n, err := rs.Scan(rows, &list, o.sqlColumns...)
 	if err != nil {
 		return 0, err
-	}
-
-	for rows.Next() {
-		err = rows.Scan(scannedRow...)
-		if err != nil {
-			return 0, err
-		}
-
-		m := make(map[string]interface{})
-		o.rs.ScanValuesIntoMap(columns, scannedRow, &m)
-		list = append(list, m)
-
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return 0, err
-	}
-
-	if len(list) == 0 {
-		return 0, nil
 	}
 
 	// simple, not very ideal json unmarshal
-	if err = siutils.DecodeAny(list, output); err != nil {
+	if err = siutils.DecodeAny(list[:n], output); err != nil {
 		return 0, err
 	}
 
-	return 1, nil
+	return n, nil
+}
+
+// QueryIntoMapSlice queries a database with context then scan resultset into output(slice of map)
+func (o *SqlDB) QueryContenxtIntoMapSlice(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
+	rows, err := o.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	rs := sicore.GetRowScanner()
+	defer sicore.PutRowScanner(rs)
+
+	return rs.Scan(rows, output, o.sqlColumns...)
+}
+
+// QueryIntoAny queries a database with context then scan resultset into output of any type
+func (o *SqlDB) QueryContextIntoAny(ctx context.Context, query string, output any, args ...any) (int, error) {
+	rows, err := o.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	rs := sicore.GetRowScanner()
+	defer sicore.PutRowScanner(rs)
+
+	list := make([]map[string]interface{}, 0)
+	n, err := rs.Scan(rows, &list, o.sqlColumns...)
+	if err != nil {
+		return 0, err
+	}
+
+	// simple, not very ideal json unmarshal
+	if err = siutils.DecodeAny(list[:n], output); err != nil {
+		return 0, err
+	}
+
+	return n, nil
 }

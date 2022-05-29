@@ -1,39 +1,82 @@
 package sicore
 
 import (
-	"bufio"
 	"io"
 	"sync"
 )
 
 var (
-	_readerPool = sync.Pool{
+	_rowScannerPool = sync.Pool{
 		New: func() interface{} {
-			return new(bufio.Reader)
-		},
-	}
-
-	_writerPool = sync.Pool{
-		New: func() interface{} {
-			return new(bufio.Writer)
+			return newRowScanner()
 		},
 	}
 )
 
-func getBufioReader(r io.Reader) *bufio.Reader {
-	br := _readerPool.Get().(*bufio.Reader)
-	br.Reset(r)
-	return br
+func getRowScanner(sqlCol map[string]any, useSqlNullType bool) *rowScanner {
+	rs := _rowScannerPool.Get().(*rowScanner)
+	rs.Reset(sqlCol, useSqlNullType)
+	return rs
 }
-func putBufioReader(br *bufio.Reader) {
-	_readerPool.Put(br)
+func putRowScanner(rs *rowScanner) {
+	rs.Reset(nil, defaultUseSqlNullType)
+	_rowScannerPool.Put(rs)
 }
 
-func getBufioWriter(w io.Writer) *bufio.Writer {
-	bw := _writerPool.Get().(*bufio.Writer)
-	bw.Reset(w)
-	return bw
+func GetRowScanner() *rowScanner {
+	return getRowScanner(make(map[string]any), defaultUseSqlNullType)
 }
-func putBufioWriter(bw *bufio.Writer) {
-	_writerPool.Put(bw)
+func PutRowScanner(rs *rowScanner) {
+	putRowScanner(rs)
+}
+
+var (
+	_readerPool = sync.Pool{}
+)
+
+func getReader(r io.Reader, opt ...ReaderOption) *Reader {
+	g := _readerPool.Get()
+	if g == nil {
+		return newReader(r, opt...)
+	}
+	rd := g.(*Reader)
+	rd.Reset(r, opt...)
+	return rd
+}
+func putReader(r *Reader) {
+	r.Reset(nil)
+	_readerPool.Put(r)
+}
+
+func GetReader(r io.Reader, opt ...ReaderOption) *Reader {
+	return getReader(r, opt...)
+}
+func PutReader(r *Reader) {
+	putReader(r)
+}
+
+var (
+	_writerPool = sync.Pool{}
+)
+
+func getWriter(w io.Writer, opt ...WriterOption) *Writer {
+	g := _writerPool.Get()
+	if g == nil {
+		return newWriter(w, opt...)
+	}
+	wr := g.(*Writer)
+	wr.Reset(w, opt...)
+	return wr
+}
+
+func putWriter(w *Writer) {
+	w.Reset(nil)
+	_writerPool.Put(w)
+}
+
+func GetWriter(w io.Writer, opt ...WriterOption) *Writer {
+	return getWriter(w, opt...)
+}
+func PutWriter(w *Writer) {
+	putWriter(w)
 }

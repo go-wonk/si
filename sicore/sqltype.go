@@ -1,6 +1,10 @@
 package sicore
 
-import "database/sql"
+import (
+	"database/sql"
+	"reflect"
+	"time"
+)
 
 type SqlColType uint8
 
@@ -35,29 +39,28 @@ const (
 )
 
 var (
-	// stringTypeValue  string
-	// bytesTypeValue   []byte
-	// intTypeValue     int
-	// int8TypeValue    int8
-	// int16TypeValue   int16
-	// int32TypeValue   int32
-	// int64TypeValue   int64
-	// uintTypeValue    uint
-	// uint8TypeValue   uint8
-	// uint16TypeValue  uint16
-	// uint32TypeValue  uint32
-	// uint64TypeValue  uint64
-	// boolTypeValue    bool
-	// float32TypeValue float32
-	// float64TypeValue float64
-	// timeTypeValue    time.Time
-	// byteTypeValue    byte
-	intsTypeValue   []int
-	ints8TypeValue  []int8
-	ints16TypeValue []int16
-	ints32TypeValue []int32
-	ints64TypeValue []int64
-
+	stringTypeValue  string
+	bytesTypeValue   []byte
+	intTypeValue     int
+	int8TypeValue    int8
+	int16TypeValue   int16
+	int32TypeValue   int32
+	int64TypeValue   int64
+	uintTypeValue    uint
+	uint8TypeValue   uint8
+	uint16TypeValue  uint16
+	uint32TypeValue  uint32
+	uint64TypeValue  uint64
+	boolTypeValue    bool
+	float32TypeValue float32
+	float64TypeValue float64
+	timeTypeValue    time.Time
+	byteTypeValue    byte
+	intsTypeValue    []int
+	ints8TypeValue   []int8
+	ints16TypeValue  []int16
+	ints32TypeValue  []int32
+	ints64TypeValue  []int64
 	uintsTypeValue   []uint
 	uints8TypeValue  []uint8
 	uints16TypeValue []uint16
@@ -83,12 +86,60 @@ var (
 	sqlNullTimeTypeValue    sql.NullTime
 )
 
+var (
+	refTypeOfStringTypeValue  = reflect.TypeOf(stringTypeValue)
+	refTypeOfBytesTypeValue   = reflect.TypeOf(bytesTypeValue)
+	refTypeOfIntTypeValue     = reflect.TypeOf(intTypeValue)
+	refTypeOfInt8TypeValue    = reflect.TypeOf(int8TypeValue)
+	refTypeOfInt16TypeValue   = reflect.TypeOf(int16TypeValue)
+	refTypeOfInt32TypeValue   = reflect.TypeOf(int32TypeValue)
+	refTypeOfInt64TypeValue   = reflect.TypeOf(int64TypeValue)
+	refTypeOfUintTypeValue    = reflect.TypeOf(uintTypeValue)
+	refTypeOfUint8TypeValue   = reflect.TypeOf(uint8TypeValue)
+	refTypeOfUint16TypeValue  = reflect.TypeOf(uint16TypeValue)
+	refTypeOfUint32TypeValue  = reflect.TypeOf(uint32TypeValue)
+	refTypeOfUint64TypeValue  = reflect.TypeOf(uint64TypeValue)
+	refTypeOfBoolTypeValue    = reflect.TypeOf(boolTypeValue)
+	refTypeOfFloat32TypeValue = reflect.TypeOf(float32TypeValue)
+	refTypeOfFloat64TypeValue = reflect.TypeOf(float64TypeValue)
+	refTypeOfTimeTypeValue    = reflect.TypeOf(timeTypeValue)
+	refTypeOfByteTypeValue    = reflect.TypeOf(byteTypeValue)
+	refTypeOfIntsTypeValue    = reflect.TypeOf(intsTypeValue)
+	refTypeOfInts8TypeValue   = reflect.TypeOf(ints8TypeValue)
+	refTypeOfInts16TypeValue  = reflect.TypeOf(ints16TypeValue)
+	refTypeOfInts32TypeValue  = reflect.TypeOf(ints32TypeValue)
+	refTypeOfInts64TypeValue  = reflect.TypeOf(ints64TypeValue)
+	refTypeOfUintsTypeValue   = reflect.TypeOf(uintsTypeValue)
+	refTypeOfUints8TypeValue  = reflect.TypeOf(uints8TypeValue)
+	refTypeOfUints16TypeValue = reflect.TypeOf(uints16TypeValue)
+	refTypeOfUints32TypeValue = reflect.TypeOf(uints32TypeValue)
+	refTypeOfUints64TypeValue = reflect.TypeOf(uints64TypeValue)
+
+	refTypeOfRawBytes    = reflect.TypeOf(sqlBytesTypeValue)
+	refTypeOfNullByte    = reflect.TypeOf(sqlNullByteTypeValue)
+	refTypeOfNullBool    = reflect.TypeOf(sqlNullBoolTypeValue)
+	refTypeOfNullString  = reflect.TypeOf(sqlNullStringTypeValue)
+	refTypeOfNullFloat32 = reflect.TypeOf(sqlNullFloat32TypeValue)
+	refTypeOfNullFloat64 = reflect.TypeOf(sqlNullFloat64TypeValue)
+	refTypeOfNullInt     = reflect.TypeOf(sqlNullIntTypeValue)
+	refTypeOfNullInt8    = reflect.TypeOf(sqlNullInt8TypeValue)
+	refTypeOfNullInt16   = reflect.TypeOf(sqlNullInt16TypeValue)
+	refTypeOfNullInt32   = reflect.TypeOf(sqlNullInt32TypeValue)
+	refTypeOfNullInt64   = reflect.TypeOf(sqlNullInt64TypeValue)
+	refTypeOfNullUint    = reflect.TypeOf(sqlNullUintTypeValue)
+	refTypeOfNullUint8   = reflect.TypeOf(sqlNullUint8TypeValue)
+	refTypeOfNullUint16  = reflect.TypeOf(sqlNullUint16TypeValue)
+	refTypeOfNullUint32  = reflect.TypeOf(sqlNullUint32TypeValue)
+	refTypeOfNullUint64  = reflect.TypeOf(sqlNullUint64TypeValue)
+	refTypeOfNullTime    = reflect.TypeOf(sqlNullTimeTypeValue)
+)
+
 type SqlColumn struct {
 	Name string
 	Type SqlColType
 }
 
-func (sc SqlColumn) SetType(rs *RowScanner) {
+func (sc SqlColumn) SetType(rs *rowScanner) {
 	switch sc.Type {
 	case SqlColTypeBool:
 		rs.SetSqlColumn(sc.Name, sqlNullBoolTypeValue)

@@ -1,6 +1,7 @@
 package sicore_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -16,6 +17,11 @@ var (
 
 	listener       net.Listener
 	listenerClosed bool
+)
+
+const (
+	testDataFile  = `{"name":"wonk","age":20,"email":"wonk@wonk.org"}` + "\n"
+	testDataFile2 = `{"name":"mink","age":40,"email":"mink@wonk.org"}` + "\n"
 )
 
 func startTcpServer(waitChannel chan bool) error {
@@ -52,15 +58,16 @@ func startTcpServer(waitChannel chan bool) error {
 			buffer := make([]byte, 1000) //버퍼
 
 			totalReceived := 0
-			received := make([]byte, 0, 1000001)
+			received := make([]byte, 0, 1024)
+			recvBuf := bytes.NewBuffer(received)
 			//다 받을때까지 반복하며 읽음
 			for {
 				//입력
 				count, err := connection.Read(buffer)
 				if nil != err {
-					//입력이 종료되면 중료
+					//입력이 종료되면
 					if io.EOF == err {
-						log.Printf("연결 종료: %v", connection.RemoteAddr().String())
+						// log.Printf("연결 종료: %v", connection.RemoteAddr().String())
 					} else {
 						log.Printf("수신 실패: %v", err)
 					}
@@ -69,17 +76,16 @@ func startTcpServer(waitChannel chan bool) error {
 
 				totalReceived += count
 				if count > 0 {
-					//받아온 길이만큼 슬라이스를 잘라서 출력
-					data := buffer[:count]
-					// log.Println(string(data[:14]))
-					received = append(received, data...)
+					recvBuf.Write(buffer[:count])
 				}
 
-				lenStr := string(received[:7])
+				lenStr := string(recvBuf.Bytes()[:7])
 				lenProt, _ := strconv.ParseInt(lenStr, 10, 64)
 				if int(lenProt) == totalReceived {
 					// log.Println("writing...")
-					connection.Write(received)
+					connection.Write(recvBuf.Bytes()[:totalReceived])
+					totalReceived = 0
+					recvBuf.Reset()
 				}
 			}
 		}()
@@ -88,13 +94,15 @@ func startTcpServer(waitChannel chan bool) error {
 }
 
 func setup() error {
-	waitChannel := make(chan bool)
-	go startTcpServer(waitChannel)
+	os.Mkdir("./data", 0777)
 
-	for range waitChannel {
-		break
-	}
 	if onlinetest == "1" {
+		waitChannel := make(chan bool)
+		go startTcpServer(waitChannel)
+		for range waitChannel {
+			break
+		}
+
 	}
 
 	return nil
