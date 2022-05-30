@@ -13,11 +13,16 @@ type SqlTx struct {
 	sqlColumns []sicore.SqlColumn
 }
 
-func NewSqlTx(tx *sql.Tx, sc ...sicore.SqlColumn) *SqlTx {
+func newSqlTx(tx *sql.Tx, sc ...sicore.SqlColumn) *SqlTx {
 	return &SqlTx{
 		tx:         tx,
 		sqlColumns: sc,
 	}
+}
+
+func (o *SqlTx) Reset(tx *sql.Tx, sc ...sicore.SqlColumn) {
+	o.tx = tx
+	o.sqlColumns = sc
 }
 
 func (o *SqlTx) Commit() error {
