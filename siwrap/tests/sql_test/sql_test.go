@@ -62,7 +62,7 @@ func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
 
 	// tl := Table{}
 	tl := TableList{}
-	_, err := sqldb.QueryIntoAny(query, &tl)
+	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
 
 	expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
@@ -107,7 +107,7 @@ func TestSqlDB_QueryIntoAny_Slice(t *testing.T) {
 
 	// tl := Table{}
 	tl := TableList{}
-	_, err := sqldb.QueryIntoAny(query, &tl)
+	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
 
 	expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123456789123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"},{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123456789123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:13Z"}]`
@@ -148,7 +148,7 @@ func TestSqlDB_QueryIntoAny_SliceUseSqlNullType(t *testing.T) {
 
 	// tl := Table{}
 	tl := TableList{}
-	_, err := sqldb.QueryIntoAny(query, &tl)
+	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
 
 	expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123456789123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123absdfwefasdf","time_":"2022-01-01T12:12:12Z"},{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123456789123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123fewfeasdfzxcv123","time_":"2022-01-01T12:12:13Z"}]`
@@ -181,7 +181,7 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 	`
 
 	m := make([]map[string]interface{}, 0)
-	_, err := sqldb.QueryIntoMapSlice(query, &m)
+	_, err := sqldb.QueryMaps(query, &m)
 	siutils.AssertNilFail(t, err)
 
 	expected := `[{"bigint_":123,"bytea_":"0123","char_arr_":"e2FiY2RlLGx1bmNofQ==","decimal_":123,"int2_":123,"nil":null,"numeric_":123,"str":"123","time_":"2022-01-01T12:12:12Z","varchar_arr_":"e2FiY2RlLGx1bmNofQ=="}]`
@@ -210,7 +210,7 @@ func TestSqlDB_QueryIntoMap_Bool(t *testing.T) {
 	`
 
 	m := make([]map[string]interface{}, 0)
-	_, err := sqldb.QueryIntoMapSlice(query, &m)
+	_, err := sqldb.QueryMaps(query, &m)
 	siutils.AssertNilFail(t, err)
 
 	expected := `[{"false_1":0,"false_2":"0","false_3":"N","nil":null,"true_1":null,"true_2":"1","true_3":"Y"},{"false_1":0,"false_2":"0","false_3":"N","nil":"abcdef","true_1":1,"true_2":"1","true_3":"Y"}]`
@@ -250,7 +250,7 @@ func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
 	`
 
 	m := make([]map[string]interface{}, 0)
-	_, err := sqldb.QueryIntoMapSlice(query, &m)
+	_, err := sqldb.QueryMaps(query, &m)
 	siutils.AssertNilFail(t, err)
 
 	expected := `[{"false_1":false,"false_2":false,"nil":null,"true_1":null,"true_2":true},{"false_1":false,"false_2":false,"nil":null,"true_1":true,"true_2":true}]`

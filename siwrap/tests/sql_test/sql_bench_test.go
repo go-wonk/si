@@ -35,7 +35,7 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 		`
 
 		m := make([]map[string]interface{}, 0)
-		_, err := sqldb.QueryIntoMapSlice(query, &m)
+		_, err := sqldb.QueryMaps(query, &m)
 		siutils.AssertNilFailB(b, err)
 	}
 
@@ -79,7 +79,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 
 		// tl := Table{}
 		tl := TableList{}
-		_, err := sqldb.QueryIntoAny(query, &tl)
+		_, err := sqldb.QueryStructs(query, &tl)
 		siutils.AssertNilFailB(b, err)
 
 		expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"MDEyMw==","time_":"2022-01-01T12:12:12Z"}]`

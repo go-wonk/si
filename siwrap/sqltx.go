@@ -60,7 +60,7 @@ func (o *SqlTx) ExecContext(ctx context.Context, query string, args ...any) (sql
 	return o.tx.ExecContext(ctx, query, args...)
 }
 
-func (o *SqlTx) QueryIntoMapSlice(query string, output *[]map[string]interface{}, args ...any) (int, error) {
+func (o *SqlTx) QueryMaps(query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.tx.Query(query, args...)
 	if err != nil {
 		return 0, err
@@ -73,7 +73,7 @@ func (o *SqlTx) QueryIntoMapSlice(query string, output *[]map[string]interface{}
 	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
-func (o *SqlTx) QueryIntoAny(query string, output any, args ...any) (int, error) {
+func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error) {
 	rows, err := o.tx.Query(query, args...)
 	if err != nil {
 		return 0, err
@@ -97,7 +97,7 @@ func (o *SqlTx) QueryIntoAny(query string, output any, args ...any) (int, error)
 	return n, nil
 }
 
-func (o *SqlTx) QueryContenxtIntoMapSlice(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
+func (o *SqlTx) QueryContenxtMaps(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
@@ -110,7 +110,7 @@ func (o *SqlTx) QueryContenxtIntoMapSlice(ctx context.Context, query string, out
 	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
-func (o *SqlTx) QueryContextIntoAny(ctx context.Context, query string, output any, args ...any) (int, error) {
+func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output any, args ...any) (int, error) {
 	rows, err := o.tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, err

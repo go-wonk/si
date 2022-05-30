@@ -17,11 +17,11 @@ func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
 	siutils.AssertNotNilFail(t, db)
 
 	sqldb := siwrap.NewSqlDB(db,
-		sicore.SqlColumn{"id", sicore.SqlColTypeInt},
-		sicore.SqlColumn{"id2", sicore.SqlColTypeInt},
-		sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
+		sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeInt},
+		sicore.SqlColumn{Name: "id2", Type: sicore.SqlColTypeInt},
+		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 	)
 
 	var wg sync.WaitGroup
@@ -68,7 +68,7 @@ func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
 				`
 
 				m := make([]map[string]interface{}, 0)
-				_, err := sqldb.QueryIntoMapSlice(query, &m, i, j)
+				_, err := sqldb.QueryMaps(query, &m, i, j)
 				assert.Nil(t, err)
 				if !assert.EqualValues(t, i, m[0]["id"]) {
 					break
