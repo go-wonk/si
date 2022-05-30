@@ -63,6 +63,21 @@ func (o *SqlDB) ExecContext(ctx context.Context, query string, args ...any) (sql
 	return o.db.ExecContext(ctx, query, args...)
 }
 
+func (o *SqlDB) ExecRowsAffected(query string, args ...any) (int64, error) {
+	res, err := o.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+func (o *SqlDB) ExecContextRowsAffected(ctx context.Context, query string, args ...any) (int64, error) {
+	res, err := o.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 // QueryMaps queries a database then scan resultset into output(slice of map)
 func (o *SqlDB) QueryMaps(query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)

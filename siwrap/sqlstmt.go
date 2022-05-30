@@ -44,6 +44,21 @@ func (o *SqlStmt) ExecContext(ctx context.Context, args ...any) (sql.Result, err
 	return o.stmt.ExecContext(ctx, args...)
 }
 
+func (o *SqlStmt) ExecRowsAffected(args ...any) (int64, error) {
+	res, err := o.stmt.Exec(args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+func (o *SqlStmt) ExecContextRowsAffected(ctx context.Context, args ...any) (int64, error) {
+	res, err := o.stmt.ExecContext(ctx, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 func (o *SqlStmt) QueryMaps(output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.stmt.Query(args...)
 	if err != nil {
