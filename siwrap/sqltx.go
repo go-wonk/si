@@ -65,6 +65,21 @@ func (o *SqlTx) ExecContext(ctx context.Context, query string, args ...any) (sql
 	return o.tx.ExecContext(ctx, query, args...)
 }
 
+func (o *SqlTx) ExecRowsAffected(query string, args ...any) (int64, error) {
+	res, err := o.tx.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+func (o *SqlTx) ExecContextRowsAffected(ctx context.Context, query string, args ...any) (int64, error) {
+	res, err := o.tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 func (o *SqlTx) QueryMaps(query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.tx.Query(query, args...)
 	if err != nil {
