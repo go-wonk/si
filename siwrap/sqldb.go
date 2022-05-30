@@ -63,8 +63,8 @@ func (o *SqlDB) ExecContext(ctx context.Context, query string, args ...any) (sql
 	return o.db.ExecContext(ctx, query, args...)
 }
 
-// QueryIntoMapSlice queries a database then scan resultset into output(slice of map)
-func (o *SqlDB) QueryIntoMapSlice(query string, output *[]map[string]interface{}, args ...any) (int, error) {
+// QueryMaps queries a database then scan resultset into output(slice of map)
+func (o *SqlDB) QueryMaps(query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
 	if err != nil {
 		return 0, err
@@ -77,8 +77,8 @@ func (o *SqlDB) QueryIntoMapSlice(query string, output *[]map[string]interface{}
 	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
-// QueryIntoAny queries a database then scan resultset into output of any type
-func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error) {
+// QueryStructs queries a database then scan resultset into output of any type
+func (o *SqlDB) QueryStructs(query string, output any, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
 	if err != nil {
 		return 0, err
@@ -102,8 +102,8 @@ func (o *SqlDB) QueryIntoAny(query string, output any, args ...any) (int, error)
 	return n, nil
 }
 
-// QueryIntoMapSlice queries a database with context then scan resultset into output(slice of map)
-func (o *SqlDB) QueryContenxtIntoMapSlice(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
+// QueryContenxtMaps queries a database with context then scan resultset into output(slice of map)
+func (o *SqlDB) QueryContenxtMaps(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
@@ -116,8 +116,8 @@ func (o *SqlDB) QueryContenxtIntoMapSlice(ctx context.Context, query string, out
 	return rs.Scan(rows, output, o.sqlColumns...)
 }
 
-// QueryIntoAny queries a database with context then scan resultset into output of any type
-func (o *SqlDB) QueryContextIntoAny(ctx context.Context, query string, output any, args ...any) (int, error) {
+// QueryContextStructs queries a database with context then scan resultset into output of any type
+func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output any, args ...any) (int, error) {
 	rows, err := o.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
