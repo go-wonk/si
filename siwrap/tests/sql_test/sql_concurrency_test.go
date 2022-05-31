@@ -10,9 +10,67 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
-	if onlinetest != "1" {
+func TestSqlDB_Concurrency_QueryMaps(t *testing.T) {
+
+	if !onlinetest {
 		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := siwrap.NewSqlDB(db,
+		sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeInt},
+		sicore.SqlColumn{Name: "id2", Type: sicore.SqlColTypeInt},
+	)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, i int) {
+			for j := 0; j < 10000; j++ {
+				query := `
+					select $1 as id, $2 as id2
+					union all
+					select $1+1 as id, $2+1 as id2
+				`
+
+				m := make([]map[string]interface{}, 0)
+				_, err := sqldb.QueryMaps(query, &m, i, j)
+				if err != nil {
+					t.Fail()
+					break
+				}
+				if !assert.EqualValues(t, i, m[0]["id"]) {
+					t.Fail()
+					break
+				}
+				if !assert.EqualValues(t, j, m[0]["id2"]) {
+					t.Fail()
+					break
+				}
+				if !assert.EqualValues(t, i+1, m[1]["id"]) {
+					t.Fail()
+					break
+				}
+				if !assert.EqualValues(t, j+1, m[1]["id2"]) {
+					t.Fail()
+					break
+				}
+			}
+			wg.Done()
+		}(&wg, i)
+	}
+	wg.Wait()
+}
+
+func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
 	}
 	siutils.AssertNotNilFail(t, db)
 

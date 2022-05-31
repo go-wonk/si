@@ -12,7 +12,7 @@ import (
 )
 
 func TestSqlDB_QueryRow(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
@@ -36,7 +36,7 @@ func TestSqlDB_QueryRow(t *testing.T) {
 }
 
 func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
@@ -70,7 +70,7 @@ func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
 }
 
 func TestSqlDB_QueryIntoAny_Slice(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
@@ -115,7 +115,7 @@ func TestSqlDB_QueryIntoAny_Slice(t *testing.T) {
 }
 
 func TestSqlDB_QueryIntoAny_SliceUseSqlNullType(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
@@ -156,7 +156,7 @@ func TestSqlDB_QueryIntoAny_SliceUseSqlNullType(t *testing.T) {
 }
 
 func TestSqlDB_QueryIntoMap(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
@@ -192,7 +192,7 @@ func TestSqlDB_QueryIntoMap(t *testing.T) {
 }
 
 func TestSqlDB_QueryIntoMap_Bool(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
@@ -221,7 +221,7 @@ func TestSqlDB_QueryIntoMap_Bool(t *testing.T) {
 }
 
 func TestSqlDB_QueryIntoMap_Bool_WithSqlColumn(t *testing.T) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)

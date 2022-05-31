@@ -15,7 +15,6 @@ var (
 
 func getRowScanner(useSqlNullType bool) *rowScanner {
 	rs := _rowScannerPool.Get().(*rowScanner)
-	rs.Reset(useSqlNullType)
 	return rs
 }
 func putRowScanner(rs *rowScanner) {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,8 +13,9 @@ import (
 )
 
 var (
-	// onlinetest = os.Getenv("ONLINE_TEST")
-	onlinetest = "1"
+	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
+	// onlinetest, _ = strconv.ParseBool("1")
 
 	db *sql.DB
 )
@@ -43,13 +45,13 @@ func (tl TableList) String() string {
 }
 
 func openDB() (*sql.DB, error) {
-	connStr := "host=172.16.130.144 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
+	connStr := "host=127.0.0.1 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
 	driver := "postgres"
 	return sql.Open(driver, connStr)
 }
 
 func setup() error {
-	if onlinetest == "1" {
+	if onlinetest {
 		db, _ = openDB()
 	}
 
