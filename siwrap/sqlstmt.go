@@ -96,7 +96,7 @@ func (o *SqlStmt) QueryStructs(output any, args ...any) (int, error) {
 	return n, nil
 }
 
-func (o *SqlStmt) QueryContenxtMaps(ctx context.Context, output *[]map[string]interface{}, args ...any) (int, error) {
+func (o *SqlStmt) QueryContextMaps(ctx context.Context, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.stmt.QueryContext(ctx, args...)
 	if err != nil {
 		return 0, err
