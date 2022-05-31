@@ -117,8 +117,8 @@ func (o *SqlDB) QueryStructs(query string, output any, args ...any) (int, error)
 	return n, nil
 }
 
-// QueryContenxtMaps queries a database with context then scan resultset into output(slice of map)
-func (o *SqlDB) QueryContenxtMaps(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
+// QueryContextMaps queries a database with context then scan resultset into output(slice of map)
+func (o *SqlDB) QueryContextMaps(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
 	rows, err := o.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, err

@@ -113,6 +113,15 @@ func (rd *Reader) Decode(v any) error {
 	return rd.dec.Decode(v)
 }
 
+func (rd *Reader) Peek(n int) ([]byte, error) {
+	return rd.br.Peek(n)
+}
+
+func (rd *Reader) PeekRest() ([]byte, error) {
+	n := rd.br.Buffered()
+	return rd.Peek(n)
+}
+
 // Writer writes data to underlying Writer
 type Writer struct {
 	bw  *bufio.Writer

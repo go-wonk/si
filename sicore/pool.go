@@ -13,18 +13,18 @@ var (
 	}
 )
 
-func getRowScanner(sqlCol map[string]any, useSqlNullType bool) *rowScanner {
+func getRowScanner(useSqlNullType bool) *rowScanner {
 	rs := _rowScannerPool.Get().(*rowScanner)
-	rs.Reset(sqlCol, useSqlNullType)
+	rs.Reset(useSqlNullType)
 	return rs
 }
 func putRowScanner(rs *rowScanner) {
-	rs.Reset(nil, defaultUseSqlNullType)
+	rs.Reset(defaultUseSqlNullType)
 	_rowScannerPool.Put(rs)
 }
 
 func GetRowScanner() *rowScanner {
-	return getRowScanner(make(map[string]any), defaultUseSqlNullType)
+	return getRowScanner(defaultUseSqlNullType)
 }
 func PutRowScanner(rs *rowScanner) {
 	putRowScanner(rs)
