@@ -187,5 +187,6 @@ func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc 
 		return 0, err
 	}
 
+	*output = (*output)[:n]
 	return n, nil
 }

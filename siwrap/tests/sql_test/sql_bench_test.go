@@ -9,6 +9,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func BenchmarkSqlDB_Exec(b *testing.B) {
+	if !onlinetest {
+		b.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFailB(b, db)
+
+	sqldb := siwrap.NewSqlDB(db)
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+
+		query := `insert into student(email_address, name, borrowed)
+		values($1, $2, $3)`
+
+		sqldb.Exec(query, i, i, 0)
+		// byt, _ := json.Marshal(m)
+		// json.Unmarshal(byt, &o)
+	}
+}
+
 func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
