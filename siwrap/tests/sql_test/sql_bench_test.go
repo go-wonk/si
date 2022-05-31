@@ -86,3 +86,39 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 		assert.Equal(b, expected, tl.String())
 	}
 }
+
+func BenchmarkSqlDB_QueryStructs(b *testing.B) {
+	if onlinetest != "1" {
+		b.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFailB(b, db)
+
+	sqldb := siwrap.NewSqlDB(db,
+		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
+	)
+	for i := 0; i < b.N; i++ {
+
+		query := `
+			select null as nil,
+				'123'::varchar(255) as str,
+				123::integer as int2_,
+				123::decimal(24,4) as decimal_,
+				123::numeric(24,4) as numeric_,
+				123::bigint as bigint_,
+				'{"abcde", "lunch"}'::char(5)[] as char_arr_,
+				'{"abcde", "lunch"}'::varchar(50)[] as varchar_arr_,
+				'0123'::bytea as bytea_,
+				to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
+		`
+
+		// tl := Table{}
+		tl := TableList{}
+		_, err := sqldb.QueryStructs(query, &tl)
+		siutils.AssertNilFailB(b, err)
+
+		expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
+		assert.Equal(b, expected, tl.String())
+	}
+}

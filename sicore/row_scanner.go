@@ -25,8 +25,10 @@ func newRowScanner() *rowScanner {
 	}
 }
 
-func (rs *rowScanner) Reset(sqlCol map[string]any, useSqlNullType bool) {
-	rs.sqlCol = sqlCol
+func (rs *rowScanner) Reset(useSqlNullType bool) {
+	for k := range rs.sqlCol {
+		delete(rs.sqlCol, k)
+	}
 	rs.useSqlNullType = useSqlNullType
 }
 
@@ -122,9 +124,9 @@ func (rs *rowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnT
 					values[i] = reflect.New(reflect.PtrTo(refTypeOfNullTime)).Interface()
 				default:
 					switch ct.DatabaseTypeName() {
-					case "NUMERIC", "DECIMAL":
+					case "NUMERIC", "DECIMAL", "NUMBER":
 						values[i] = reflect.New(reflect.PtrTo(refTypeOfNullFloat64)).Interface()
-					case "VARCHAR", "NVARCHAR", "CHAR", "TEXT":
+					case "VARCHAR", "VARCHAR2", "NVARCHAR", "CHAR", "NCHAR", "TEXT":
 						values[i] = reflect.New(reflect.PtrTo(refTypeOfNullString)).Interface()
 					default:
 						var t interface{} = reflect.New(reflect.PtrTo(ct.ScanType())).Interface()
