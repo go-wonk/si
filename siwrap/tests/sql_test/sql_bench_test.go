@@ -10,11 +10,12 @@ import (
 )
 
 func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
 
+	// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	for i := 0; i < b.N; i++ {
 		sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
@@ -35,8 +36,10 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 		`
 
 		m := make([]map[string]interface{}, 0)
-		_, err := sqldb.QueryMaps(query, &m)
-		siutils.AssertNilFailB(b, err)
+		// o := TableList{}
+		sqldb.QueryMaps(query, &m)
+		// byt, _ := json.Marshal(m)
+		// json.Unmarshal(byt, &o)
 	}
 
 }
@@ -53,7 +56,7 @@ BenchmarkSqlDB_QueryIntoAny_Struct2-8                100           2903963 ns/op
 PASS
 */
 func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
@@ -82,13 +85,13 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 		_, err := sqldb.QueryStructs(query, &tl)
 		siutils.AssertNilFailB(b, err)
 
-		expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"MDEyMw==","time_":"2022-01-01T12:12:12Z"}]`
+		expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
 		assert.Equal(b, expected, tl.String())
 	}
 }
 
 func BenchmarkSqlDB_QueryMaps(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
@@ -110,13 +113,13 @@ func BenchmarkSqlDB_QueryMaps(b *testing.B) {
 		`
 
 		// tl := Table{}
-		var tl []map[string]interface{}
+		tl := make([]map[string]interface{}, 0, 16)
 		sqldb.QueryMaps(query, &tl)
 	}
 }
 
 func BenchmarkSqlDB_QueryStructs(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
@@ -144,7 +147,7 @@ func BenchmarkSqlDB_QueryStructs(b *testing.B) {
 }
 
 func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
@@ -173,4 +176,36 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 		tl := TableList{}
 		sqldb.QueryStructs(query, &tl)
 	}
+}
+
+type Student struct {
+	ID           int    `json:"id"`
+	EmailAddress string `json:"email_address"`
+	Name         string `json:"name"`
+}
+
+func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
+	if !onlinetest {
+		b.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFailB(b, db)
+
+	sqldb := siwrap.NewSqlDB(db)
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+
+		query := `select id, email_address, name from student`
+
+		// tl := Table{}
+		var tl []Student
+		sqldb.QueryStructs(query, &tl)
+	}
+	/*
+		goos: darwin
+		goarch: arm64
+		pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+		BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
+		PASS
+	*/
 }

@@ -168,14 +168,16 @@ func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc 
 	}
 
 	n := 0
+	numCol := len(columns)
 	for rows.Next() {
 		err = rows.Scan(scannedRow...)
 		if err != nil {
 			return 0, err
 		}
 
-		m := make(map[string]interface{})
+		m := make(map[string]interface{}, numCol)
 		rs.ScanValuesIntoMap(columns, scannedRow, &m)
+
 		*output = append(*output, m)
 		n++
 	}
