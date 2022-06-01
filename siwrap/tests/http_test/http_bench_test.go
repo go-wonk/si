@@ -11,7 +11,7 @@ import (
 )
 
 func BenchmarkBasicClient_Get(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, client)
@@ -39,7 +39,7 @@ func BenchmarkBasicClient_Get(b *testing.B) {
 }
 
 func BenchmarkHttpClient_Get(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, client)
@@ -61,7 +61,7 @@ func BenchmarkHttpClient_Get(b *testing.B) {
 }
 
 func BenchmarkHttpClient_GetSize(b *testing.B) {
-	if onlinetest != "1" {
+	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, client)

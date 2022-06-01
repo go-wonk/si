@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -11,8 +12,8 @@ import (
 )
 
 var (
-	onlinetest = os.Getenv("ONLINE_TEST")
-	// onlinetest = "1"
+	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	// onlinetest, _ = strconv.ParseBool("1")
 
 	client *http.Client
 )
@@ -32,7 +33,7 @@ func openClient() *http.Client {
 }
 
 func setup() error {
-	if onlinetest == "1" {
+	if onlinetest {
 		client = openClient()
 	}
 
