@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHttpClient_Do(t *testing.T) {
+func TestHttpClientDo(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
@@ -46,7 +46,7 @@ func TestCheckRequestState(t *testing.T) {
 	data := "hey"
 
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	rw := sicore.GetReadWriter(buf, nil, buf, nil)
+	rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
 	defer sicore.PutReadWriter(rw)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
@@ -65,12 +65,12 @@ func TestCheckRequestState(t *testing.T) {
 	fmt.Println(string(respBody))
 	resp.Body.Close()
 
-	req2, err := http.NewRequest(http.MethodPost, "https://127.0.0.1:8080/test/echo", rw)
+	req2, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
 	siutils.AssertNilFail(t, err)
 
-	// for k := range req.Header {
-	// 	delete(req.Header, k)
-	// }
+	for k := range req.Header {
+		delete(req.Header, k)
+	}
 
 	assert.EqualValues(t, req2, req)
 }
@@ -82,7 +82,7 @@ func TestReuseRequest(t *testing.T) {
 	data := "hey"
 
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	rw := sicore.GetReadWriter(buf, nil, buf, nil)
+	rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
 	defer sicore.PutReadWriter(rw)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
@@ -115,7 +115,7 @@ func TestReuseRequestInGoroutinePanic(t *testing.T) {
 	data := "hey"
 
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	rw := sicore.GetReadWriter(buf, nil, buf, nil)
+	rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
 	defer sicore.PutReadWriter(rw)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
@@ -160,7 +160,7 @@ func TestReuseRequestInGoroutine(t *testing.T) {
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, routineNumber int) {
 			buf := bytes.NewBuffer(make([]byte, 0, 1024))
-			rw := sicore.GetReadWriter(buf, nil, buf, nil)
+			rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
 
 			req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", nil)
 			siutils.AssertNilFail(t, err)
@@ -192,80 +192,80 @@ func TestReuseRequestInGoroutine(t *testing.T) {
 
 }
 
-var (
-	requestPool = sync.Pool{}
-)
-
-func getRequest(method string, url string, r io.Reader) (*http.Request, error) {
-	g := requestPool.Get()
-	if g == nil {
-		return http.NewRequest(method, url, r)
-	}
-	req := g.(*http.Request)
-	req.Method = method
-	req.URL.Host = url
-	req.Body = ioutil.NopCloser(r)
-	return req, nil
-}
-
-func TestReuseRequestInGoroutineWithRequestPool(t *testing.T) {
+func TestReuseRequestWithRequestPool(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 
 	data := "hey"
 
-	var wg sync.WaitGroup
-	for j := 0; j < 5; j++ {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, routineNumber int) {
-			buf := bytes.NewBuffer(make([]byte, 0, 1024))
-			rw := sicore.GetReadWriter(buf, nil, buf, nil)
+	rw := bytes.NewBuffer(make([]byte, 0, 1024))
 
-			req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", nil)
-			siutils.AssertNilFail(t, err)
+	urls := []string{"http://127.0.0.1:8080/test/echo", "https://127.0.0.1:8081/test/echo"}
+	for i := 0; i < 2; i++ {
+		sendData := fmt.Sprintf("%s-%d", data, i)
+		rw.Write([]byte(sendData))
 
-			req.Body = ioutil.NopCloser(rw)
+		req, err := siwrap.GetRequest(http.MethodPost, urls[i], rw)
+		siutils.AssertNilFail(t, err)
 
-			for i := 0; i < 10; i++ {
-				sendData := fmt.Sprintf("%s-%d-%d", data, routineNumber, i)
+		//////////////////////////////////////////////////////////
+		// Check if pooled request is porperly reset
+		expected, err := http.NewRequest(http.MethodPost, urls[i], rw)
+		siutils.AssertNilFail(t, err)
+		assert.EqualValues(t, expected.Method, req.Method)
+		assert.EqualValues(t, expected.URL, req.URL)
+		assert.EqualValues(t, expected.Proto, req.Proto)
+		assert.EqualValues(t, expected.ProtoMajor, req.ProtoMajor)
+		assert.EqualValues(t, expected.ProtoMinor, req.ProtoMinor)
+		assert.EqualValues(t, expected.Header, req.Header)
+		assert.EqualValues(t, expected.Body, req.Body)
+		assert.EqualValues(t, expected.Host, req.Host)
+		assert.EqualValues(t, expected.ContentLength, req.ContentLength)
 
-				req.Header.Set("custom_header", sendData)
+		assert.EqualValues(t, expected.TransferEncoding, req.TransferEncoding)
+		assert.EqualValues(t, expected.Trailer, req.Trailer)             // For client, once the body returns EOF(read all), the caller must not mutate Trailer.
+		assert.EqualValues(t, expected.Close, req.Close)                 // DO NOT SET THIS ON CLIENT
+		assert.EqualValues(t, expected.Form, req.Form)                   // DO NOT SET THIS ON CLIENT
+		assert.EqualValues(t, expected.PostForm, req.PostForm)           // DO NOT SET THIS ON CLIENT
+		assert.EqualValues(t, expected.MultipartForm, req.MultipartForm) // DO NOT SET THIS ON CLIENT
+		assert.EqualValues(t, expected.RemoteAddr, req.RemoteAddr)       // DO NOT SET THIS ON CLIENT
+		assert.EqualValues(t, expected.RequestURI, req.RequestURI)       // DO NOT SET THIS ON CLIENT
+		//////////////////////////////////////////////////////////
 
-				rw.WriteFlush([]byte(sendData))
-				resp, err := client.Do(req)
-				siutils.AssertNilFail(t, err)
+		req.Header.Set("custom_header", sendData)
+		req.URL.RawQuery = "bar=foo"
 
-				respBody, err := io.ReadAll(resp.Body)
-				siutils.AssertNilFail(t, err)
-				assert.EqualValues(t, sendData, string(respBody))
-				fmt.Println(string(respBody))
+		resp, err := client.Do(req)
+		siutils.AssertNilFail(t, err)
 
-				resp.Body.Close()
-			}
+		respBody, err := io.ReadAll(resp.Body)
+		siutils.AssertNilFail(t, err)
+		assert.EqualValues(t, sendData, string(respBody))
+		fmt.Println(string(respBody))
 
-			sicore.PutReadWriter(rw)
-			wg.Done()
-		}(&wg, j)
+		resp.Body.Close()
+
+		siwrap.PutRequest(req)
 	}
-	wg.Wait()
-
 }
 
-// func TestNewPostRequestJson(t *testing.T) {
-// 	type Person struct {
-// 		Name string `json:"name"`
-// 		Age  uint8  `json:"age"`
-// 	}
+func TestHttpClientPostReadBody(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
 
-// 	hc := siwrap.NewHttpClient(client)
+	client := siwrap.NewHttpClient(client)
 
-// 	pr, err := siwrap.NewPostRequestJson("http://127.0.0.1:8080/test/echo", &Person{"wonk", 20})
-// 	siutils.NilFail(t, err)
+	data := "hey"
+	urls := []string{"http://127.0.0.1:8080/test/echo", "https://127.0.0.1:8081/test/echo"}
+	for i := 0; i < 2; i++ {
+		sendData := fmt.Sprintf("%s-%d", data, i)
 
-// 	body, err := hc.DoReadBody(pr)
-// 	siutils.NilFail(t, err)
+		respBody, err := client.PostReadBody(urls[i], nil, []byte(sendData))
+		siutils.AssertNilFail(t, err)
 
-// 	assert.EqualValues(t, `{"name":"wonk","age":20}`+"\n", string(body))
-
-// }
+		assert.EqualValues(t, sendData, string(respBody))
+		fmt.Println(string(respBody))
+	}
+}

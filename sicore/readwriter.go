@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-const defaultBufferSize = 4096
+const defaultBufferSize = 512
 
 // Flusher interface has Flush method to check if a writer has a flush method like bufio.Writer.
 // json.Encoder doesn't flush after write.
@@ -14,16 +14,23 @@ type Flusher interface {
 	Flush() error
 }
 
+type Lengther interface {
+	Len() int
+}
+
 // Reader
 type Reader struct {
+	r   io.Reader
 	br  *bufio.Reader
 	dec Decoder
 	chk EofChecker
+
+	bufAll []byte
 }
 
 func newReader(r io.Reader, opt ...ReaderOption) *Reader {
 	if br, ok := r.(*bufio.Reader); ok {
-		b := &Reader{br: br}
+		b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
 		for _, o := range opt {
 			o.apply(b)
 		}
@@ -33,7 +40,28 @@ func newReader(r io.Reader, opt ...ReaderOption) *Reader {
 		return b
 	}
 	br := bufio.NewReader(r)
-	b := &Reader{br: br}
+	b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
+	for _, o := range opt {
+		o.apply(b)
+	}
+	if b.chk == nil {
+		b.chk = &DefaultEofChecker{}
+	}
+	return b
+}
+func newReaderSize(r io.Reader, bufferSize int, opt ...ReaderOption) *Reader {
+	if br, ok := r.(*bufio.Reader); ok {
+		b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
+		for _, o := range opt {
+			o.apply(b)
+		}
+		if b.chk == nil {
+			b.chk = &DefaultEofChecker{}
+		}
+		return b
+	}
+	br := bufio.NewReaderSize(r, bufferSize)
+	b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
 	for _, o := range opt {
 		o.apply(b)
 	}
@@ -49,6 +77,8 @@ func (rd *Reader) SetEofChecker(chk EofChecker) {
 
 // Reset r, bufferSize and validator of Reader
 func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
+	rd.bufAll = rd.bufAll[:0]
+	rd.r = r
 	rd.br.Reset(r)
 
 	if len(opt) == 0 {
@@ -77,7 +107,33 @@ func (rd *Reader) Read(p []byte) (n int, err error) {
 
 // ReadAll reads all data from r.r and returns it.
 func (rd *Reader) ReadAll() ([]byte, error) {
-	return readAll(rd.br, rd.chk)
+	// return readAll(rd.br, rd.chk)
+	return rd.readAll()
+}
+
+func (rd *Reader) readAll() ([]byte, error) {
+	for {
+		if len(rd.bufAll) == cap(rd.bufAll) {
+			if err := growCap(&rd.bufAll, defaultBufferSize); err != nil {
+				return nil, err
+			}
+		}
+
+		n, err := rd.br.Read(rd.bufAll[len(rd.bufAll):cap(rd.bufAll)])
+		rd.bufAll = rd.bufAll[:len(rd.bufAll)+n]
+
+		ended, err := rd.chk.Check(rd.bufAll, err)
+		if err != nil {
+			rb := make([]byte, len(rd.bufAll))
+			n := copy(rb, rd.bufAll[:len(rd.bufAll)])
+			return rb[:n], err
+		}
+		if ended {
+			rb := make([]byte, len(rd.bufAll))
+			n := copy(rb, rd.bufAll[:len(rd.bufAll)])
+			return rb[:n], nil
+		}
+	}
 }
 
 // readAll reads all data from r and returns it
@@ -117,9 +173,19 @@ func (rd *Reader) Peek(n int) ([]byte, error) {
 	return rd.br.Peek(n)
 }
 
-func (rd *Reader) PeekRest() ([]byte, error) {
-	n := rd.br.Buffered()
-	return rd.Peek(n)
+func (rd *Reader) Buffered() int {
+	return rd.br.Buffered()
+}
+
+func (rd *Reader) Size() int {
+	return rd.br.Size()
+}
+
+func (rd *Reader) Len() int {
+	if l, ok := rd.r.(Lengther); ok {
+		return l.Len()
+	}
+	return 0
 }
 
 // Writer writes data to underlying Writer
@@ -166,6 +232,10 @@ func (wr *Writer) Write(p []byte) (n int, err error) {
 
 func (wr *Writer) Flush() error {
 	return wr.bw.Flush()
+}
+
+func (wr *Writer) Buffered() int {
+	return wr.bw.Buffered()
 }
 
 func (wr *Writer) WriteFlush(p []byte) (n int, err error) {
@@ -216,6 +286,18 @@ type ReadWriter struct {
 
 func newReadWriter(r *Reader, w *Writer) *ReadWriter {
 	return &ReadWriter{r, w}
+}
+
+func (rw *ReadWriter) RLen() int {
+	return rw.Reader.Len()
+}
+
+func (rw *ReadWriter) RBuffered() int {
+	return rw.Reader.Buffered()
+}
+
+func (rw *ReadWriter) WBuffered() int {
+	return rw.Writer.Buffered()
 }
 
 func (rw *ReadWriter) Request(p []byte) ([]byte, error) {

@@ -1,6 +1,7 @@
 package http_test
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -19,10 +20,15 @@ var (
 )
 
 func openClient() *http.Client {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
 	tr := &http.Transport{
 		MaxIdleConns:       3,
 		IdleConnTimeout:    time.Duration(15) * time.Second,
 		DisableCompression: false,
+		TLSClientConfig:    tlsConfig,
 	}
 
 	client := &http.Client{
