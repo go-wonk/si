@@ -1,6 +1,7 @@
 package sql_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/go-wonk/si/sicore"
@@ -145,22 +146,35 @@ func BenchmarkSqlDB_QueryStructs(b *testing.B) {
 	siutils.AssertNotNilFailB(b, db)
 
 	sqldb := siwrap.NewSqlDB(db)
-	for i := 0; i < b.N; i++ {
-
-		query := `
-			select null as nil,
-				'123'::varchar(255) as str,
-				123::integer as int2_,
-				123::decimal(24,4) as decimal_,
-				123::numeric(24,4) as numeric_,
-				123::bigint as bigint_,
-				'{"abcde", "lunch"}'::char(5)[] as char_arr_,
-				'{"abcde", "lunch"}'::varchar(50)[] as varchar_arr_,
-				'0123'::bytea as bytea_,
-				to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
+	query := `
+		select null as nil,
+			'123'::varchar(255) as str,
+			123::integer as int2_,
+			123::decimal(24,4) as decimal_,
+			123::numeric(24,4) as numeric_,
+			123::bigint as bigint_,
+			'{"abcde", "lunch"}'::char(5)[] as char_arr_,
+			'{"abcde", "lunch"}'::varchar(50)[] as varchar_arr_,
+			'0123'::bytea as bytea_,
+			to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
+			union all
+	`
+	query = strings.Repeat(query, 50)
+	query += `
+		select null as nil,
+			'123'::varchar(255) as str,
+			123::integer as int2_,
+			123::decimal(24,4) as decimal_,
+			123::numeric(24,4) as numeric_,
+			123::bigint as bigint_,
+			'{"abcde", "lunch"}'::char(5)[] as char_arr_,
+			'{"abcde", "lunch"}'::varchar(50)[] as varchar_arr_,
+			'0123'::bytea as bytea_,
+			to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
 		`
 
-		// tl := Table{}
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
 		tl := TableList{}
 		sqldb.QueryStructs(query, &tl)
 	}
