@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/go-wonk/si/example/transaction/adaptor"
-	"github.com/go-wonk/si/example/transaction/core"
+	"github.com/go-wonk/si/example/school/adaptor"
+	"github.com/go-wonk/si/example/school/core"
 	_ "github.com/lib/pq"
 )
 
@@ -32,6 +32,7 @@ func main() {
 	borrowingRepo := adaptor.NewPgBorrowingRepo(db)
 
 	borrowingUsc := core.NewBorrowingUsecaseImpl(txBeginner, borrowingRepo, studentRepo, bookRepo)
+	bookUsc := core.NewBookUsecaseImpl(txBeginner, bookRepo)
 
 	err = borrowingUsc.Borrow(&core.Student{ID: 1}, &core.Book{ID: 1})
 	if err != nil {
@@ -39,7 +40,6 @@ func main() {
 		return
 	}
 
-	bookUsc := core.NewBookUsecaseImpl(txBeginner, bookRepo)
 	err = bookUsc.Add("Eva Armisen")
 	if err != nil {
 		fmt.Println(err)
