@@ -3,6 +3,7 @@ package sql_test
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/go-wonk/si/sicore"
@@ -33,6 +34,28 @@ func TestSqlDB_QueryRow(t *testing.T) {
 
 	expected := `2022-01-01 12:12:12 +0000 UTC`
 	assert.Equal(t, expected, tim.Time.String())
+}
+
+func TestSqlDBQueryStructsSimple(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := siwrap.NewSqlDB(db)
+
+	query := `
+		select * from student limit 1
+	`
+
+	// tl := Table{}
+	var tl []Student
+	_, err := sqldb.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(tl)
+	// expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
+	// assert.Equal(t, expected, tl.String())
 }
 
 func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {

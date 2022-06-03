@@ -13,14 +13,15 @@ import (
 )
 
 var (
-	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	// onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	onlinetest, _ = strconv.ParseBool("1")
 	longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
-	// onlinetest, _ = strconv.ParseBool("1")
 
 	db *sql.DB
 )
 
 type Table struct {
+	// Str        string    `json:"str"`
 	Nil        string    `json:"nil" mapstructure:"nil"`
 	Int2       int       `json:"int2_" mapstructure:"int2_"`
 	Decimal    float64   `json:"decimal_" mapstructure:"decimal_"`
