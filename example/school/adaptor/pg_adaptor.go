@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-wonk/si/example/transaction/core"
+	"github.com/go-wonk/si/example/school/core"
 	"github.com/go-wonk/si/siwrap"
 )
 
@@ -25,10 +25,7 @@ func (o *pgStudentRepo) Add(student *core.Student, tx core.TxController) error {
 		return errors.New("invalid tx")
 	}
 
-	insertQuery := `
-		insert into student(email_address, name)
-		values($1, $2)
-	`
+	insertQuery := `insert into student(email_address, name) values($1, $2)`
 	_, err := sqlTx.Exec(insertQuery, student.EmailAddress, student.Name)
 	if err != nil {
 		return err

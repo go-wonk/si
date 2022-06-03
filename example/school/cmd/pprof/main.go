@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	_ "net/http/pprof"
+	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -68,6 +69,7 @@ func main() {
 	router.HandleFunc("/test/echo", HandleEcho)
 	router.HandleFunc("/test/pprof", HandlePprof)
 	router.HandleFunc("/test/gc", HandleGC)
+	router.HandleFunc("/test/findall", HandleFindAll)
 
 	// http 서버 생성
 	httpServer := &http.Server{
@@ -82,6 +84,58 @@ func main() {
 	}()
 
 	log.Fatal(httpServer.ListenAndServe())
+}
+
+func HandleFindAll(w http.ResponseWriter, req *http.Request) {
+	if dump {
+		dumpReq, _ := httputil.DumpRequest(req, true)
+		fmt.Println(string(dumpReq))
+	}
+
+	body := sicore.GetReader(req.Body, sicore.SetJsonDecoder())
+	defer sicore.PutReader(body)
+
+	var s core.Student
+	err := body.Decode(&s)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	list, err := studentUsc.FindAll()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	f, err := os.OpenFile("./students.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+	fw := sicore.GetWriter(f)
+	defer sicore.PutWriter(fw)
+	for _, student := range list {
+		_, err := fw.Write([]byte(student.EmailAddress + "," + student.Name + "\n"))
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+	if err = fw.Flush(); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	res := sicore.GetWriter(w, sicore.SetJsonEncoder())
+	defer sicore.PutWriter(res)
+
+	err = res.EncodeFlush(list)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 }
 
 func HandlePprof(w http.ResponseWriter, req *http.Request) {
