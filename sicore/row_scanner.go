@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 	"reflect"
 	"sync"
+
+	"github.com/go-wonk/si/siutils"
 )
 
 const defaultUseSqlNullType = true
@@ -160,6 +162,25 @@ func (rs *rowScanner) scanValuesIntoMap(columns []string, values []interface{}, 
 	}
 }
 
+func (rs *rowScanner) scanValuesMap(columns []string, values []interface{}, dest map[string]interface{}) {
+	for idx, v := range values {
+		columnName := columns[idx]
+		if rv := reflect.Indirect(reflect.Indirect(reflect.ValueOf(v))); rv.IsValid() {
+			var rvi interface{} = rv.Interface()
+
+			if valuer, ok := rvi.(driver.Valuer); ok {
+				dest[columnName], _ = valuer.Value()
+			} else if b, ok := rvi.(sql.RawBytes); ok {
+				dest[columnName] = string(b)
+			} else {
+				dest[columnName] = rvi
+			}
+		} else {
+			dest[columnName] = nil
+		}
+	}
+}
+
 // Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
 func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc ...SqlColumn) (int, error) {
 	scannedRow, columns, err := rs.ScanTypes(rows, sc...)
@@ -188,5 +209,47 @@ func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc 
 	}
 
 	*output = (*output)[:n]
+	return n, nil
+}
+
+// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
+func (rs *rowScanner) ScanStructs(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
+	scannedRow, columns, err := rs.ScanTypes(rows, sc...)
+	if err != nil {
+		return 0, err
+	}
+
+	ms := getMapSlice()
+	defer putMapSlice(ms)
+
+	n := 0
+	_ = len(columns)
+	for rows.Next() {
+		err = rows.Scan(scannedRow...)
+		if err != nil {
+			return 0, err
+		}
+
+		if len(ms) < n+1 {
+			_, err := growMapSlice(&ms, 100)
+			if err != nil {
+				return 0, err
+			}
+		}
+		makeMapIfNil(&ms[n])
+		rs.scanValuesMap(columns, scannedRow, ms[n])
+
+		n++
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
+	// simple, not very ideal json unmarshal
+	if err = siutils.DecodeAny(ms[:n], output); err != nil {
+		return 0, err
+	}
 	return n, nil
 }

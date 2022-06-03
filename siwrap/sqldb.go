@@ -103,14 +103,8 @@ func (o *SqlDB) QueryStructs(query string, output any, args ...any) (int, error)
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list, o.sqlColumns...)
+	n, err := rs.ScanStructs(rows, output, o.sqlColumns...)
 	if err != nil {
-		return 0, err
-	}
-
-	// simple, not very ideal json unmarshal
-	if err = siutils.DecodeAny(list[:n], output); err != nil {
 		return 0, err
 	}
 

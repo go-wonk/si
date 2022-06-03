@@ -60,48 +60,6 @@ func PutReader(r *Reader) {
 	putReader(r)
 }
 
-// func getReaderSmall(r io.Reader, opt ...ReaderOption) *Reader {
-// 	g := _readerPoolSmall.Get()
-// 	if g == nil {
-// 		return newReaderSize(r, smallBufferSize, opt...)
-// 	}
-// 	rd := g.(*Reader)
-// 	rd.Reset(r, opt...)
-// 	return rd
-// }
-// func putReaderSmall(r *Reader) {
-// 	r.Reset(nil)
-// 	_readerPoolSmall.Put(r)
-// }
-
-// func GetReaderSmall(r io.Reader, opt ...ReaderOption) *Reader {
-// 	return getReaderSmall(r, opt...)
-// }
-// func PutReaderSmall(r *Reader) {
-// 	putReaderSmall(r)
-// }
-
-// func getReaderMedium(r io.Reader, opt ...ReaderOption) *Reader {
-// 	g := _readerPoolMedium.Get()
-// 	if g == nil {
-// 		return newReaderSize(r, mediumBufferSize, opt...)
-// 	}
-// 	rd := g.(*Reader)
-// 	rd.Reset(r, opt...)
-// 	return rd
-// }
-// func putReaderMedium(r *Reader) {
-// 	r.Reset(nil)
-// 	_readerPoolMedium.Put(r)
-// }
-
-// func GetReaderMedium(r io.Reader, opt ...ReaderOption) *Reader {
-// 	return getReaderMedium(r, opt...)
-// }
-// func PutReaderMedium(r *Reader) {
-// 	putReaderMedium(r)
-// }
-
 var (
 	_writerPool = sync.Pool{}
 )
@@ -222,4 +180,66 @@ func GetBytesBuffer(b []byte) *bytes.Buffer {
 
 func PutBytesBuffer(b *bytes.Buffer) {
 	putBytesBuffer(b)
+}
+
+// MapSlice pool
+var (
+	_msPool = sync.Pool{
+		New: func() interface{} {
+			ms := make([]map[string]interface{}, 0, 100)
+			return ms
+		},
+	}
+)
+
+func getMapSlice() []map[string]interface{} {
+	ms := _msPool.Get().([]map[string]interface{})
+	return ms
+}
+
+func putMapSlice(ms []map[string]interface{}) {
+	for i := range ms {
+		for k := range ms[i] {
+			// ms[i][k] = nil //
+			delete(ms[i], k)
+		}
+	}
+	ms = ms[:0]
+	_msPool.Put(ms)
+}
+
+// const maxInt = int(^uint(0) >> 1)
+
+// var ErrTooLarge = errors.New("buf too large")
+
+func growMapSlice(ms *[]map[string]interface{}, s int) (int, error) {
+	c := cap(*ms)
+	l := len(*ms)
+	a := c - l // available
+	if s <= a {
+		*ms = (*ms)[:l+s]
+		return l, nil
+	}
+
+	if l+s <= c {
+		// if needed length is lte c
+		return l, nil
+	}
+
+	if c > maxInt-c-s {
+		// too large
+		return l, ErrTooLarge
+	}
+
+	newBuf := make([]map[string]interface{}, c*2+s)
+	copy(newBuf, (*ms)[0:])
+	*ms = newBuf[:l+s]
+	return l, nil
+}
+
+func makeMapIfNil(m *map[string]interface{}) {
+	if *m == nil {
+		*m = make(map[string]interface{})
+		return
+	}
 }
