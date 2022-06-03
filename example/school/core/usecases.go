@@ -2,6 +2,8 @@ package core
 
 type StudentUsecase interface {
 	Add(emailAddress, name string) error
+	Find(ID int) (*Student, error)
+	FindAll() ([]Student, error)
 }
 type StudentUsecaseImpl struct {
 	txBeginner  TxBeginner
@@ -32,6 +34,14 @@ func (u *StudentUsecaseImpl) Add(emailAddress, name string) error {
 	}
 
 	return nil
+}
+
+func (u *StudentUsecaseImpl) Find(ID int) (*Student, error) {
+	return u.studentRepo.Find(ID)
+}
+
+func (u *StudentUsecaseImpl) FindAll() ([]Student, error) {
+	return u.studentRepo.FindAll()
 }
 
 //

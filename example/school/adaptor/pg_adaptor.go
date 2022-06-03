@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-wonk/si/example/transaction/core"
+	"github.com/go-wonk/si/example/school/core"
 	"github.com/go-wonk/si/siwrap"
 )
 
 type pgStudentRepo struct {
-	db *sql.DB
+	db *siwrap.SqlDB
 }
 
 func NewPgStudentRepo(db *sql.DB) *pgStudentRepo {
-	return &pgStudentRepo{db: db}
+	return &pgStudentRepo{db: siwrap.NewSqlDB(db)}
 }
 
 func (o *pgStudentRepo) Add(student *core.Student, tx core.TxController) error {
@@ -25,15 +25,39 @@ func (o *pgStudentRepo) Add(student *core.Student, tx core.TxController) error {
 		return errors.New("invalid tx")
 	}
 
-	insertQuery := `
-		insert into student(email_address, name)
-		values($1, $2)
-	`
+	insertQuery := `insert into student(email_address, name) values($1, $2)`
 	_, err := sqlTx.Exec(insertQuery, student.EmailAddress, student.Name)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (o *pgStudentRepo) Find(ID int) (*core.Student, error) {
+	qry := `select * from student where id = $1`
+
+	var output []core.Student
+	n, err := o.db.QueryStructs(qry, &output, ID)
+	if err != nil {
+		return nil, err
+	}
+	if n == 1 {
+		return &output[0], nil
+	}
+
+	return nil, nil
+}
+
+func (o *pgStudentRepo) FindAll() ([]core.Student, error) {
+	qry := `select * from student order by id`
+
+	var output []core.Student
+	n, err := o.db.QueryStructs(qry, &output)
+	if err != nil {
+		return nil, err
+	}
+
+	return output[:n], nil
 }
 
 //

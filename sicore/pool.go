@@ -1,6 +1,7 @@
 package sicore
 
 import (
+	"bytes"
 	"io"
 	"sync"
 )
@@ -30,7 +31,12 @@ func PutRowScanner(rs *rowScanner) {
 }
 
 var (
+	// smallBufferSize  = 128
+	// mediumBufferSize = 1024
+
 	_readerPool = sync.Pool{}
+	// _readerPoolSmall  = sync.Pool{}
+	// _readerPoolMedium = sync.Pool{}
 )
 
 func getReader(r io.Reader, opt ...ReaderOption) *Reader {
@@ -53,6 +59,48 @@ func GetReader(r io.Reader, opt ...ReaderOption) *Reader {
 func PutReader(r *Reader) {
 	putReader(r)
 }
+
+// func getReaderSmall(r io.Reader, opt ...ReaderOption) *Reader {
+// 	g := _readerPoolSmall.Get()
+// 	if g == nil {
+// 		return newReaderSize(r, smallBufferSize, opt...)
+// 	}
+// 	rd := g.(*Reader)
+// 	rd.Reset(r, opt...)
+// 	return rd
+// }
+// func putReaderSmall(r *Reader) {
+// 	r.Reset(nil)
+// 	_readerPoolSmall.Put(r)
+// }
+
+// func GetReaderSmall(r io.Reader, opt ...ReaderOption) *Reader {
+// 	return getReaderSmall(r, opt...)
+// }
+// func PutReaderSmall(r *Reader) {
+// 	putReaderSmall(r)
+// }
+
+// func getReaderMedium(r io.Reader, opt ...ReaderOption) *Reader {
+// 	g := _readerPoolMedium.Get()
+// 	if g == nil {
+// 		return newReaderSize(r, mediumBufferSize, opt...)
+// 	}
+// 	rd := g.(*Reader)
+// 	rd.Reset(r, opt...)
+// 	return rd
+// }
+// func putReaderMedium(r *Reader) {
+// 	r.Reset(nil)
+// 	_readerPoolMedium.Put(r)
+// }
+
+// func GetReaderMedium(r io.Reader, opt ...ReaderOption) *Reader {
+// 	return getReaderMedium(r, opt...)
+// }
+// func PutReaderMedium(r *Reader) {
+// 	putReaderMedium(r)
+// }
 
 var (
 	_writerPool = sync.Pool{}
@@ -104,10 +152,74 @@ func putReadWriter(rw *ReadWriter) {
 	_readwriterPool.Put(rw)
 }
 
-func GetReadWriter(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
+func GetReadWriter(r io.Reader, w io.Writer) *ReadWriter {
+	return getReadWriter(r, nil, w, nil)
+}
+
+func GetReadWriterWithOptions(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
 	return getReadWriter(r, ro, w, wo)
 }
 
 func PutReadWriter(rw *ReadWriter) {
 	putReadWriter(rw)
+}
+
+// bytes.Reader pool
+var (
+	_bytesReaderPool = sync.Pool{}
+)
+
+func getBytesReader(b []byte) *bytes.Reader {
+	g := _bytesReaderPool.Get()
+	if g == nil {
+		return bytes.NewReader(b)
+	}
+	br := g.(*bytes.Reader)
+	br.Reset(b)
+	return br
+}
+
+func putBytesReader(r *bytes.Reader) {
+	_bytesReaderPool.Put(r)
+}
+
+func GetBytesReader(b []byte) *bytes.Reader {
+	return getBytesReader(b)
+}
+
+func PutBytesReader(r *bytes.Reader) {
+	putBytesReader(r)
+}
+
+// bytes.Buffer pool
+var (
+	_bytesBufferPool = sync.Pool{
+		New: func() interface{} {
+			return bytes.NewBuffer(make([]byte, 0, 512))
+		},
+	}
+)
+
+func getBytesBuffer(b []byte) *bytes.Buffer {
+	bb := _bytesBufferPool.Get().(*bytes.Buffer)
+	bb.Reset()
+	if len(b) > 0 {
+		_, err := bb.Write(b)
+		if err != nil {
+			return bytes.NewBuffer(b)
+		}
+	}
+	return bb
+}
+
+func putBytesBuffer(r *bytes.Buffer) {
+	_bytesBufferPool.Put(r)
+}
+
+func GetBytesBuffer(b []byte) *bytes.Buffer {
+	return getBytesBuffer(b)
+}
+
+func PutBytesBuffer(b *bytes.Buffer) {
+	putBytesBuffer(b)
 }

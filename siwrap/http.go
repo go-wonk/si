@@ -1,42 +1,27 @@
 package siwrap
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/go-wonk/si/sicore"
 )
 
-const defaultBufferSize = 4096
-
 // HttpClient is a wrapper of http.Client
 type HttpClient struct {
 	client         *http.Client
 	defaultHeaders map[string]string
-	bufferSize     int
 }
 
 // NewHttpClient returns default HttpClient
 func NewHttpClient(client *http.Client) *HttpClient {
-	return NewHttpClientSizeWithHeader(client, defaultBufferSize, nil)
-}
-
-// NewHttpClientSize returns HttpClient with specified bufferSize
-func NewHttpClientSize(client *http.Client, bufferSize int) *HttpClient {
-	return NewHttpClientSizeWithHeader(client, bufferSize, nil)
+	return NewHttpClientWithHeader(client, nil)
 }
 
 // NewHttpClientWithHeader returns HttpClient with specified defaultHeaders that will be set on every request
 func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]string) *HttpClient {
-	return NewHttpClientSizeWithHeader(client, defaultBufferSize, defaultHeaders)
-}
-
-// NewHttpClientSizeWithHeader returns HttpClient with specified bufferSize and defaultHeaders that will be set on every request
-func NewHttpClientSizeWithHeader(client *http.Client, bufferSize int, defaultHeaders map[string]string) *HttpClient {
 	return &HttpClient{
 		client:         client,
 		defaultHeaders: defaultHeaders,
-		bufferSize:     bufferSize,
 	}
 }
 
@@ -66,37 +51,40 @@ func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
 
 	r := sicore.GetReader(resp.Body)
 	defer sicore.PutReader(r)
-	b, err := r.ReadAll()
-	if err != nil {
-		return nil, err
-	}
 
-	return b, nil
+	return r.ReadAll()
 }
 
-// func replaceByBufioReader(r io.Reader) io.Reader {
-// 	if r != nil {
-// 		var br *bufio.Reader
-// 		if _, ok := r.(io.ByteReader); !ok {
-// 			br = sicore.GetBufioReader(r)
-// 			return br
-// 		}
-// 	}
-// 	return r
-// }
+func (hc *HttpClient) PostReadBody(url string, header http.Header, body []byte) ([]byte, error) {
+	r := sicore.GetBytesReader(body)
+	defer sicore.PutBytesReader(r)
 
-func NewGetRequest(url string, body io.Reader) (*http.Request, error) {
-	r, err := http.NewRequest(http.MethodGet, url, body)
+	// req, err := http.NewRequest(http.MethodPost, url, r)
+	req, err := GetRequest(http.MethodPost, url, r)
 	if err != nil {
 		return nil, err
 	}
-	return r, nil
+	defer PutRequest(req)
+
+	setHeader(req, header)
+
+	return hc.DoReadBody(req)
+
 }
 
-func NewPostRequest(url string, body io.Reader) (*http.Request, error) {
-	r, err := http.NewRequest(http.MethodPost, url, body)
+func (hc *HttpClient) PostReadBody2(url string, header http.Header, body []byte) ([]byte, error) {
+	r := sicore.GetBytesBuffer(body)
+	defer sicore.PutBytesBuffer(r)
+
+	// req, err := http.NewRequest(http.MethodPost, url, r)
+	req, err := GetRequest(http.MethodPost, url, r)
 	if err != nil {
 		return nil, err
 	}
-	return r, nil
+	defer PutRequest(req)
+
+	setHeader(req, header)
+
+	return hc.DoReadBody(req)
+
 }

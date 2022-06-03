@@ -1,9 +1,11 @@
 package http_test
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -11,17 +13,22 @@ import (
 )
 
 var (
-	onlinetest = os.Getenv("ONLINE_TEST")
-	// onlinetest = "1"
+	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	// onlinetest, _ = strconv.ParseBool("1")
 
 	client *http.Client
 )
 
 func openClient() *http.Client {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
 	tr := &http.Transport{
 		MaxIdleConns:       3,
 		IdleConnTimeout:    time.Duration(15) * time.Second,
 		DisableCompression: false,
+		TLSClientConfig:    tlsConfig,
 	}
 
 	client := &http.Client{
@@ -32,7 +39,7 @@ func openClient() *http.Client {
 }
 
 func setup() error {
-	if onlinetest == "1" {
+	if onlinetest {
 		client = openClient()
 	}
 
