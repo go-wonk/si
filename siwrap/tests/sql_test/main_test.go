@@ -21,6 +21,7 @@ var (
 )
 
 type Table struct {
+	// Str        string    `json:"str"`
 	Nil        string    `json:"nil" mapstructure:"nil"`
 	Int2       int       `json:"int2_" mapstructure:"int2_"`
 	Decimal    float64   `json:"decimal_" mapstructure:"decimal_"`
@@ -45,7 +46,7 @@ func (tl TableList) String() string {
 }
 
 func openDB() (*sql.DB, error) {
-	connStr := "host=172.16.130.144 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
+	connStr := "host=127.0.0.1 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
 	driver := "postgres"
 	return sql.Open(driver, connStr)
 }

@@ -224,7 +224,9 @@ func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeNotNullInt64},
+	// sicore.SqlColumn{Name: "email_address", Type: sicore.SqlColTypeNotNullString},
+	// sicore.SqlColumn{Name: "name", Type: sicore.SqlColTypeNotNullString},
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

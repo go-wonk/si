@@ -71,16 +71,11 @@ func (rs *rowScanner) ScanTypes(rows *sql.Rows, sc ...SqlColumn) ([]interface{},
 	return scannedRow, columns, nil
 }
 
-func (rs *rowScanner) ScanValuesIntoMap(columns []string, values []interface{}, dest *map[string]interface{}) {
-	// scanIntoMap(columns, values, dest)
-	rs.scanValuesIntoMap(columns, values, dest)
-}
-
 func (rs *rowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnType, columns []string) {
 	for i, ct := range columnTypes {
 		if len(rs.sqlCol) > 0 {
 			if c, ok := rs.GetSqlColumn(columns[i]); ok {
-				values[i] = reflect.New(reflect.PtrTo(reflect.TypeOf(c))).Interface()
+				values[i] = reflect.New(reflect.TypeOf(c)).Interface()
 				continue
 			}
 		}
@@ -93,71 +88,55 @@ func (rs *rowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnT
 		if rs.useSqlNullType {
 			switch ct.ScanType() {
 			case refTypeOfRawBytes:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfRawBytes)).Interface()
+				values[i] = reflect.New(refTypeOfRawBytes).Interface()
 			case refTypeOfBytesTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfRawBytes)).Interface()
+				values[i] = reflect.New(refTypeOfRawBytes).Interface()
 			case refTypeOfByteTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullByte)).Interface()
+				values[i] = reflect.New(refTypeOfNullByte).Interface()
 			case refTypeOfBoolTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullBool)).Interface()
+				values[i] = reflect.New(refTypeOfNullBool).Interface()
 			case refTypeOfStringTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullString)).Interface()
+				values[i] = reflect.New(refTypeOfNullString).Interface()
 			case refTypeOfFloat32TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullFloat32)).Interface()
+				values[i] = reflect.New(refTypeOfNullFloat32).Interface()
 			case refTypeOfFloat64TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullFloat64)).Interface()
+				values[i] = reflect.New(refTypeOfNullFloat64).Interface()
 			case refTypeOfIntTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullInt)).Interface()
+				values[i] = reflect.New(refTypeOfNullInt).Interface()
 			case refTypeOfInt8TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullInt8)).Interface()
+				values[i] = reflect.New(refTypeOfNullInt8).Interface()
 			case refTypeOfInt16TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullInt16)).Interface()
+				values[i] = reflect.New(refTypeOfNullInt16).Interface()
 			case refTypeOfInt32TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullInt32)).Interface()
+				values[i] = reflect.New(refTypeOfNullInt32).Interface()
 			case refTypeOfInt64TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullInt64)).Interface()
+				values[i] = reflect.New(refTypeOfNullInt64).Interface()
 			case refTypeOfUintTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullUint)).Interface()
+				values[i] = reflect.New(refTypeOfNullUint).Interface()
 			case refTypeOfUint8TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullUint8)).Interface()
+				values[i] = reflect.New(refTypeOfNullUint8).Interface()
 			case refTypeOfUint16TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullUint16)).Interface()
+				values[i] = reflect.New(refTypeOfNullUint16).Interface()
 			case refTypeOfUint32TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullUint32)).Interface()
+				values[i] = reflect.New(refTypeOfNullUint32).Interface()
 			case refTypeOfUint64TypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullUint64)).Interface()
+				values[i] = reflect.New(refTypeOfNullUint64).Interface()
 			case refTypeOfTimeTypeValue:
-				values[i] = reflect.New(reflect.PtrTo(refTypeOfNullTime)).Interface()
+				values[i] = reflect.New(refTypeOfNullTime).Interface()
 			default:
 				switch ct.DatabaseTypeName() {
 				case "NUMERIC", "DECIMAL", "NUMBER":
-					values[i] = reflect.New(reflect.PtrTo(refTypeOfNullFloat64)).Interface()
+					values[i] = reflect.New(refTypeOfNullFloat64).Interface()
 				case "VARCHAR", "VARCHAR2", "NVARCHAR", "CHAR", "NCHAR", "TEXT":
-					values[i] = reflect.New(reflect.PtrTo(refTypeOfNullString)).Interface()
+					values[i] = reflect.New(refTypeOfNullString).Interface()
 				default:
-					var t interface{} = reflect.New(reflect.PtrTo(ct.ScanType())).Interface()
+					var t interface{} = reflect.New(ct.ScanType()).Interface()
 					values[i] = t
 				}
 			}
 		} else {
-			var t interface{} = reflect.New(reflect.PtrTo(ct.ScanType())).Interface()
+			var t interface{} = reflect.New(ct.ScanType()).Interface()
 			values[i] = t
-		}
-	}
-}
-
-func (rs *rowScanner) scanValuesIntoMap(columns []string, values []interface{}, dest *map[string]interface{}) {
-	for idx, v := range values {
-		if rv := reflect.Indirect(reflect.Indirect(reflect.ValueOf(v))); rv.IsValid() {
-			(*dest)[columns[idx]] = rv.Interface()
-
-			if valuer, ok := (*dest)[columns[idx]].(driver.Valuer); ok {
-				(*dest)[columns[idx]], _ = valuer.Value()
-			} else if b, ok := (*dest)[columns[idx]].(sql.RawBytes); ok {
-				(*dest)[columns[idx]] = string(b)
-			}
-		} else {
-			(*dest)[columns[idx]] = nil
 		}
 	}
 }
@@ -165,7 +144,7 @@ func (rs *rowScanner) scanValuesIntoMap(columns []string, values []interface{}, 
 func (rs *rowScanner) scanValuesMap(columns []string, values []interface{}, dest map[string]interface{}) {
 	for idx, v := range values {
 		columnName := columns[idx]
-		if rv := reflect.Indirect(reflect.Indirect(reflect.ValueOf(v))); rv.IsValid() {
+		if rv := reflect.Indirect(reflect.ValueOf(v)); rv.IsValid() {
 			var rvi interface{} = rv.Interface()
 
 			if valuer, ok := rvi.(driver.Valuer); ok {
@@ -197,7 +176,7 @@ func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc 
 		}
 
 		m := make(map[string]interface{}, numCol)
-		rs.ScanValuesIntoMap(columns, scannedRow, &m)
+		rs.scanValuesMap(columns, scannedRow, m)
 
 		*output = append(*output, m)
 		n++
