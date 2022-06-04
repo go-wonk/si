@@ -231,7 +231,7 @@ func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 
-		query := `select id, email_address, name from student`
+		query := `select id, email_address, name, borrowed from student`
 
 		// tl := Table{}
 		var tl []Student

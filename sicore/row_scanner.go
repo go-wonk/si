@@ -142,20 +142,20 @@ func (rs *rowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnT
 }
 
 func (rs *rowScanner) scanValuesMap(columns []string, values []interface{}, dest map[string]interface{}) {
-	for idx, v := range values {
-		columnName := columns[idx]
-		if rv := reflect.Indirect(reflect.ValueOf(v)); rv.IsValid() {
+	for idx := range columns {
+		if rv := reflect.Indirect(reflect.ValueOf(values[idx])); rv.IsValid() {
 			var rvi interface{} = rv.Interface()
 
-			if valuer, ok := rvi.(driver.Valuer); ok {
-				dest[columnName], _ = valuer.Value()
-			} else if b, ok := rvi.(sql.RawBytes); ok {
-				dest[columnName] = string(b)
-			} else {
-				dest[columnName] = rvi
+			switch v := rvi.(type) {
+			case driver.Valuer:
+				dest[columns[idx]], _ = v.Value()
+			case sql.RawBytes:
+				dest[columns[idx]] = string(v)
+			default:
+				dest[columns[idx]] = rvi
 			}
 		} else {
-			dest[columnName] = nil
+			dest[columns[idx]] = nil
 		}
 	}
 }

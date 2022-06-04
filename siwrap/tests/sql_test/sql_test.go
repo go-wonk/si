@@ -58,17 +58,39 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	// assert.Equal(t, expected, tl.String())
 }
 
+func TestSqlDBQueryStructsNil(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
+
+	query := `
+		select null as nil, 
+			123::integer as int2_
+	`
+
+	// tl := Table{}
+	tl := TableList{}
+	_, err := sqldb.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	// expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
+	// assert.Equal(t, expected, tl.String())
+}
+
 func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db,
-		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
-	)
+	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 
 	query := `
 		select null as nil, 

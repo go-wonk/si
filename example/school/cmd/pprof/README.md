@@ -46,3 +46,8 @@ curl --insecure -H "Content-Type: application/json; charset=utf-8" \
 -d '{"name":"wonk","email_address":"wonk@wonk.org"}' \
 http://127.0.0.1:8080/test/findall
 
+curl --insecure -H "Content-Type: application/json; charset=utf-8" \
+-X POST \
+-d '{"name":"wonk","email_address":"wonk@wonk.org"}' \
+http://127.0.0.1:8080/test/repeat/findall
+

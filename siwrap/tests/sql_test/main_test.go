@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/lib/pq"
 )
 
@@ -48,6 +49,7 @@ func (tl TableList) String() string {
 func openDB() (*sql.DB, error) {
 	connStr := "host=127.0.0.1 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
 	driver := "postgres"
+	// driver := "pgx"
 	return sql.Open(driver, connStr)
 }
 

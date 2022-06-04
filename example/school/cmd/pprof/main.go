@@ -70,6 +70,7 @@ func main() {
 	router.HandleFunc("/test/pprof", HandlePprof)
 	router.HandleFunc("/test/gc", HandleGC)
 	router.HandleFunc("/test/findall", HandleFindAll)
+	router.HandleFunc("/test/repeat/findall", HandleRepeatFindAll)
 
 	// http 서버 생성
 	httpServer := &http.Server{
@@ -136,6 +137,33 @@ func HandleFindAll(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+}
+
+func HandleRepeatFindAll(w http.ResponseWriter, req *http.Request) {
+	if dump {
+		dumpReq, _ := httputil.DumpRequest(req, true)
+		fmt.Println(string(dumpReq))
+	}
+
+	body := sicore.GetReader(req.Body, sicore.SetJsonDecoder())
+	defer sicore.PutReader(body)
+
+	var s core.Student
+	err := body.Decode(&s)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	for i := 0; i < 100; i++ {
+		_, err := studentUsc.FindAll()
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+
+	w.Write([]byte("done"))
 }
 
 func HandlePprof(w http.ResponseWriter, req *http.Request) {
