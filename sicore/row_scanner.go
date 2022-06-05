@@ -262,6 +262,11 @@ func (rs *rowScanner) ScanStructs2(rows *sql.Rows, output any, sc ...SqlColumn) 
 			elem = reflect.New(rvTypeElem).Elem()
 		}
 
+		// need to handle buildFieldNameMapByTag
+		for i := 0; i < elem.NumField(); i++ {
+			instantiateStructField(elem.Field(i))
+		}
+
 		if !foundFieldNames {
 			fieldNameMap = buildFieldNameMapByTag(elem)
 			foundFieldNames = true

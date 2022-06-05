@@ -62,7 +62,12 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	// assert.Equal(t, expected, tl.String())
 }
 
+type Embedded struct {
+	Nil string `json:"embeded_nil"`
+}
+
 type Sample struct {
+	*Embedded
 	Nil  string `json:"nil"`
 	Int2 int    `json:"int2_"`
 	Int3 *int   `json:"int3_"`
@@ -86,16 +91,26 @@ func TestSqlDBQueryStructsNil(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
+	te := &Embedded{
+		Nil: "not nil embedded",
+	}
+	ts := &Sample{
+		te, "", 1, nil,
+	}
+	fmt.Println(ts.String())
+
 	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
 	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
 	// sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 
 	query := `
 		select null as nil, 
+			'2' as embedded_nil, 
 			123::integer as int2_,
 			234::integer as int3_
 		union all
 		select 'not null' as nil, 
+			'3' as embedded_nil, 
 			99123::integer as int2_,
 			99234::integer as int3_
 	`

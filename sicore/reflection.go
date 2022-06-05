@@ -14,6 +14,7 @@ func findFieldNameByTag(tagName string, t reflect.StructTag) (string, error) {
 }
 
 func buildFieldNameMapByTag(structValue reflect.Value) map[string]int {
+	// need to handle embedded field
 	fieldNameMap := map[string]int{}
 	for i := 0; i < structValue.NumField(); i++ {
 		typeField := structValue.Type().Field(i)
@@ -29,15 +30,19 @@ func buildScanDest(columns []string, fieldNameMap map[string]int,
 
 	scannedRow := make([]interface{}, len(columns))
 	for i, col := range columns {
+		// need to find embedded
 		fieldIndex, ok := fieldNameMap[col]
 		if !ok {
 			// found no field corresponding to the column name
-			scannedRow[i] = new(interface{})
+			scannedRow[i] = reflect.New(reflect.PointerTo(refTypeOfRawBytes)).Interface()
 			continue
 		}
 		field := structValue.Field(fieldIndex)
-		// scannedRow[i] = fieldVal.Addr().Interface() // this is to scan into the field directly, but it cannot handle nil
 		fieldType := field.Type()
+
+		// this is to scan into the field directly, but it cannot handle nil
+		// scannedRow[i] = field.Addr().Interface()
+
 		switch fieldType.Kind() {
 		case reflect.Pointer:
 			// if a field is pointer
@@ -62,13 +67,26 @@ func setScannedValue(structValue reflect.Value, scannedRow []interface{}, column
 		if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(scannedRow[i]))); refValue.IsValid() {
 			switch fieldType.Kind() {
 			case reflect.Pointer:
-				// field.Set(reflect.Indirect(reflect.ValueOf(scannedRow[i])))
-				field.Set(refValue.Addr())
+				if fieldType.Elem().Kind() == reflect.Struct {
+					// embedded field
+				} else {
+					// field.Set(reflect.Indirect(reflect.ValueOf(scannedRow[i])))
+					field.Set(refValue.Addr())
+				}
 			// case reflect.Int:
 			// 	field.SetInt(refValue.Int())
 			default:
 				field.Set(refValue)
 			}
 		}
+	}
+}
+
+func instantiateStructField(field reflect.Value) {
+	if field.Kind() == reflect.Pointer &&
+		field.Type().Elem().Kind() == reflect.Struct &&
+		field.IsNil() {
+
+		field.Set(reflect.New(field.Type().Elem()))
 	}
 }
