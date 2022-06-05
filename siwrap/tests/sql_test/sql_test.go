@@ -73,6 +73,13 @@ func (s *Sample) String() string {
 	return string(b)
 }
 
+type SampleList []Sample
+
+func (s *SampleList) String() string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
 func TestSqlDBQueryStructsNil(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
@@ -88,19 +95,19 @@ func TestSqlDBQueryStructsNil(t *testing.T) {
 			123::integer as int2_,
 			234::integer as int3_
 		union all
-		select null as nil, 
+		select 'not null' as nil, 
 			99123::integer as int2_,
 			99234::integer as int3_
 	`
 
 	// tl := Table{}
-	tl := []Sample{}
+	var tl SampleList
 	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
-	fmt.Println("tl:", tl[0].String(), tl[1].String())
+	fmt.Println(tl.String())
 
-	// expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
-	// assert.Equal(t, expected, tl.String())
+	expected := `[{"nil":"","int2_":123,"int3_":234},{"nil":"not null","int2_":99123,"int3_":99234}]`
+	assert.Equal(t, expected, tl.String())
 }
 
 func TestSqlDB_QueryIntoAny_Struct(t *testing.T) {
