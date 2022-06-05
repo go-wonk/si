@@ -103,7 +103,7 @@ func (o *SqlDB) QueryStructs(query string, output any, args ...any) (int, error)
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	n, err := rs.ScanStructs(rows, output, o.sqlColumns...)
+	n, err := rs.ScanStructs2(rows, output, o.sqlColumns...)
 	if err != nil {
 		return 0, err
 	}

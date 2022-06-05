@@ -3,7 +3,10 @@ package sicore
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/go-wonk/si/siutils"
@@ -217,7 +220,6 @@ func (rs *rowScanner) ScanStructs(rows *sql.Rows, output any, sc ...SqlColumn) (
 		}
 		makeMapIfNil(&ms[n])
 		rs.scanValuesMap(columns, scannedRow, ms[n])
-
 		n++
 	}
 
@@ -230,5 +232,123 @@ func (rs *rowScanner) ScanStructs(rows *sql.Rows, output any, sc ...SqlColumn) (
 	if err = siutils.DecodeAny(ms[:n], output); err != nil {
 		return 0, err
 	}
+	return n, nil
+}
+
+func findByJsonTag(t reflect.StructTag) (string, error) {
+	if jt, ok := t.Lookup("json"); ok {
+		return strings.Split(jt, ",")[0], nil
+	}
+	return "", fmt.Errorf("tag provided does not define a json tag")
+}
+
+// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
+func (rs *rowScanner) ScanStructs2(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
+	rv := reflect.Indirect(reflect.ValueOf(output))
+	if rv.Kind() != reflect.Slice {
+		return 0, errors.New("not slice")
+	}
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, err
+	}
+
+	n := 0
+
+	foundFieldNames := false
+	fieldNames := map[string]int{}
+	rvTypeElem := rv.Type().Elem() // type of the element
+	rvTypeElemKind := rvTypeElem.Kind()
+	scannedFirst := false
+	scannedRow := make([]interface{}, len(columns))
+	for rows.Next() {
+		var elem reflect.Value // slice's element
+		if rvTypeElemKind == reflect.Pointer {
+			elem = reflect.New(rvTypeElem.Elem())
+		} else if rvTypeElemKind == reflect.Struct {
+			elem = reflect.New(rvTypeElem).Elem()
+		}
+		// fmt.Printf("%v, %T\n", elem, elem)
+
+		if !foundFieldNames {
+			// fieldNames := map[string]int{}
+			for i := 0; i < elem.NumField(); i++ {
+				typeField := elem.Type().Field(i)
+				tag := typeField.Tag
+				jname, _ := findByJsonTag(tag)
+				fieldNames[jname] = i
+			}
+			foundFieldNames = true
+		}
+
+		if !scannedFirst {
+			// scannedRow := make([]interface{}, len(columns))
+			for i, col := range columns {
+				fieldNum := fieldNames[col]
+				// if !ok {
+				// 	return fmt.Errorf("field %s does not exist within the provided item", col)
+				// }
+				field := elem.Field(fieldNum)
+				// scannedRow[i] = fieldVal.Addr().Interface()
+				// fmt.Println("scannedRow:", field.Type().Kind())
+				fieldType := field.Type()
+				switch fieldType.Kind() {
+				case reflect.Pointer:
+					scannedRow[i] = reflect.New(fieldType).Interface()
+				default:
+					scannedRow[i] = reflect.New(reflect.PointerTo(fieldType)).Interface()
+				}
+			}
+			scannedFirst = true
+		}
+
+		// scan the values
+		err = rows.Scan(scannedRow...)
+		if err != nil {
+			return 0, err
+		}
+
+		// set values to the struct fields
+		for i, _ := range scannedRow {
+			fieldIndex := fieldNames[columns[i]]
+			field := elem.Field(fieldIndex)
+			fieldType := field.Type()
+
+			// skip any invalid(nil) values
+			if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(scannedRow[i]))); refValue.IsValid() {
+				switch fieldType.Kind() {
+				case reflect.Pointer:
+					// field.Set(reflect.Indirect(reflect.ValueOf(scannedRow[i])))
+					field.Set(refValue.Addr())
+				// case reflect.Int:
+				// 	field.SetInt(refValue.Int())
+				default:
+					field.Set(refValue)
+				}
+			}
+
+			// if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(scannedRow[i]))); refValue.IsValid() {
+			// 	// fieldNum := fieldNames[columns[i]]
+			// 	// field := elem.Field(fieldNum)
+
+			// 	fmt.Println(field, field.Kind())
+
+			// 	switch field.Kind() {
+			// 	case reflect.Int:
+			// 		field.SetInt(refValue.Int())
+			// 	case reflect.Ptr:
+			// 	}
+			// }
+		}
+		rv.Set(reflect.Append(rv, elem))
+
+		n++
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
 	return n, nil
 }
