@@ -45,17 +45,32 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	sqldb := siwrap.NewSqlDB(db)
 
 	query := `
-		select * from student limit 1
+		select * from student limit 10
 	`
 
 	// tl := Table{}
 	var tl []Student
 	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
-
 	fmt.Println(tl)
+
+	// _, err = sqldb.QueryStructs(query, &tl)
+	// siutils.AssertNilFail(t, err)
+	// fmt.Println(tl)
+
 	// expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
 	// assert.Equal(t, expected, tl.String())
+}
+
+type Sample struct {
+	Nil  string `json:"nil"`
+	Int2 int    `json:"int2_"`
+	Int3 *int   `json:"int3_"`
+}
+
+func (s *Sample) String() string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }
 
 func TestSqlDBQueryStructsNil(t *testing.T) {
@@ -70,13 +85,19 @@ func TestSqlDBQueryStructsNil(t *testing.T) {
 
 	query := `
 		select null as nil, 
-			123::integer as int2_
+			123::integer as int2_,
+			234::integer as int3_
+		union all
+		select null as nil, 
+			99123::integer as int2_,
+			99234::integer as int3_
 	`
 
 	// tl := Table{}
-	tl := TableList{}
+	tl := []Sample{}
 	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
+	fmt.Println("tl:", tl[0].String(), tl[1].String())
 
 	// expected := `[{"nil":"","int2_":123,"decimal_":123,"numeric_":123,"bigint_":123,"char_arr_":"e2FiY2RlLGx1bmNofQ==","varchar_arr_":"e2FiY2RlLGx1bmNofQ==","bytea_":"0123","time_":"2022-01-01T12:12:12Z"}]`
 	// assert.Equal(t, expected, tl.String())
