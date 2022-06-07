@@ -45,7 +45,7 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	sqldb := siwrap.NewSqlDB(db)
 
 	query := `
-		select * from student limit 10
+		select id, name, email_address, borrowed, 23 as book_id from student limit 10
 	`
 
 	// tl := Table{}
@@ -53,6 +53,12 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	_, err := sqldb.QueryStructs(query, &tl)
 	siutils.AssertNilFail(t, err)
 	fmt.Println(tl)
+
+	for _, v := range tl {
+		v.SayBye()
+		v.SayHello()
+		fmt.Println(v.Book.ID)
+	}
 
 	// _, err = sqldb.QueryStructs(query, &tl)
 	// siutils.AssertNilFail(t, err)

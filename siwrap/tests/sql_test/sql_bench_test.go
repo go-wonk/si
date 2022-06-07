@@ -212,11 +212,32 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 	}
 }
 
+type Book struct {
+	ID int `json:"book_id"`
+}
+
+func (s *Book) SayHello() string {
+	return "hello book"
+}
+
+func (s Book) SayBye() string {
+	return "bye book"
+}
+
 type Student struct {
 	ID           int    `json:"id"`
 	EmailAddress string `json:"email_address"`
 	Name         string `json:"name"`
 	Borrowed     bool   `json:"borrowed"`
+	*Book
+}
+
+func (s *Student) SayHello() string {
+	return "hello"
+}
+
+func (s Student) SayBye() string {
+	return "bye"
 }
 
 func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
