@@ -96,10 +96,8 @@ type traversedField struct {
 	indices []int
 }
 
-func traverseFields(tagKey string, parent traversedField, result *[]traversedField) {
-
+func traverseFields(parent traversedField, result *[]traversedField) {
 	n := parent.field.NumField()
-	// fmt.Println(n)
 	for i := 0; i < n; i++ {
 		field := parent.field.Field(i)
 		if field.Kind() == reflect.Pointer &&
@@ -109,13 +107,83 @@ func traverseFields(tagKey string, parent traversedField, result *[]traversedFie
 				field.Set(reflect.New(field.Type().Elem()))
 			}
 
-			traverseFields(tagKey, traversedField{field.Elem(), append(parent.indices, i)}, result)
+			traverseFields(traversedField{field.Elem(), append(parent.indices, i)}, result)
 		} else if field.Type().Kind() == reflect.Struct {
-			traverseFields(tagKey, traversedField{field, append(parent.indices, i)}, result)
+			traverseFields(traversedField{field, append(parent.indices, i)}, result)
 		} else {
 			// handle tag key
 			*result = append(*result, traversedField{field, append(parent.indices, i)})
-			// fmt.Println(parent.field.Field(i).Type(), toTraverse{field, append(parent.indices, i)})
+		}
+	}
+}
+
+func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField) map[string][]int {
+	m := make(map[string][]int)
+	for _, v := range fields {
+		// fmt.Println(elem.FieldByIndex(v.indices).Type())
+		field := root.Type().FieldByIndex(v.indices)
+		name, err := findFieldNameByTag(tagKey, field.Tag)
+		if err == nil {
+			m[name] = v.indices
+		}
+	}
+
+	return m
+}
+
+func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
+	root reflect.Value) []interface{} {
+
+	scannedRow := make([]interface{}, len(columns))
+	for i, col := range columns {
+		// need to find embedded
+		fieldIndex, ok := fieldTagMap[col]
+		if !ok {
+			// found no field corresponding to the column name
+			scannedRow[i] = reflect.New(reflect.PointerTo(refTypeOfRawBytes)).Interface()
+			continue
+		}
+		field := root.FieldByIndex(fieldIndex)
+		fieldType := field.Type()
+
+		// this is to scan into the field directly, but it cannot handle nil
+		// scannedRow[i] = field.Addr().Interface()
+
+		switch fieldType.Kind() {
+		case reflect.Pointer:
+			// if a field is pointer
+			scannedRow[i] = reflect.New(fieldType).Interface()
+		default:
+			scannedRow[i] = reflect.New(reflect.PointerTo(fieldType)).Interface()
+		}
+	}
+
+	return scannedRow
+
+}
+
+func setScannedValues(structValue reflect.Value, scannedRow []interface{}, columns []string, fieldNameMap map[string][]int) {
+	// set values to the struct fields
+	for i, _ := range scannedRow {
+		fieldIndex := fieldNameMap[columns[i]]
+		field := structValue.FieldByIndex(fieldIndex)
+		fieldType := field.Type()
+
+		// skip any invalid(nil) values
+		if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(scannedRow[i]))); refValue.IsValid() {
+			switch fieldType.Kind() {
+			case reflect.Pointer:
+				if fieldType.Elem().Kind() == reflect.Struct {
+					// embedded field
+				} else {
+					// field.Set(reflect.Indirect(reflect.ValueOf(scannedRow[i])))
+					field.Set(refValue.Addr())
+				}
+			// case reflect.Int:
+			// 	field.SetInt(refValue.Int())
+			default:
+				field.Set(refValue)
+			}
 		}
 	}
 }

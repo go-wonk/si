@@ -36,13 +36,16 @@ func TestTraverseFields(t *testing.T) {
 	}
 
 	var traversedFields []traversedField
-	traverseFields("json", traversedField{elem, []int{}}, &traversedFields)
+	traverseFields(traversedField{elem, []int{}}, &traversedFields)
 
-	fmt.Println(traversedFields)
-	for _, v := range traversedFields {
-		// fmt.Println(elem.FieldByIndex(v.indices).Type())
-		field := elem.Type().FieldByIndex(v.indices)
-		name, _ := findFieldNameByTag("json", field.Tag)
-		fmt.Println(field.Type, name)
-	}
+	// fmt.Println(traversedFields)
+	// for _, v := range traversedFields {
+	// 	// fmt.Println(elem.FieldByIndex(v.indices).Type())
+	// 	field := elem.Type().FieldByIndex(v.indices)
+	// 	name, _ := findFieldNameByTag("json", field.Tag)
+	// 	fmt.Println(field.Type, name)
+	// }
+
+	tagMap := buildTagNameMap(elem, "json", traversedFields)
+	fmt.Println(tagMap)
 }
