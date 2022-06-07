@@ -1,6 +1,7 @@
 package sicore
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -82,12 +83,62 @@ func setScannedValue(structValue reflect.Value, scannedRow []interface{}, column
 	}
 }
 
-func instantiateStructField(field reflect.Value) {
-	if field.Kind() == reflect.Pointer &&
-		field.Type().Elem().Kind() == reflect.Struct &&
-		field.IsNil() {
+// getReflectValuePointer returns a value that v points to.
+// It returns error if v is not a pointer
+func getReflectValuePointer(v any) (reflect.Value, error) {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Pointer {
+		return reflect.Value{}, errors.New("not a pointer")
+	}
+	return reflect.Indirect(rv), nil
+}
 
-		field.Set(reflect.New(field.Type().Elem()))
+func getSliceElement(sliceValue reflect.Value) (reflect.Value, error) {
+	if sliceValue.Kind() != reflect.Slice && sliceValue.Kind() != reflect.Array {
+		return reflect.Value{}, errors.New("sliceValue is not slice or array")
+	}
+
+	// this only works when the slice's element is a struct
+	// var elem reflect.Value
+	// rvTypeElem := rv.Type().Elem()
+	// switch rvTypeElem.Kind() {
+	// case reflect.Pointer:
+	// 	if rvTypeElem.Elem().Kind() == reflect.Struct {
+	// 		elem = reflect.New(rvTypeElem.Elem())
+	// 	}
+	// case reflect.Struct:
+	// 	elem = reflect.New(rvTypeElem).Elem()
+	// }
+
+	// to handle all kinds(struct, int, string...)
+	var elem reflect.Value
+	rvTypeElem := sliceValue.Type().Elem()
+	switch rvTypeElem.Kind() {
+	case reflect.Pointer:
+		elem = reflect.New(rvTypeElem.Elem())
+	default:
+		elem = reflect.New(rvTypeElem).Elem()
+	}
+
+	initializeFields(elem)
+	return elem, nil
+}
+
+func initializeFields(field reflect.Value) {
+	n := field.NumField()
+	for i := 0; i < n; i++ {
+		field := field.Field(i)
+		if field.Kind() == reflect.Pointer &&
+			field.Type().Elem().Kind() == reflect.Struct {
+
+			if field.IsNil() {
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+
+			initializeFields(field.Elem())
+		} else if field.Type().Kind() == reflect.Struct {
+			initializeFields(field)
+		}
 	}
 }
 
@@ -162,25 +213,17 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
 
 }
 
-func setScannedValues(structValue reflect.Value, scannedRow []interface{}, columns []string, fieldNameMap map[string][]int) {
+func setScannedValues(v reflect.Value, scannedRow []interface{}, columns []string, tagNameMap map[string][]int) {
 	// set values to the struct fields
-	for i, _ := range scannedRow {
-		fieldIndex := fieldNameMap[columns[i]]
-		field := structValue.FieldByIndex(fieldIndex)
+	for i := range scannedRow {
+		field := v.FieldByIndex(tagNameMap[columns[i]])
 		fieldType := field.Type()
 
 		// skip any invalid(nil) values
 		if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(scannedRow[i]))); refValue.IsValid() {
 			switch fieldType.Kind() {
 			case reflect.Pointer:
-				if fieldType.Elem().Kind() == reflect.Struct {
-					// embedded field
-				} else {
-					// field.Set(reflect.Indirect(reflect.ValueOf(scannedRow[i])))
-					field.Set(refValue.Addr())
-				}
-			// case reflect.Int:
-			// 	field.SetInt(refValue.Int())
+				field.Set(refValue.Addr())
 			default:
 				field.Set(refValue)
 			}

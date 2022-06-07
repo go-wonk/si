@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/go-wonk/si/siutils"
 )
 
 type TestEmbeddedLevel2 struct {
@@ -21,7 +23,19 @@ type TestTraverse struct {
 	gender string `json:"gender"`
 }
 
-// func callTestTraverse()
+func TestGetReflectValue(t *testing.T) {
+	tt := TestTraverse{}
+	_, err := getReflectValuePointer(tt)
+	siutils.AssertNotNilFail(t, err)
+
+	_, err = getReflectValuePointer(&tt)
+	siutils.AssertNilFail(t, err)
+
+	ttSlice := []TestTraverse{}
+	_, err = getReflectValuePointer(&ttSlice)
+	siutils.AssertNilFail(t, err)
+
+}
 
 func TestTraverseFields(t *testing.T) {
 	tt := []TestTraverse{}

@@ -193,7 +193,7 @@ func (rs *rowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}, sc 
 }
 
 // Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *rowScanner) ScanStructs(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
+func (rs *rowScanner) ScanStructs_Deprecated(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
 	scannedRow, columns, err := rs.ScanTypes(rows, sc...)
 	if err != nil {
 		return 0, err
@@ -234,7 +234,7 @@ func (rs *rowScanner) ScanStructs(rows *sql.Rows, output any, sc ...SqlColumn) (
 }
 
 // Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *rowScanner) ScanStructs2(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
+func (rs *rowScanner) ScanStructs2_Deprecated(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
 	rv := reflect.Indirect(reflect.ValueOf(output))
 	if rv.Kind() != reflect.Slice {
 		return 0, errors.New("not slice")
@@ -260,11 +260,6 @@ func (rs *rowScanner) ScanStructs2(rows *sql.Rows, output any, sc ...SqlColumn) 
 			elem = reflect.New(rvTypeElem.Elem())
 		} else if rvTypeElemKind == reflect.Struct {
 			elem = reflect.New(rvTypeElem).Elem()
-		}
-
-		// need to handle buildFieldNameMapByTag
-		for i := 0; i < elem.NumField(); i++ {
-			instantiateStructField(elem.Field(i))
 		}
 
 		if !foundFieldNames {
@@ -301,32 +296,28 @@ func (rs *rowScanner) ScanStructs2(rows *sql.Rows, output any, sc ...SqlColumn) 
 }
 
 // Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *rowScanner) ScanStructs3(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
-	rv := reflect.Indirect(reflect.ValueOf(output))
-	if rv.Kind() != reflect.Slice {
-		return 0, errors.New("not slice")
+func (rs *rowScanner) ScanStructs(rows *sql.Rows, output any, sc ...SqlColumn) (int, error) {
+	sliceValue, err := getReflectValuePointer(output)
+	if err != nil {
+		return 0, err
+	}
+
+	elemValue, err := getSliceElement(sliceValue)
+	if err != nil {
+		return 0, err
 	}
 	columns, err := rows.Columns()
 	if err != nil {
 		return 0, err
 	}
 
-	n := 0
-
-	rvTypeElem := rv.Type().Elem() // type of the slice element
-	rvTypeElemKind := rvTypeElem.Kind()
-	var elem reflect.Value // slice's element
-	if rvTypeElemKind == reflect.Pointer {
-		elem = reflect.New(rvTypeElem.Elem())
-	} else if rvTypeElemKind == reflect.Struct {
-		elem = reflect.New(rvTypeElem).Elem()
-	}
+	n := 0 // num rows
 
 	var traversedFields []traversedField
-	traverseFields(traversedField{elem, []int{}}, &traversedFields)
-	fieldNameMap := buildTagNameMap(elem, "json", traversedFields)
+	traverseFields(traversedField{elemValue, []int{}}, &traversedFields)
+	tagNameMap := buildTagNameMap(elemValue, "json", traversedFields)
 
-	scannedRow := buildScanDestinations(columns, fieldNameMap, elem)
+	scannedRow := buildScanDestinations(columns, tagNameMap, elemValue)
 	for rows.Next() {
 
 		// scan the values
@@ -335,11 +326,15 @@ func (rs *rowScanner) ScanStructs3(rows *sql.Rows, output any, sc ...SqlColumn) 
 			return 0, err
 		}
 
+		elem, err := getSliceElement(sliceValue)
+		if err != nil {
+			return 0, err
+		}
 		// set values to the struct fields
-		setScannedValues(elem, scannedRow, columns, fieldNameMap)
+		setScannedValues(elem, scannedRow, columns, tagNameMap)
 
 		// append element to slice
-		rv.Set(reflect.Append(rv, elem))
+		sliceValue.Set(reflect.Append(sliceValue, elem))
 
 		n++
 	}
