@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-func findFieldNameByTag(tagName string, t reflect.StructTag) (string, error) {
-	if jt, ok := t.Lookup(tagName); ok {
+func findFieldNameByTag(tagKey string, t reflect.StructTag) (string, error) {
+	if jt, ok := t.Lookup(tagKey); ok {
 		return strings.Split(jt, ",")[0], nil
 	}
-	return "", fmt.Errorf("tag provided does not define a json tag")
+	return "", fmt.Errorf("tag provided does not define a %s tag", tagKey)
 }
 
 func buildFieldNameMapByTag(structValue reflect.Value) map[string]int {
@@ -88,5 +88,34 @@ func instantiateStructField(field reflect.Value) {
 		field.IsNil() {
 
 		field.Set(reflect.New(field.Type().Elem()))
+	}
+}
+
+type traversedField struct {
+	field   reflect.Value
+	indices []int
+}
+
+func traverseFields(tagKey string, parent traversedField, result *[]traversedField) {
+
+	n := parent.field.NumField()
+	// fmt.Println(n)
+	for i := 0; i < n; i++ {
+		field := parent.field.Field(i)
+		if field.Kind() == reflect.Pointer &&
+			field.Type().Elem().Kind() == reflect.Struct {
+
+			if field.IsNil() {
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+
+			traverseFields(tagKey, traversedField{field.Elem(), append(parent.indices, i)}, result)
+		} else if field.Type().Kind() == reflect.Struct {
+			traverseFields(tagKey, traversedField{field, append(parent.indices, i)}, result)
+		} else {
+			// handle tag key
+			*result = append(*result, traversedField{field, append(parent.indices, i)})
+			// fmt.Println(parent.field.Field(i).Type(), toTraverse{field, append(parent.indices, i)})
+		}
 	}
 }
