@@ -7,6 +7,7 @@ import (
 	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwrap"
+	"github.com/go-wonk/si/tests/testmodels"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,7 +58,6 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 		`
 
 		m := make([]map[string]interface{}, 0)
-		// o := TableList{}
 		sqldb.QueryMaps(query, &m)
 		// byt, _ := json.Marshal(m)
 		// json.Unmarshal(byt, &o)
@@ -101,8 +101,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 				to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
 		`
 
-		// tl := Table{}
-		tl := TableList{}
+		tl := testmodels.TableList{}
 		_, err := sqldb.QueryStructs(query, &tl)
 		siutils.AssertNilFailB(b, err)
 
@@ -175,7 +174,7 @@ func BenchmarkSqlDB_QueryStructs(b *testing.B) {
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		tl := TableList{}
+		tl := testmodels.TableList{}
 		sqldb.QueryStructs(query, &tl)
 	}
 }
@@ -206,38 +205,9 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 				to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
 		`
 
-		// tl := Table{}
-		tl := TableList{}
+		tl := testmodels.TableList{}
 		sqldb.QueryStructs(query, &tl)
 	}
-}
-
-type Book struct {
-	ID int `json:"book_id"`
-}
-
-func (s *Book) SayHello() string {
-	return "hello book"
-}
-
-func (s Book) SayBye() string {
-	return "bye book"
-}
-
-type Student struct {
-	ID           int    `json:"id"`
-	EmailAddress string `json:"email_address"`
-	Name         string `json:"name"`
-	Borrowed     bool   `json:"borrowed"`
-	*Book
-}
-
-func (s *Student) SayHello() string {
-	return "hello"
-}
-
-func (s Student) SayBye() string {
-	return "bye"
 }
 
 func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
@@ -246,17 +216,13 @@ func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeNotNullInt64},
-	// sicore.SqlColumn{Name: "email_address", Type: sicore.SqlColTypeNotNullString},
-	// sicore.SqlColumn{Name: "name", Type: sicore.SqlColTypeNotNullString},
-
+	sqldb := siwrap.NewSqlDB(db)
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 
 		query := `select id, email_address, name, borrowed from student`
 
-		// tl := Table{}
-		var tl []Student
+		var tl []testmodels.Student
 		sqldb.QueryStructs(query, &tl)
 	}
 	/*

@@ -150,8 +150,8 @@ func (rs *rowScanner) scanValuesMap(columns []string, values []interface{}, dest
 			switch v := rvi.(type) {
 			case driver.Valuer:
 				dest[columns[idx]], _ = v.Value()
-			case sql.RawBytes:
-				dest[columns[idx]] = string(v)
+			// case sql.RawBytes:
+			// 	dest[columns[idx]] = string(v)
 			default:
 				dest[columns[idx]] = rvi
 			}

@@ -1,10 +1,13 @@
 package sicore
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func findFieldNameByTag(tagKey string, t reflect.StructTag) (string, error) {
@@ -127,18 +130,59 @@ func getSliceElement(sliceValue reflect.Value) (reflect.Value, error) {
 func initializeFields(field reflect.Value) {
 	n := field.NumField()
 	for i := 0; i < n; i++ {
-		field := field.Field(i)
-		if field.Kind() == reflect.Pointer &&
-			field.Type().Elem().Kind() == reflect.Struct {
+		structField := field.Type().Field(i)
+		if !structField.IsExported() {
+			continue
+		}
 
+		field := field.Field(i)
+
+		// check if a field is pointer
+		var fieldTypeKind reflect.Kind
+		if field.Kind() == reflect.Pointer {
+			fieldTypeKind = field.Type().Elem().Kind()
+		} else {
+			fieldTypeKind = field.Type().Kind()
+		}
+
+		// skip if it is not a struct
+		if fieldTypeKind != reflect.Struct {
+			continue
+		}
+
+		// initialize a field if it is nil
+		var fieldValue reflect.Value
+		if field.Kind() == reflect.Pointer {
 			if field.IsNil() {
 				field.Set(reflect.New(field.Type().Elem()))
 			}
-
-			initializeFields(field.Elem())
-		} else if field.Type().Kind() == reflect.Struct {
-			initializeFields(field)
+			fieldValue = field.Elem()
+		} else {
+			fieldValue = field
 		}
+
+		// initialize struct's nested field
+		initializeFields(fieldValue)
+
+		// if field.Kind() == reflect.Pointer && field.Type().Elem().Kind() == reflect.Struct {
+		// 	switch field.Interface().(type) {
+		// 	// case *time.Time:
+		// 	// 	// do nothing
+		// 	default:
+		// 		if field.IsNil() {
+		// 			field.Set(reflect.New(field.Type().Elem()))
+		// 		}
+
+		// 		initializeFields(field.Elem())
+		// 	}
+		// } else if field.Type().Kind() == reflect.Struct {
+		// 	switch field.Interface().(type) {
+		// 	// case time.Time:
+		// 	// 	// do nothing
+		// 	default:
+		// 		initializeFields(field)
+		// 	}
+		// }
 	}
 }
 
@@ -147,35 +191,96 @@ type traversedField struct {
 	indices []int
 }
 
+type ScanValuer interface {
+	Scan(value any) error
+	Value() (driver.Value, error)
+}
+
 func traverseFields(parent traversedField, result *[]traversedField) {
 	n := parent.field.NumField()
 	for i := 0; i < n; i++ {
-		field := parent.field.Field(i)
-		if field.Kind() == reflect.Pointer &&
-			field.Type().Elem().Kind() == reflect.Struct {
+		structField := parent.field.Type().Field(i)
+		if !structField.IsExported() {
+			continue
+		}
 
+		field := parent.field.Field(i)
+
+		var fieldTypeKind reflect.Kind
+		if field.Kind() == reflect.Pointer {
+			fieldTypeKind = field.Type().Elem().Kind()
+		} else {
+			fieldTypeKind = field.Type().Kind()
+		}
+
+		if fieldTypeKind != reflect.Struct {
+			*result = append(*result, traversedField{field, append(parent.indices, i)})
+			continue
+		}
+
+		var fieldValue reflect.Value
+		if field.Kind() == reflect.Pointer {
 			if field.IsNil() {
 				field.Set(reflect.New(field.Type().Elem()))
 			}
-
-			traverseFields(traversedField{field.Elem(), append(parent.indices, i)}, result)
-		} else if field.Type().Kind() == reflect.Struct {
-			traverseFields(traversedField{field, append(parent.indices, i)}, result)
+			fieldValue = field.Elem()
 		} else {
-			// handle tag key
-			*result = append(*result, traversedField{field, append(parent.indices, i)})
+			fieldValue = field
 		}
+
+		switch field.Interface().(type) {
+		case *time.Time, *sql.NullBool, *sql.NullByte, *sql.NullFloat64, *sql.NullInt16, *sql.NullInt32, *sql.NullInt64,
+			*sql.NullString, *sql.NullTime,
+			time.Time, sql.NullBool, sql.NullByte, sql.NullFloat64, sql.NullInt16, sql.NullInt32, sql.NullInt64,
+			sql.NullString, sql.NullTime:
+
+			*result = append(*result, traversedField{fieldValue, append(parent.indices, i)})
+		default:
+			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, result)
+		}
+
+		// if field.Kind() == reflect.Pointer &&
+		// 	field.Type().Elem().Kind() == reflect.Struct {
+
+		// 	switch field.Interface().(type) {
+		// 	case *time.Time, *sql.NullBool, *sql.NullByte, *sql.NullFloat64, *sql.NullInt16, *sql.NullInt32, *sql.NullInt64,
+		// 		*sql.NullString, *sql.NullTime:
+		// 		if field.IsNil() {
+		// 			field.Set(reflect.New(field.Type().Elem()))
+		// 		}
+		// 		*result = append(*result, traversedField{field.Elem(), append(parent.indices, i)})
+		// 	default:
+		// 		if field.IsNil() {
+		// 			field.Set(reflect.New(field.Type().Elem()))
+		// 		}
+		// 		traverseFields(traversedField{field.Elem(), append(parent.indices, i)}, result)
+		// 	}
+		// } else if field.Type().Kind() == reflect.Struct {
+		// 	switch field.Interface().(type) {
+		// 	case time.Time, sql.NullBool, sql.NullByte, sql.NullFloat64, sql.NullInt16, sql.NullInt32, sql.NullInt64,
+		// 		sql.NullString, sql.NullTime:
+		// 		*result = append(*result, traversedField{field, append(parent.indices, i)})
+		// 	default:
+		// 		traverseFields(traversedField{field, append(parent.indices, i)}, result)
+		// 	}
+		// } else {
+		// 	// handle tag key
+		// 	*result = append(*result, traversedField{field, append(parent.indices, i)})
+		// }
 	}
 }
 
 func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField) map[string][]int {
 	m := make(map[string][]int)
 	for _, v := range fields {
-		// fmt.Println(elem.FieldByIndex(v.indices).Type())
 		field := root.Type().FieldByIndex(v.indices)
 		name, err := findFieldNameByTag(tagKey, field.Tag)
 		if err == nil {
-			m[name] = v.indices
+
+			_, ok := m[name]
+			if !ok {
+				m[name] = v.indices
+			}
 		}
 	}
 
@@ -216,10 +321,14 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
 func setScannedValues(v reflect.Value, scannedRow []interface{}, columns []string, tagNameMap map[string][]int) {
 	// set values to the struct fields
 	for i := range scannedRow {
-		field := v.FieldByIndex(tagNameMap[columns[i]])
+		indices, ok := tagNameMap[columns[i]]
+		if !ok {
+			continue
+		}
+		field := v.FieldByIndex(indices)
 		fieldType := field.Type()
 
-		// skip any invalid(nil) values
+		// skip any invalid(nil) values, so skipped fields will have their default values like 0, "", false and etc.
 		if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(scannedRow[i]))); refValue.IsValid() {
 			switch fieldType.Kind() {
 			case reflect.Pointer:
