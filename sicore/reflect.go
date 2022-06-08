@@ -127,15 +127,15 @@ func getSliceElement(sliceValue reflect.Value) (reflect.Value, error) {
 	return elem, nil
 }
 
-func initializeFields(field reflect.Value) {
-	n := field.NumField()
+func initializeFields(v reflect.Value) {
+	n := v.NumField()
 	for i := 0; i < n; i++ {
-		structField := field.Type().Field(i)
+		structField := v.Type().Field(i)
 		if !structField.IsExported() {
 			continue
 		}
 
-		field := field.Field(i)
+		field := v.Field(i)
 
 		// check if a field is pointer
 		var fieldTypeKind reflect.Kind

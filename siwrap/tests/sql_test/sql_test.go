@@ -173,7 +173,7 @@ func TestSqlDBQueryStructsNil(t *testing.T) {
 	// }
 	// fmt.Println(ts.String())
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select null as nil, '2' as embedded_nil, 123::integer as int2_, 234::integer as int3_
