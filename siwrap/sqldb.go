@@ -119,7 +119,7 @@ func (o *SqlDB) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
 	return rs.Scan(rows, output)
@@ -133,7 +133,7 @@ func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output an
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
 	list := make([]map[string]interface{}, 0)
