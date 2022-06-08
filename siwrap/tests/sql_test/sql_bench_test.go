@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwrap"
 	"github.com/go-wonk/si/tests/testmodels"
@@ -39,10 +38,9 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 
 	// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
-		)
+		sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 
 		query := `
 			select null as nil,
@@ -83,10 +81,9 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 	siutils.AssertNotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
-		)
+		sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 
 		query := `
 			select null as nil,
@@ -185,11 +182,10 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db,
-		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
-	)
+	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
+
 	for i := 0; i < b.N; i++ {
 
 		query := `

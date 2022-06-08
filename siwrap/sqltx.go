@@ -9,20 +9,17 @@ import (
 )
 
 type SqlTx struct {
-	tx         *sql.Tx
-	sqlColumns []sicore.SqlColumn
+	tx *sql.Tx
 }
 
-func newSqlTx(tx *sql.Tx, sc ...sicore.SqlColumn) *SqlTx {
+func newSqlTx(tx *sql.Tx) *SqlTx {
 	return &SqlTx{
-		tx:         tx,
-		sqlColumns: sc,
+		tx: tx,
 	}
 }
 
-func (o *SqlTx) Reset(tx *sql.Tx, sc ...sicore.SqlColumn) {
+func (o *SqlTx) Reset(tx *sql.Tx) {
 	o.tx = tx
-	o.sqlColumns = sc
 }
 
 func (o *SqlTx) Commit() error {
@@ -90,7 +87,7 @@ func (o *SqlTx) QueryMaps(query string, output *[]map[string]interface{}, args .
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output, o.sqlColumns...)
+	return rs.Scan(rows, output)
 }
 
 func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error) {
@@ -104,7 +101,7 @@ func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error)
 	defer sicore.PutRowScanner(rs)
 
 	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list, o.sqlColumns...)
+	n, err := rs.Scan(rows, &list)
 	if err != nil {
 		return 0, err
 	}
@@ -127,7 +124,7 @@ func (o *SqlTx) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output, o.sqlColumns...)
+	return rs.Scan(rows, output)
 }
 
 func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output any, args ...any) (int, error) {
@@ -141,7 +138,7 @@ func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output an
 	defer sicore.PutRowScanner(rs)
 
 	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list, o.sqlColumns...)
+	n, err := rs.Scan(rows, &list)
 	if err != nil {
 		return 0, err
 	}

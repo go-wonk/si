@@ -10,15 +10,15 @@ import (
 
 // SqlDB is a wrapper of sql.DB
 type SqlDB struct {
-	db         *sql.DB
-	sqlColumns []sicore.SqlColumn
+	db   *sql.DB
+	opts []sicore.RowScannerOption
 }
 
 // NewSqlDB returns SqlDB
-func NewSqlDB(db *sql.DB, sc ...sicore.SqlColumn) *SqlDB {
+func NewSqlDB(db *sql.DB, opts ...sicore.RowScannerOption) *SqlDB {
 	return &SqlDB{
-		db:         db,
-		sqlColumns: sc,
+		db:   db,
+		opts: opts,
 	}
 }
 
@@ -86,10 +86,10 @@ func (o *SqlDB) QueryMaps(query string, output *[]map[string]interface{}, args .
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output, o.sqlColumns...)
+	return rs.Scan(rows, output)
 }
 
 // QueryStructs queries a database then scan resultset into output of any type
@@ -100,10 +100,10 @@ func (o *SqlDB) QueryStructs(query string, output any, args ...any) (int, error)
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	n, err := rs.ScanStructs(rows, output, o.sqlColumns...)
+	n, err := rs.ScanStructs(rows, output)
 	if err != nil {
 		return 0, err
 	}
@@ -122,7 +122,7 @@ func (o *SqlDB) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output, o.sqlColumns...)
+	return rs.Scan(rows, output)
 }
 
 // QueryContextStructs queries a database with context then scan resultset into output of any type
@@ -137,7 +137,7 @@ func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output an
 	defer sicore.PutRowScanner(rs)
 
 	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list, o.sqlColumns...)
+	n, err := rs.Scan(rows, &list)
 	if err != nil {
 		return 0, err
 	}
@@ -148,4 +148,14 @@ func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output an
 	}
 
 	return n, nil
+}
+
+func (o *SqlDB) WithTagKey(key string) *SqlDB {
+	o.opts = append(o.opts, sicore.WithTagKey(key))
+	return o
+}
+
+func (o *SqlDB) WithTypedBool(name string) *SqlDB {
+	o.opts = append(o.opts, sicore.WithSqlColumnType(name, sicore.SqlColTypeBool))
+	return o
 }

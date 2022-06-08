@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwrap"
 	"github.com/go-wonk/si/tests/testmodels"
@@ -41,7 +40,7 @@ func TestSqlDBQueryStructsBasicDataType(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select 0 as bool_value, '' as string_value, 
@@ -280,11 +279,7 @@ func TestSqlDBQueryMaps(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db,
-		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
-	)
+	sqldb := siwrap.NewSqlDB(db)
 
 	query := `
 		select null as nil,
@@ -345,12 +340,11 @@ func TestSqlDBQueryMapsBoolWithSqlColumn(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db,
-		sicore.SqlColumn{Name: "true_1", Type: sicore.SqlColTypeBool},
-		sicore.SqlColumn{Name: "true_2", Type: sicore.SqlColTypeBool},
-		sicore.SqlColumn{Name: "false_1", Type: sicore.SqlColTypeBool},
-		sicore.SqlColumn{Name: "false_2", Type: sicore.SqlColTypeBool},
-	)
+	sqldb := siwrap.NewSqlDB(db).WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+	// sicore.SqlColumn{Name: "true_1", Type: sicore.SqlColTypeBool},
+	// sicore.SqlColumn{Name: "true_2", Type: sicore.SqlColTypeBool},
+	// sicore.SqlColumn{Name: "false_1", Type: sicore.SqlColTypeBool},
+	// sicore.SqlColumn{Name: "false_2", Type: sicore.SqlColTypeBool},
 
 	type BoolTest struct {
 		True_1  bool `json:"true_1"`
