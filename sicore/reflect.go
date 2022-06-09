@@ -96,37 +96,30 @@ func getReflectValuePointer(v any) (reflect.Value, error) {
 	return reflect.Indirect(rv), nil
 }
 
-func getSliceElement(sliceValue reflect.Value) (reflect.Value, error) {
-	if sliceValue.Kind() != reflect.Slice && sliceValue.Kind() != reflect.Array {
-		return reflect.Value{}, errors.New("sliceValue is not slice or array")
+func isSlice(v reflect.Value) bool {
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return false
 	}
+	return true
+}
 
-	// this only works when the slice's element is a struct
-	// var elem reflect.Value
-	// rvTypeElem := rv.Type().Elem()
-	// switch rvTypeElem.Kind() {
-	// case reflect.Pointer:
-	// 	if rvTypeElem.Elem().Kind() == reflect.Struct {
-	// 		elem = reflect.New(rvTypeElem.Elem())
-	// 	}
-	// case reflect.Struct:
-	// 	elem = reflect.New(rvTypeElem).Elem()
-	// }
-
-	// to handle all kinds(struct, int, string...)
+// getSliceElement creates a new element of `sliceValue`.
+func getSliceElement(sliceValue reflect.Value) (reflect.Value, error) {
 	var elem reflect.Value
 	rvTypeElem := sliceValue.Type().Elem()
 	switch rvTypeElem.Kind() {
 	case reflect.Pointer:
+		// element is a pointer like []*Struct
 		elem = reflect.New(rvTypeElem.Elem())
 	default:
+		// element is a value like []Struct
 		elem = reflect.New(rvTypeElem).Elem()
 	}
 
-	initializeFields(elem)
 	return elem, nil
 }
 
+// initializeFields traverses all fields recursivley and initialize nil pointer struct
 func initializeFields(v reflect.Value) {
 	n := v.NumField()
 	for i := 0; i < n; i++ {
@@ -186,6 +179,15 @@ func initializeFields(v reflect.Value) {
 	}
 }
 
+func initializeFieldsWithIndices(v reflect.Value, indices [][]int) {
+	for _, s := range indices {
+		field := v.FieldByIndex(s)
+		// if field.Kind() == reflect.Pointer && field.IsNil() {
+		field.Set(reflect.New(field.Type().Elem()))
+		// }
+	}
+}
+
 type traversedField struct {
 	field   reflect.Value
 	indices []int
@@ -196,7 +198,7 @@ type ScanValuer interface {
 	Value() (driver.Value, error)
 }
 
-func traverseFields(parent traversedField, result *[]traversedField) {
+func traverseFields(parent traversedField, result *[]traversedField, resultInitialize *[][]int) {
 	n := parent.field.NumField()
 	for i := 0; i < n; i++ {
 		structField := parent.field.Type().Field(i)
@@ -222,6 +224,7 @@ func traverseFields(parent traversedField, result *[]traversedField) {
 		if field.Kind() == reflect.Pointer {
 			if field.IsNil() {
 				field.Set(reflect.New(field.Type().Elem()))
+				*resultInitialize = append(*resultInitialize, append(parent.indices, i))
 			}
 			fieldValue = field.Elem()
 		} else {
@@ -236,7 +239,7 @@ func traverseFields(parent traversedField, result *[]traversedField) {
 
 			*result = append(*result, traversedField{fieldValue, append(parent.indices, i)})
 		default:
-			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, result)
+			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, result, resultInitialize)
 		}
 
 		// if field.Kind() == reflect.Pointer &&
@@ -276,7 +279,6 @@ func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField)
 		field := root.Type().FieldByIndex(v.indices)
 		name, err := findFieldNameByTag(tagKey, field.Tag)
 		if err == nil {
-
 			_, ok := m[name]
 			if !ok {
 				m[name] = v.indices

@@ -50,7 +50,8 @@ func TestTraverseFields(t *testing.T) {
 	}
 
 	var traversedFields []traversedField
-	traverseFields(traversedField{elem, []int{}}, &traversedFields)
+	var fieldsToInitialize [][]int
+	traverseFields(traversedField{elem, []int{}}, &traversedFields, &fieldsToInitialize)
 
 	// fmt.Println(traversedFields)
 	// for _, v := range traversedFields {

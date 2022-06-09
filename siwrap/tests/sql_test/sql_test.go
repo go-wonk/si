@@ -77,7 +77,7 @@ func TestSqlDBQueryStructsBasicDataTypeLimit(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	// float values can only express 17 digits from the left, the rest is zero'ed
 	f64 := 1.797693134862315708145274237317043567981e+308
@@ -112,7 +112,7 @@ func TestSqlDBQueryStructsBasicDataTypeBig(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select '12345678901234567890.1234'::bytea as bytes_value,
@@ -139,7 +139,7 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select id, name, email_address, borrowed, 23 as book_id from student order by id limit 10
@@ -201,7 +201,7 @@ func TestSqlDBQueryStructs(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select null as nil, 
@@ -239,7 +239,7 @@ func TestSqlDBQueryStructs2Rows(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select null as nil, 
@@ -311,7 +311,7 @@ func TestSqlDBQueryMapsBool(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 
 	query := `
 		select null as nil,

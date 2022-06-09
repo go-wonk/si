@@ -304,10 +304,15 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		return 0, err
 	}
 
+	if !isSlice(sliceValue) {
+		return 0, errors.New("ouput is not a slice")
+	}
+
 	elemValue, err := getSliceElement(sliceValue)
 	if err != nil {
 		return 0, err
 	}
+
 	columns, err := rows.Columns()
 	if err != nil {
 		return 0, err
@@ -316,7 +321,8 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	n := 0 // num rows
 
 	var traversedFields []traversedField
-	traverseFields(traversedField{elemValue, []int{}}, &traversedFields)
+	var fieldsToInitialize [][]int
+	traverseFields(traversedField{elemValue, []int{}}, &traversedFields, &fieldsToInitialize)
 	tagNameMap := buildTagNameMap(elemValue, rs.tagKey, traversedFields)
 
 	scannedRow := buildScanDestinations(columns, tagNameMap, elemValue)
@@ -332,6 +338,8 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		initializeFieldsWithIndices(elem, fieldsToInitialize)
+
 		// set values to the struct fields
 		setScannedValues(elem, scannedRow, columns, tagNameMap)
 

@@ -206,26 +206,48 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 	}
 }
 
+type Student struct {
+	ID           int    `json:"id"`
+	EmailAddress string `json:"email_address"`
+	Name         string `json:"name"`
+	Borrowed     bool   `json:"borrowed"`
+}
+
+/*
+	goos: darwin
+	goarch: arm64
+	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
+	PASS
+
+	goos: windows
+	goarch: amd64
+	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
+	BenchmarkSqlDB_QueryStructsStudent-8         100           8626656 ns/op          992037 B/op      31466 allocs/op
+	PASS
+
+	goos: windows
+	goarch: amd64
+	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
+	BenchmarkSqlDB_QueryStructsStudent-8         100           7502967 ns/op          747775 B/op      25015 allocs/op
+	PASS
+*/
 func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 
 		query := `select id, email_address, name, borrowed from student`
 
-		var tl []testmodels.Student
+		var tl []Student
 		sqldb.QueryStructs(query, &tl)
+		// fmt.Println(tl)
 	}
-	/*
-		goos: darwin
-		goarch: arm64
-		pkg: github.com/go-wonk/si/siwrap/tests/sql_test
-		BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
-		PASS
-	*/
 }
