@@ -139,7 +139,68 @@ type SqlColumn struct {
 	Type SqlColType
 }
 
-func (sc SqlColumn) SetType(rs *rowScanner) {
+func WithSqlColumnType(name string, columnType SqlColType) RowScannerOption {
+	return RowScannerOptionFunc(func(rs *RowScanner) {
+		switch columnType {
+		case SqlColTypeBool:
+			rs.SetSqlColumn(name, sqlNullBoolTypeValue)
+		case SqlColTypeByte:
+			rs.SetSqlColumn(name, sqlNullByteTypeValue)
+		case SqlColTypeBytes:
+			rs.SetSqlColumn(name, sqlBytesTypeValue)
+		case SqlColTypeString:
+			rs.SetSqlColumn(name, sqlNullStringTypeValue)
+		case SqlColTypeInt:
+			rs.SetSqlColumn(name, sqlNullIntTypeValue)
+		case SqlColTypeInt8:
+			rs.SetSqlColumn(name, sqlNullInt8TypeValue)
+		case SqlColTypeInt16:
+			rs.SetSqlColumn(name, sqlNullInt16TypeValue)
+		case SqlColTypeInt32:
+			rs.SetSqlColumn(name, sqlNullInt32TypeValue)
+		case SqlColTypeInt64:
+			rs.SetSqlColumn(name, sqlNullInt64TypeValue)
+		case SqlColTypeUint:
+			rs.SetSqlColumn(name, sqlNullUintTypeValue)
+		case SqlColTypeUint8:
+			rs.SetSqlColumn(name, sqlNullUint8TypeValue)
+		case SqlColTypeUint16:
+			rs.SetSqlColumn(name, sqlNullUint16TypeValue)
+		case SqlColTypeUint32:
+			rs.SetSqlColumn(name, sqlNullUint32TypeValue)
+		case SqlColTypeUint64:
+			rs.SetSqlColumn(name, sqlNullUint64TypeValue)
+		case SqlColTypeFloat32:
+			rs.SetSqlColumn(name, sqlNullFloat32TypeValue)
+		case SqlColTypeFloat64:
+			rs.SetSqlColumn(name, sqlNullFloat64TypeValue)
+		case SqlColTypeTime:
+			rs.SetSqlColumn(name, sqlNullTimeTypeValue)
+		case SqlColTypeints:
+			rs.SetSqlColumn(name, intsTypeValue)
+		case SqlColTypeints8:
+			rs.SetSqlColumn(name, ints8TypeValue)
+		case SqlColTypeints16:
+			rs.SetSqlColumn(name, ints16TypeValue)
+		case SqlColTypeints32:
+			rs.SetSqlColumn(name, ints32TypeValue)
+		case SqlColTypeints64:
+			rs.SetSqlColumn(name, ints64TypeValue)
+		case SqlColTypeUints:
+			rs.SetSqlColumn(name, uintsTypeValue)
+		case SqlColTypeUints8:
+			rs.SetSqlColumn(name, uints8TypeValue)
+		case SqlColTypeUints16:
+			rs.SetSqlColumn(name, uints16TypeValue)
+		case SqlColTypeUints32:
+			rs.SetSqlColumn(name, uints32TypeValue)
+		case SqlColTypeUints64:
+			rs.SetSqlColumn(name, uints64TypeValue)
+		}
+	})
+}
+
+func (sc SqlColumn) SetType(rs *RowScanner) {
 	switch sc.Type {
 	case SqlColTypeBool:
 		rs.SetSqlColumn(sc.Name, sqlNullBoolTypeValue)

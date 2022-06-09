@@ -3,22 +3,20 @@ package siwrap
 import (
 	"database/sql"
 	"sync"
-
-	"github.com/go-wonk/si/sicore"
 )
 
 var (
 	_sqltxPool = sync.Pool{}
 )
 
-func getSqlTx(tx *sql.Tx, sc ...sicore.SqlColumn) *SqlTx {
+func getSqlTx(tx *sql.Tx) *SqlTx {
 	g := _sqltxPool.Get()
 	if g == nil {
-		return newSqlTx(tx, sc...)
+		return newSqlTx(tx)
 	}
 
 	stx := g.(*SqlTx)
-	stx.Reset(tx, sc...)
+	stx.Reset(tx)
 	return stx
 }
 
@@ -27,8 +25,8 @@ func putSqlTx(sqlTx *SqlTx) {
 	_sqltxPool.Put(sqlTx)
 }
 
-func GetSqlTx(tx *sql.Tx, sc ...sicore.SqlColumn) *SqlTx {
-	return getSqlTx(tx, sc...)
+func GetSqlTx(tx *sql.Tx) *SqlTx {
+	return getSqlTx(tx)
 }
 
 func PutSqlTx(sqlTx *SqlTx) {

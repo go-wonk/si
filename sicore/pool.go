@@ -14,19 +14,20 @@ var (
 	}
 )
 
-func getRowScanner(useSqlNullType bool) *rowScanner {
-	rs := _rowScannerPool.Get().(*rowScanner)
+func getRowScanner(opts ...RowScannerOption) *RowScanner {
+	rs := _rowScannerPool.Get().(*RowScanner)
+	rs.Reset(opts...)
 	return rs
 }
-func putRowScanner(rs *rowScanner) {
-	rs.Reset(defaultUseSqlNullType)
+func putRowScanner(rs *RowScanner) {
+	rs.Reset()
 	_rowScannerPool.Put(rs)
 }
 
-func GetRowScanner() *rowScanner {
-	return getRowScanner(defaultUseSqlNullType)
+func GetRowScanner(opts ...RowScannerOption) *RowScanner {
+	return getRowScanner(opts...)
 }
-func PutRowScanner(rs *rowScanner) {
+func PutRowScanner(rs *RowScanner) {
 	putRowScanner(rs)
 }
 
