@@ -152,3 +152,22 @@ func (t *TableWithNoTagList) String() string {
 	b, _ := json.Marshal(t)
 	return string(b)
 }
+
+type TableWithPtrElem struct {
+	NilValue        string `json:"nil_value"`
+	IntValue        int
+	DecimalValue    float64
+	SomeStringValue string
+}
+
+func (t *TableWithPtrElem) String() string {
+	b, _ := json.Marshal(t)
+	return string(b)
+}
+
+type TableWithPtrElemList []*TableWithPtrElem
+
+func (t *TableWithPtrElemList) String() string {
+	b, _ := json.Marshal(t)
+	return string(b)
+}

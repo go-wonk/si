@@ -36,19 +36,23 @@ func isSlice(v reflect.Value) bool {
 }
 
 // getSliceElement creates a new element of `sliceValue`.
-func getSliceElement(sliceValue reflect.Value) (reflect.Value, error) {
+func getSliceElement(sliceValue reflect.Value) (reflect.Value, bool, error) {
 	var elem reflect.Value
 	rvTypeElem := sliceValue.Type().Elem()
+
+	isPtr := false
 	switch rvTypeElem.Kind() {
 	case reflect.Pointer:
 		// element is a pointer like []*Struct
-		elem = reflect.New(rvTypeElem.Elem())
+		elem = reflect.Indirect(reflect.New(rvTypeElem.Elem()))
+		isPtr = true
 	default:
 		// element is a value like []Struct
 		elem = reflect.New(rvTypeElem).Elem()
+		isPtr = false
 	}
 
-	return elem, nil
+	return elem, isPtr, nil
 }
 
 // initializeFields traverses all fields recursivley and initialize nil pointer struct
