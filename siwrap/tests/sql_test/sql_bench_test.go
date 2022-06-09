@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwrap"
+	"github.com/go-wonk/si/tests/testmodels"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,10 +38,9 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 
 	// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
-		)
+		sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 
 		query := `
 			select null as nil,
@@ -57,7 +56,6 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 		`
 
 		m := make([]map[string]interface{}, 0)
-		// o := TableList{}
 		sqldb.QueryMaps(query, &m)
 		// byt, _ := json.Marshal(m)
 		// json.Unmarshal(byt, &o)
@@ -83,10 +81,9 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 	siutils.AssertNotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrap.NewSqlDB(db, sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
-			sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
-		)
+		sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
+		// sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 
 		query := `
 			select null as nil,
@@ -101,8 +98,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 				to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
 		`
 
-		// tl := Table{}
-		tl := TableList{}
+		tl := testmodels.TableList{}
 		_, err := sqldb.QueryStructs(query, &tl)
 		siutils.AssertNilFailB(b, err)
 
@@ -175,7 +171,7 @@ func BenchmarkSqlDB_QueryStructs(b *testing.B) {
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		tl := TableList{}
+		tl := testmodels.TableList{}
 		sqldb.QueryStructs(query, &tl)
 	}
 }
@@ -186,11 +182,10 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db,
-		sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
-		sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
-	)
+	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
+	// sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
+
 	for i := 0; i < b.N; i++ {
 
 		query := `
@@ -206,8 +201,7 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 				to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
 		`
 
-		// tl := Table{}
-		tl := TableList{}
+		tl := testmodels.TableList{}
 		sqldb.QueryStructs(query, &tl)
 	}
 }
@@ -216,32 +210,44 @@ type Student struct {
 	ID           int    `json:"id"`
 	EmailAddress string `json:"email_address"`
 	Name         string `json:"name"`
+	Borrowed     bool   `json:"borrowed"`
 }
 
+/*
+	goos: darwin
+	goarch: arm64
+	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
+	PASS
+
+	goos: windows
+	goarch: amd64
+	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
+	BenchmarkSqlDB_QueryStructsStudent-8         100           8626656 ns/op          992037 B/op      31466 allocs/op
+	PASS
+
+	goos: windows
+	goarch: amd64
+	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
+	BenchmarkSqlDB_QueryStructsStudent-8         100           7502967 ns/op          747775 B/op      25015 allocs/op
+	PASS
+*/
 func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeNotNullInt64},
-	// sicore.SqlColumn{Name: "email_address", Type: sicore.SqlColTypeNotNullString},
-	// sicore.SqlColumn{Name: "name", Type: sicore.SqlColTypeNotNullString},
-
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 
 		query := `select id, email_address, name, borrowed from student`
 
-		// tl := Table{}
 		var tl []Student
 		sqldb.QueryStructs(query, &tl)
+		// fmt.Println(tl)
 	}
-	/*
-		goos: darwin
-		goarch: arm64
-		pkg: github.com/go-wonk/si/siwrap/tests/sql_test
-		BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
-		PASS
-	*/
 }
