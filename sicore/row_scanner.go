@@ -195,7 +195,7 @@ func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (in
 
 // Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
 func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
-	sliceValue, err := getReflectValuePointer(output)
+	sliceValue, err := getValueOfPointer(output)
 	if err != nil {
 		return 0, err
 	}
@@ -222,9 +222,9 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	var traversedFields []traversedField
 	var fieldsToInitialize [][]int
 	traverseFields(traversedField{elemValue, []int{}}, &traversedFields, &fieldsToInitialize)
-	tagNameMap := buildTagNameMap(elemValue, rs.tagKey, traversedFields)
+	tagNameMap := makeNameMap(elemValue, rs.tagKey, traversedFields)
 
-	scannedRow, err := buildScanDestinations(columns, tagNameMap, elemValue)
+	scannedRow, err := buildDestinations(columns, tagNameMap, elemValue)
 	if err != nil {
 		return 0, err
 	}
@@ -243,7 +243,7 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		initializeFieldsWithIndices(elem, fieldsToInitialize)
 
 		// set values to the struct fields
-		setScannedValues(elem, scannedRow, columns, tagNameMap)
+		setStructValues(elem, scannedRow, columns, tagNameMap)
 
 		// append element to slice
 		if isPtr {
