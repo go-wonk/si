@@ -31,6 +31,7 @@ func (rs *RowScanner) Reset(opts ...RowScannerOption) {
 	for k := range rs.sqlCol {
 		delete(rs.sqlCol, k)
 	}
+	rs.tagKey = defaultTagKey
 	for _, v := range opts {
 		v.apply(rs)
 	}
