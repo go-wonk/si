@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/siutils"
 )
 
 // SqlDB is a wrapper of sql.DB
@@ -136,14 +135,8 @@ func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output an
 	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list)
+	n, err := rs.ScanStructs(rows, output)
 	if err != nil {
-		return 0, err
-	}
-
-	// simple, not very ideal json unmarshal
-	if err = siutils.DecodeAny(list[:n], output); err != nil {
 		return 0, err
 	}
 

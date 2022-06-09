@@ -5,16 +5,17 @@ import (
 	"database/sql"
 
 	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/siutils"
 )
 
 type SqlTx struct {
-	tx *sql.Tx
+	tx   *sql.Tx
+	opts []sicore.RowScannerOption
 }
 
-func newSqlTx(tx *sql.Tx) *SqlTx {
+func newSqlTx(tx *sql.Tx, opts ...sicore.RowScannerOption) *SqlTx {
 	return &SqlTx{
-		tx: tx,
+		tx:   tx,
+		opts: opts,
 	}
 }
 
@@ -84,7 +85,7 @@ func (o *SqlTx) QueryMaps(query string, output *[]map[string]interface{}, args .
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
 	return rs.Scan(rows, output)
@@ -97,17 +98,11 @@ func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error)
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list)
+	n, err := rs.ScanStructs(rows, output)
 	if err != nil {
-		return 0, err
-	}
-
-	// simple, not very ideal json unmarshal
-	if err = siutils.DecodeAny(list[:n], output); err != nil {
 		return 0, err
 	}
 
@@ -121,7 +116,7 @@ func (o *SqlTx) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
 	return rs.Scan(rows, output)
@@ -134,19 +129,18 @@ func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output an
 	}
 	defer rows.Close()
 
-	rs := sicore.GetRowScanner()
+	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list)
+	n, err := rs.ScanStructs(rows, output)
 	if err != nil {
 		return 0, err
 	}
 
-	// simple, not very ideal json unmarshal
-	if err = siutils.DecodeAny(list[:n], output); err != nil {
-		return 0, err
-	}
-
 	return n, nil
+}
+
+func (o *SqlTx) WithTagKey(key string) *SqlTx {
+	o.opts = append(o.opts, sicore.WithTagKey(key))
+	return o
 }

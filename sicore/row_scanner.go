@@ -5,8 +5,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"reflect"
-
-	"github.com/go-wonk/si/siutils"
 )
 
 // const defaultUseSqlNullType = true
@@ -191,109 +189,6 @@ func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (in
 	}
 
 	*output = (*output)[:n]
-	return n, nil
-}
-
-// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *RowScanner) ScanStructs_Deprecated(rows *sql.Rows, output any) (int, error) {
-	scannedRow, columns, err := rs.ScanTypes(rows)
-	if err != nil {
-		return 0, err
-	}
-
-	ms := getMapSlice()
-	defer putMapSlice(ms)
-
-	n := 0
-	_ = len(columns)
-	for rows.Next() {
-		err = rows.Scan(scannedRow...)
-		if err != nil {
-			return 0, err
-		}
-
-		if len(ms) < n+1 {
-			_, err := growMapSlice(&ms, 100)
-			if err != nil {
-				return 0, err
-			}
-		}
-		makeMapIfNil(&ms[n])
-		rs.scanValuesMap(columns, scannedRow, ms[n])
-		n++
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return 0, err
-	}
-
-	// simple, not very ideal json unmarshal
-	if err = siutils.DecodeAny(ms[:n], output); err != nil {
-		return 0, err
-	}
-	return n, nil
-}
-
-// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *RowScanner) ScanStructs2_Deprecated(rows *sql.Rows, output any) (int, error) {
-	rv := reflect.Indirect(reflect.ValueOf(output))
-	if rv.Kind() != reflect.Slice {
-		return 0, errors.New("not slice")
-	}
-	columns, err := rows.Columns()
-	if err != nil {
-		return 0, err
-	}
-
-	n := 0
-
-	foundFieldNames := false
-	var fieldNameMap map[string]int
-
-	scanned := false
-	var scannedRow []interface{}
-
-	rvTypeElem := rv.Type().Elem() // type of the slice element
-	rvTypeElemKind := rvTypeElem.Kind()
-	for rows.Next() {
-		var elem reflect.Value // slice's element
-		if rvTypeElemKind == reflect.Pointer {
-			elem = reflect.New(rvTypeElem.Elem())
-		} else if rvTypeElemKind == reflect.Struct {
-			elem = reflect.New(rvTypeElem).Elem()
-		}
-
-		if !foundFieldNames {
-			fieldNameMap = buildFieldNameMapByTag(elem)
-			foundFieldNames = true
-		}
-
-		if !scanned {
-			scannedRow = buildScanDest(columns, fieldNameMap, elem)
-			scanned = true
-		}
-
-		// scan the values
-		err = rows.Scan(scannedRow...)
-		if err != nil {
-			return 0, err
-		}
-
-		// set values to the struct fields
-		setScannedValue(elem, scannedRow, columns, fieldNameMap)
-
-		// append element to slice
-		rv.Set(reflect.Append(rv, elem))
-
-		n++
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return 0, err
-	}
-
 	return n, nil
 }
 
