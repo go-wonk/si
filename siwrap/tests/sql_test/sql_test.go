@@ -205,7 +205,6 @@ func TestSqlDBQueryStructs(t *testing.T) {
 
 	query := `
 		select null as nil, 
-			'123'::varchar(255) as str, 
 			123::integer as int2_,
 			123::decimal(24,4) as decimal_,
 			123::numeric(24,4) as numeric_, 
@@ -219,7 +218,6 @@ func TestSqlDBQueryStructs(t *testing.T) {
 			't string' as table_str,
 			't string 2' as table_str2,
 			0 as table_interface,
-			1 as tabler,
 			0 as any_value,
 			'asdf' as null_string,
 			'asdf-ptr' as null_string_ptr
@@ -243,7 +241,6 @@ func TestSqlDBQueryStructs2Rows(t *testing.T) {
 
 	query := `
 		select null as nil, 
-			'123'::varchar(255) as str, 
 			123::integer as int2_,
 			123::decimal(24,4) as decimal_,
 			123::numeric(24,4) as numeric_, 
@@ -254,7 +251,6 @@ func TestSqlDBQueryStructs2Rows(t *testing.T) {
 			to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as time_
 		union all
 		select null as nil, 
-			'234'::varchar(255) as str, 
 			123::integer as int2_,
 			123::decimal(24,4) as decimal_,
 			123::numeric(24,4) as numeric_, 
@@ -375,4 +371,27 @@ func TestSqlDBQueryMapsBoolWithSqlColumn(t *testing.T) {
 	err = siutils.DecodeAny(m, &bt)
 	siutils.AssertNilFail(t, err)
 
+}
+
+func TestSqlDBQueryStructsNoTag(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
+
+	query := `
+		select null as nil_value, 
+			123::integer as int_value,
+			123::decimal(24,4) as decimal_value,
+			'some string' as some_string_value
+	`
+
+	tl := testmodels.TableWithNoTagList{}
+	_, err := sqldb.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	expected := `[{"nil_value":"","IntValue":123,"DecimalValue":123,"SomeStringValue":"some string"}]`
+	assert.Equal(t, expected, tl.String())
 }

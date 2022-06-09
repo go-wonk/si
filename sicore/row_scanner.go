@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"reflect"
+	"strings"
 )
 
 // const defaultUseSqlNullType = true
@@ -212,6 +213,9 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	for i := range columns {
+		columns[i] = strings.ToLower(columns[i])
+	}
 
 	n := 0 // num rows
 
@@ -220,7 +224,10 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	traverseFields(traversedField{elemValue, []int{}}, &traversedFields, &fieldsToInitialize)
 	tagNameMap := buildTagNameMap(elemValue, rs.tagKey, traversedFields)
 
-	scannedRow := buildScanDestinations(columns, tagNameMap, elemValue)
+	scannedRow, err := buildScanDestinations(columns, tagNameMap, elemValue)
+	if err != nil {
+		return 0, err
+	}
 	for rows.Next() {
 
 		// scan the values

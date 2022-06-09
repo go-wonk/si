@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -147,6 +148,9 @@ func traverseFields(parent traversedField, result *[]traversedField, resultIniti
 		}
 
 		if fieldTypeKind != reflect.Struct {
+			if fieldTypeKind == reflect.Interface && field.NumMethod() > 0 {
+				continue
+			}
 			*result = append(*result, traversedField{field, append(parent.indices, i)})
 			continue
 		}
@@ -204,24 +208,39 @@ func traverseFields(parent traversedField, result *[]traversedField, resultIniti
 	}
 }
 
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+func ToSnake(str string) string {
+	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+	return strings.ToLower(snake)
+}
+
 func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField) map[string][]int {
 	m := make(map[string][]int)
 	for _, v := range fields {
 		field := root.Type().FieldByIndex(v.indices)
 		name, err := findFieldNameByTag(tagKey, field.Tag)
-		if err == nil {
-			_, ok := m[name]
-			if !ok {
-				m[name] = v.indices
+		if err != nil {
+			if len(field.Name) == 0 {
+				continue
 			}
+			name = ToSnake(field.Name)
+		}
+		if len(name) == 0 {
+			continue
+		}
+		_, ok := m[name]
+		if !ok {
+			m[name] = v.indices
 		}
 	}
 
 	return m
 }
 
-func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
-	root reflect.Value) []interface{} {
+func buildScanDestinations(columns []string, fieldTagMap map[string][]int, root reflect.Value) ([]interface{}, error) {
 
 	scannedRow := make([]interface{}, len(columns))
 	for i, col := range columns {
@@ -229,8 +248,12 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
 		fieldIndex, ok := fieldTagMap[col]
 		if !ok {
 			// found no field corresponding to the column name
-			scannedRow[i] = reflect.New(reflect.PointerTo(refTypeOfRawBytes)).Interface()
-			continue
+
+			// proceed even if selected columns are not matched with struct
+			// scannedRow[i] = reflect.New(reflect.PointerTo(refTypeOfRawBytes)).Interface()
+			// continue
+
+			return nil, fmt.Errorf("column '%s' was not found", col)
 		}
 		field := root.FieldByIndex(fieldIndex)
 		fieldType := field.Type()
@@ -247,7 +270,7 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
 		}
 	}
 
-	return scannedRow
+	return scannedRow, nil
 
 }
 
