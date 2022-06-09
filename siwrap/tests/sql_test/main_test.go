@@ -20,7 +20,7 @@ var (
 )
 
 func openDB() (*sql.DB, error) {
-	connStr := "host=192.168.0.92 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
+	connStr := "host=testpghost port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
 	driver := "postgres"
 	// driver := "pgx"
 	return sql.Open(driver, connStr)

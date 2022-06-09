@@ -143,7 +143,7 @@ func (rs *RowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnT
 	}
 }
 
-func (rs *RowScanner) scanValuesMap(columns []string, values []interface{}, dest map[string]interface{}) {
+func (rs *RowScanner) setMapValues(columns []string, values []interface{}, dest map[string]interface{}) {
 	for idx := range columns {
 		if rv := reflect.Indirect(reflect.ValueOf(values[idx])); rv.IsValid() {
 			var rvi interface{} = rv.Interface()
@@ -162,8 +162,8 @@ func (rs *RowScanner) scanValuesMap(columns []string, values []interface{}, dest
 	}
 }
 
-// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (int, error) {
+// ScanMapSlice scans `rows` into `output`.
+func (rs *RowScanner) ScanMapSlice(rows *sql.Rows, output *[]map[string]interface{}) (int, error) {
 	scannedRow, columns, err := rs.ScanTypes(rows)
 	if err != nil {
 		return 0, err
@@ -178,7 +178,7 @@ func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (in
 		}
 
 		m := make(map[string]interface{}, numCol)
-		rs.scanValuesMap(columns, scannedRow, m)
+		rs.setMapValues(columns, scannedRow, m)
 
 		*output = append(*output, m)
 		n++
@@ -193,7 +193,7 @@ func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (in
 	return n, nil
 }
 
-// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
+// ScanStructs scans `rows` into `output`. `output` should be a slice of structs.
 func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	sliceValue, err := getValueOfPointer(output)
 	if err != nil {
