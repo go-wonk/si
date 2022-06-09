@@ -21,6 +21,7 @@ func newSqlTx(tx *sql.Tx, opts ...sicore.RowScannerOption) *SqlTx {
 
 func (o *SqlTx) Reset(tx *sql.Tx) {
 	o.tx = tx
+	o.opts = o.opts[:0]
 }
 
 func (o *SqlTx) Commit() error {
@@ -88,7 +89,7 @@ func (o *SqlTx) QueryMaps(query string, output *[]map[string]interface{}, args .
 	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output)
+	return rs.ScanMapSlice(rows, output)
 }
 
 func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error) {
@@ -119,7 +120,7 @@ func (o *SqlTx) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output)
+	return rs.ScanMapSlice(rows, output)
 }
 
 func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output any, args ...any) (int, error) {

@@ -67,7 +67,7 @@ func (o *SqlStmt) QueryMaps(output *[]map[string]interface{}, args ...any) (int,
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output)
+	return rs.ScanMapSlice(rows, output)
 }
 
 func (o *SqlStmt) QueryStructs(output any, args ...any) (int, error) {
@@ -81,7 +81,7 @@ func (o *SqlStmt) QueryStructs(output any, args ...any) (int, error) {
 	defer sicore.PutRowScanner(rs)
 
 	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list)
+	n, err := rs.ScanMapSlice(rows, &list)
 	if err != nil {
 		return 0, err
 	}
@@ -104,7 +104,7 @@ func (o *SqlStmt) QueryContextMaps(ctx context.Context, output *[]map[string]int
 	rs := sicore.GetRowScanner()
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output)
+	return rs.ScanMapSlice(rows, output)
 }
 
 func (o *SqlStmt) QueryContextStructs(ctx context.Context, output any, args ...any) (int, error) {
@@ -118,7 +118,7 @@ func (o *SqlStmt) QueryContextStructs(ctx context.Context, output any, args ...a
 	defer sicore.PutRowScanner(rs)
 
 	list := make([]map[string]interface{}, 0)
-	n, err := rs.Scan(rows, &list)
+	n, err := rs.ScanMapSlice(rows, &list)
 	if err != nil {
 		return 0, err
 	}

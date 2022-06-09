@@ -31,6 +31,7 @@ func (rs *RowScanner) Reset(opts ...RowScannerOption) {
 	for k := range rs.sqlCol {
 		delete(rs.sqlCol, k)
 	}
+	rs.tagKey = defaultTagKey
 	for _, v := range opts {
 		v.apply(rs)
 	}
@@ -143,7 +144,7 @@ func (rs *RowScanner) scanTypes(values []interface{}, columnTypes []*sql.ColumnT
 	}
 }
 
-func (rs *RowScanner) scanValuesMap(columns []string, values []interface{}, dest map[string]interface{}) {
+func (rs *RowScanner) setMapValues(columns []string, values []interface{}, dest map[string]interface{}) {
 	for idx := range columns {
 		if rv := reflect.Indirect(reflect.ValueOf(values[idx])); rv.IsValid() {
 			var rvi interface{} = rv.Interface()
@@ -162,8 +163,8 @@ func (rs *RowScanner) scanValuesMap(columns []string, values []interface{}, dest
 	}
 }
 
-// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
-func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (int, error) {
+// ScanMapSlice scans `rows` into `output`.
+func (rs *RowScanner) ScanMapSlice(rows *sql.Rows, output *[]map[string]interface{}) (int, error) {
 	scannedRow, columns, err := rs.ScanTypes(rows)
 	if err != nil {
 		return 0, err
@@ -178,7 +179,7 @@ func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (in
 		}
 
 		m := make(map[string]interface{}, numCol)
-		rs.scanValuesMap(columns, scannedRow, m)
+		rs.setMapValues(columns, scannedRow, m)
 
 		*output = append(*output, m)
 		n++
@@ -193,20 +194,24 @@ func (rs *RowScanner) Scan(rows *sql.Rows, output *[]map[string]interface{}) (in
 	return n, nil
 }
 
-// Scan scans rows' data type into a slice of interface{} first, then read actual values from rows into the slice
+// ScanStructs scans `rows` into `output`. `output` should be a slice of structs.
 func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
-	sliceValue, err := getReflectValuePointer(output)
+	sliceValue, err := valueOfAnyPtr(output)
 	if err != nil {
 		return 0, err
 	}
 
-	if !isSlice(sliceValue) {
+	if !isSliceKind(sliceValue) {
 		return 0, errors.New("ouput is not a slice")
 	}
 
-	elemValue, _, err := getSliceElement(sliceValue)
-	if err != nil {
-		return 0, err
+	elemType, isPtr := typeOfSliceElem(sliceValue)
+
+	var elemValue reflect.Value
+	if isPtr {
+		elemValue = newValueOfSliceElemPtr(elemType)
+	} else {
+		elemValue = newValueOfSliceElem(elemType)
 	}
 
 	columns, err := rows.Columns()
@@ -222,9 +227,9 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	var traversedFields []traversedField
 	var fieldsToInitialize [][]int
 	traverseFields(traversedField{elemValue, []int{}}, &traversedFields, &fieldsToInitialize)
-	tagNameMap := buildTagNameMap(elemValue, rs.tagKey, traversedFields)
+	tagNameMap := makeNameMap(elemValue, rs.tagKey, traversedFields)
 
-	scannedRow, err := buildScanDestinations(columns, tagNameMap, elemValue)
+	scannedRow, err := buildDestinations(columns, tagNameMap, elemValue)
 	if err != nil {
 		return 0, err
 	}
@@ -236,20 +241,22 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 			return 0, err
 		}
 
-		elem, isPtr, err := getSliceElement(sliceValue)
-		if err != nil {
-			return 0, err
+		if isPtr {
+			elemValue = newValueOfSliceElemPtr(elemType)
+		} else {
+			elemValue = newValueOfSliceElem(elemType)
 		}
-		initializeFieldsWithIndices(elem, fieldsToInitialize)
+
+		initializeFieldsWithIndices(elemValue, fieldsToInitialize)
 
 		// set values to the struct fields
-		setScannedValues(elem, scannedRow, columns, tagNameMap)
+		setStructValues(elemValue, scannedRow, columns, tagNameMap)
 
 		// append element to slice
 		if isPtr {
-			elem = elem.Addr()
+			elemValue = elemValue.Addr()
 		}
-		sliceValue.Set(reflect.Append(sliceValue, elem))
+		sliceValue.Set(reflect.Append(sliceValue, elemValue))
 
 		n++
 	}

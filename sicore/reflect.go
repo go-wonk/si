@@ -11,48 +11,56 @@ import (
 	"time"
 )
 
-func findFieldNameByTag(tagKey string, t reflect.StructTag) (string, error) {
+// findTagName finds tag name with `tagKey` in `t`
+func findTagName(tagKey string, t reflect.StructTag) (string, error) {
 	if jt, ok := t.Lookup(tagKey); ok {
 		return strings.Split(jt, ",")[0], nil
 	}
-	return "", fmt.Errorf("tag provided does not define a %s tag", tagKey)
+	return "", fmt.Errorf("tagKey '%s' was not found", tagKey)
 }
 
-// getReflectValuePointer returns a value that v points to.
-// It returns error if v is not a pointer
-func getReflectValuePointer(v any) (reflect.Value, error) {
+// valueOfAnyPtr returns a value that v points to.
+// It returns error if v is not a pointer.
+func valueOfAnyPtr(v any) (reflect.Value, error) {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
 		return reflect.Value{}, errors.New("not a pointer")
 	}
-	return reflect.Indirect(rv), nil
+	return rv.Elem(), nil
 }
 
-func isSlice(v reflect.Value) bool {
+// isSliceKind returns true if `v` is a slice or array
+func isSliceKind(v reflect.Value) bool {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
 	}
 	return true
 }
 
-// getSliceElement creates a new element of `sliceValue`.
-func getSliceElement(sliceValue reflect.Value) (reflect.Value, bool, error) {
-	var elem reflect.Value
-	rvTypeElem := sliceValue.Type().Elem()
-
-	isPtr := false
-	switch rvTypeElem.Kind() {
+// typeOfSliceElem returns `elemType` that is the element type of a slice, `sv`,
+// and `isPtr` is true only if `elemType` is a pointer.
+func typeOfSliceElem(sv reflect.Value) (elemType reflect.Type, isPtr bool) {
+	elemType = sv.Type().Elem()
+	switch elemType.Kind() {
 	case reflect.Pointer:
-		// element is a pointer like []*Struct
-		elem = reflect.Indirect(reflect.New(rvTypeElem.Elem()))
 		isPtr = true
 	default:
-		// element is a value like []Struct
-		elem = reflect.New(rvTypeElem).Elem()
 		isPtr = false
 	}
 
-	return elem, isPtr, nil
+	return
+}
+
+// newValueOfSliceElem creates a new element of `elemType`.
+func newValueOfSliceElem(elemType reflect.Type) (elem reflect.Value) {
+	elem = reflect.New(elemType).Elem()
+	return
+}
+
+// newValueOfSliceElemPtr creates a new element of `elemType` when it is a pointer.
+func newValueOfSliceElemPtr(elemType reflect.Type) (elem reflect.Value) {
+	elem = reflect.New(elemType.Elem()).Elem()
+	return
 }
 
 // initializeFields traverses all fields recursivley and initialize nil pointer struct
@@ -92,29 +100,10 @@ func initializeFields(v reflect.Value) {
 
 		// initialize struct's nested field
 		initializeFields(fieldValue)
-
-		// if field.Kind() == reflect.Pointer && field.Type().Elem().Kind() == reflect.Struct {
-		// 	switch field.Interface().(type) {
-		// 	// case *time.Time:
-		// 	// 	// do nothing
-		// 	default:
-		// 		if field.IsNil() {
-		// 			field.Set(reflect.New(field.Type().Elem()))
-		// 		}
-
-		// 		initializeFields(field.Elem())
-		// 	}
-		// } else if field.Type().Kind() == reflect.Struct {
-		// 	switch field.Interface().(type) {
-		// 	// case time.Time:
-		// 	// 	// do nothing
-		// 	default:
-		// 		initializeFields(field)
-		// 	}
-		// }
 	}
 }
 
+// initializeFieldsWithIndices initializes directly using `indices`
 func initializeFieldsWithIndices(v reflect.Value, indices [][]int) {
 	for _, s := range indices {
 		field := v.FieldByIndex(s)
@@ -137,6 +126,7 @@ type ScanValuer interface {
 func traverseFields(parent traversedField, result *[]traversedField, resultInitialize *[][]int) {
 	n := parent.field.NumField()
 	for i := 0; i < n; i++ {
+		// skip any unexported(private) fields
 		structField := parent.field.Type().Field(i)
 		if !structField.IsExported() {
 			continue
@@ -180,35 +170,6 @@ func traverseFields(parent traversedField, result *[]traversedField, resultIniti
 		default:
 			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, result, resultInitialize)
 		}
-
-		// if field.Kind() == reflect.Pointer &&
-		// 	field.Type().Elem().Kind() == reflect.Struct {
-
-		// 	switch field.Interface().(type) {
-		// 	case *time.Time, *sql.NullBool, *sql.NullByte, *sql.NullFloat64, *sql.NullInt16, *sql.NullInt32, *sql.NullInt64,
-		// 		*sql.NullString, *sql.NullTime:
-		// 		if field.IsNil() {
-		// 			field.Set(reflect.New(field.Type().Elem()))
-		// 		}
-		// 		*result = append(*result, traversedField{field.Elem(), append(parent.indices, i)})
-		// 	default:
-		// 		if field.IsNil() {
-		// 			field.Set(reflect.New(field.Type().Elem()))
-		// 		}
-		// 		traverseFields(traversedField{field.Elem(), append(parent.indices, i)}, result)
-		// 	}
-		// } else if field.Type().Kind() == reflect.Struct {
-		// 	switch field.Interface().(type) {
-		// 	case time.Time, sql.NullBool, sql.NullByte, sql.NullFloat64, sql.NullInt16, sql.NullInt32, sql.NullInt64,
-		// 		sql.NullString, sql.NullTime:
-		// 		*result = append(*result, traversedField{field, append(parent.indices, i)})
-		// 	default:
-		// 		traverseFields(traversedField{field, append(parent.indices, i)}, result)
-		// 	}
-		// } else {
-		// 	// handle tag key
-		// 	*result = append(*result, traversedField{field, append(parent.indices, i)})
-		// }
 	}
 }
 
@@ -221,11 +182,11 @@ func ToSnake(str string) string {
 	return strings.ToLower(snake)
 }
 
-func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField) map[string][]int {
+func makeNameMap(root reflect.Value, tagKey string, fields []traversedField) map[string][]int {
 	m := make(map[string][]int)
 	for _, v := range fields {
 		field := root.Type().FieldByIndex(v.indices)
-		name, err := findFieldNameByTag(tagKey, field.Tag)
+		name, err := findTagName(tagKey, field.Tag)
 		if err != nil {
 			if len(field.Name) == 0 {
 				continue
@@ -244,9 +205,9 @@ func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField)
 	return m
 }
 
-func buildScanDestinations(columns []string, fieldTagMap map[string][]int, root reflect.Value) ([]interface{}, error) {
+func buildDestinations(columns []string, fieldTagMap map[string][]int, root reflect.Value) ([]interface{}, error) {
 
-	scannedRow := make([]interface{}, len(columns))
+	dest := make([]interface{}, len(columns))
 	for i, col := range columns {
 		// need to find embedded
 		fieldIndex, ok := fieldTagMap[col]
@@ -268,17 +229,17 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int, root 
 		switch fieldType.Kind() {
 		case reflect.Pointer:
 			// if a field is pointer
-			scannedRow[i] = reflect.New(fieldType).Interface()
+			dest[i] = reflect.New(fieldType).Interface()
 		default:
-			scannedRow[i] = reflect.New(reflect.PointerTo(fieldType)).Interface()
+			dest[i] = reflect.New(reflect.PointerTo(fieldType)).Interface()
 		}
 	}
 
-	return scannedRow, nil
+	return dest, nil
 
 }
 
-func setScannedValues(v reflect.Value, scannedRow []interface{}, columns []string, tagNameMap map[string][]int) {
+func setStructValues(v reflect.Value, scannedRow []interface{}, columns []string, tagNameMap map[string][]int) {
 	// set values to the struct fields
 	for i := range scannedRow {
 		indices, ok := tagNameMap[columns[i]]

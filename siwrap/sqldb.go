@@ -88,7 +88,7 @@ func (o *SqlDB) QueryMaps(query string, output *[]map[string]interface{}, args .
 	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output)
+	return rs.ScanMapSlice(rows, output)
 }
 
 // QueryStructs queries a database then scan resultset into output of any type
@@ -121,7 +121,7 @@ func (o *SqlDB) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	rs := sicore.GetRowScanner(o.opts...)
 	defer sicore.PutRowScanner(rs)
 
-	return rs.Scan(rows, output)
+	return rs.ScanMapSlice(rows, output)
 }
 
 // QueryContextStructs queries a database with context then scan resultset into output of any type

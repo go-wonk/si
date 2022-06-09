@@ -25,14 +25,14 @@ type TestTraverse struct {
 
 func TestGetReflectValue(t *testing.T) {
 	tt := TestTraverse{}
-	_, err := getReflectValuePointer(tt)
+	_, err := valueOfAnyPtr(tt)
 	siutils.AssertNotNilFail(t, err)
 
-	_, err = getReflectValuePointer(&tt)
+	_, err = valueOfAnyPtr(&tt)
 	siutils.AssertNilFail(t, err)
 
 	ttSlice := []TestTraverse{}
-	_, err = getReflectValuePointer(&ttSlice)
+	_, err = valueOfAnyPtr(&ttSlice)
 	siutils.AssertNilFail(t, err)
 
 }
@@ -61,6 +61,6 @@ func TestTraverseFields(t *testing.T) {
 	// 	fmt.Println(field.Type, name)
 	// }
 
-	tagMap := buildTagNameMap(elem, "json", traversedFields)
+	tagMap := makeNameMap(elem, "json", traversedFields)
 	fmt.Println(tagMap)
 }
