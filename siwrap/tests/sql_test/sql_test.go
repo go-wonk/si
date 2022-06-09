@@ -395,3 +395,31 @@ func TestSqlDBQueryStructsNoTag(t *testing.T) {
 	expected := `[{"nil_value":"","IntValue":123,"DecimalValue":123,"SomeStringValue":"some string"}]`
 	assert.Equal(t, expected, tl.String())
 }
+
+func TestSqlDBQueryStructsPtrElem(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
+
+	query := `
+		select null as nil_value, 
+			123::integer as int_value,
+			123::decimal(24,4) as decimal_value,
+			'some string' as some_string_value
+		union all
+		select 'not null' as nil_value, 
+			987::integer as int_value,
+			654::decimal(24,4) as decimal_value,
+			'2some string2' as some_string_value
+	`
+
+	tl := testmodels.TableWithPtrElemList{}
+	_, err := sqldb.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	expected := `[{"nil_value":"","IntValue":123,"DecimalValue":123,"SomeStringValue":"some string"},{"nil_value":"not null","IntValue":987,"DecimalValue":654,"SomeStringValue":"2some string2"}]`
+	assert.Equal(t, expected, tl.String())
+}

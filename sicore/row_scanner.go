@@ -204,7 +204,7 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		return 0, errors.New("ouput is not a slice")
 	}
 
-	elemValue, err := getSliceElement(sliceValue)
+	elemValue, _, err := getSliceElement(sliceValue)
 	if err != nil {
 		return 0, err
 	}
@@ -236,7 +236,7 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 			return 0, err
 		}
 
-		elem, err := getSliceElement(sliceValue)
+		elem, isPtr, err := getSliceElement(sliceValue)
 		if err != nil {
 			return 0, err
 		}
@@ -246,6 +246,9 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		setScannedValues(elem, scannedRow, columns, tagNameMap)
 
 		// append element to slice
+		if isPtr {
+			elem = elem.Addr()
+		}
 		sliceValue.Set(reflect.Append(sliceValue, elem))
 
 		n++
