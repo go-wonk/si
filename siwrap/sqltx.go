@@ -21,6 +21,7 @@ func newSqlTx(tx *sql.Tx, opts ...sicore.RowScannerOption) *SqlTx {
 
 func (o *SqlTx) Reset(tx *sql.Tx) {
 	o.tx = tx
+	o.opts = o.opts[:0]
 }
 
 func (o *SqlTx) Commit() error {
