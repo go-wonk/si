@@ -224,7 +224,10 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	traverseFields(traversedField{elemValue, []int{}}, &traversedFields, &fieldsToInitialize)
 	tagNameMap := buildTagNameMap(elemValue, rs.tagKey, traversedFields)
 
-	scannedRow := buildScanDestinations(columns, tagNameMap, elemValue)
+	scannedRow, err := buildScanDestinations(columns, tagNameMap, elemValue)
+	if err != nil {
+		return 0, err
+	}
 	for rows.Next() {
 
 		// scan the values

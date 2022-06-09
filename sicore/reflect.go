@@ -240,8 +240,7 @@ func buildTagNameMap(root reflect.Value, tagKey string, fields []traversedField)
 	return m
 }
 
-func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
-	root reflect.Value) []interface{} {
+func buildScanDestinations(columns []string, fieldTagMap map[string][]int, root reflect.Value) ([]interface{}, error) {
 
 	scannedRow := make([]interface{}, len(columns))
 	for i, col := range columns {
@@ -249,8 +248,12 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
 		fieldIndex, ok := fieldTagMap[col]
 		if !ok {
 			// found no field corresponding to the column name
-			scannedRow[i] = reflect.New(reflect.PointerTo(refTypeOfRawBytes)).Interface()
-			continue
+
+			// proceed even if selected columns are not matched with struct
+			// scannedRow[i] = reflect.New(reflect.PointerTo(refTypeOfRawBytes)).Interface()
+			// continue
+
+			return nil, fmt.Errorf("column '%s' was not found", col)
 		}
 		field := root.FieldByIndex(fieldIndex)
 		fieldType := field.Type()
@@ -267,7 +270,7 @@ func buildScanDestinations(columns []string, fieldTagMap map[string][]int,
 		}
 	}
 
-	return scannedRow
+	return scannedRow, nil
 
 }
 
