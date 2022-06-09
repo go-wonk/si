@@ -25,14 +25,14 @@ type TestTraverse struct {
 
 func TestGetReflectValue(t *testing.T) {
 	tt := TestTraverse{}
-	_, err := getValueOfPointer(tt)
+	_, err := valueOfAnyPtr(tt)
 	siutils.AssertNotNilFail(t, err)
 
-	_, err = getValueOfPointer(&tt)
+	_, err = valueOfAnyPtr(&tt)
 	siutils.AssertNilFail(t, err)
 
 	ttSlice := []TestTraverse{}
-	_, err = getValueOfPointer(&ttSlice)
+	_, err = valueOfAnyPtr(&ttSlice)
 	siutils.AssertNilFail(t, err)
 
 }

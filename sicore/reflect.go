@@ -19,9 +19,9 @@ func findTagName(tagKey string, t reflect.StructTag) (string, error) {
 	return "", fmt.Errorf("tagKey '%s' was not found", tagKey)
 }
 
-// getValueOfPointer returns a value that v points to.
-// It returns error if v is not a pointer
-func getValueOfPointer(v any) (reflect.Value, error) {
+// valueOfAnyPtr returns a value that v points to.
+// It returns error if v is not a pointer.
+func valueOfAnyPtr(v any) (reflect.Value, error) {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
 		return reflect.Value{}, errors.New("not a pointer")
@@ -29,16 +29,17 @@ func getValueOfPointer(v any) (reflect.Value, error) {
 	return rv.Elem(), nil
 }
 
-// isSlice returns true if `v` is a slice or array
-func isSlice(v reflect.Value) bool {
+// isSliceKind returns true if `v` is a slice or array
+func isSliceKind(v reflect.Value) bool {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
 	}
 	return true
 }
 
-// getTypeOfSliceElement returns `elemType` that is the type of `sv` and `isPtr` that is true only if `elemType` is pointer.
-func getTypeOfSliceElement(sv reflect.Value) (elemType reflect.Type, isPtr bool) {
+// typeOfSliceElem returns `elemType` that is the element type of a slice, `sv`,
+// and `isPtr` is true only if `elemType` is a pointer.
+func typeOfSliceElem(sv reflect.Value) (elemType reflect.Type, isPtr bool) {
 	elemType = sv.Type().Elem()
 	switch elemType.Kind() {
 	case reflect.Pointer:
@@ -50,14 +51,14 @@ func getTypeOfSliceElement(sv reflect.Value) (elemType reflect.Type, isPtr bool)
 	return
 }
 
-// newValue creates a new element of `elemType`.
-func newValue(elemType reflect.Type) (elem reflect.Value) {
+// newValueOfSliceElem creates a new element of `elemType`.
+func newValueOfSliceElem(elemType reflect.Type) (elem reflect.Value) {
 	elem = reflect.New(elemType).Elem()
 	return
 }
 
-// newValuePointer creates a new element of `elemType` when it is a pointer.
-func newValuePointer(elemType reflect.Type) (elem reflect.Value) {
+// newValueOfSliceElemPtr creates a new element of `elemType` when it is a pointer.
+func newValueOfSliceElemPtr(elemType reflect.Type) (elem reflect.Value) {
 	elem = reflect.New(elemType.Elem()).Elem()
 	return
 }

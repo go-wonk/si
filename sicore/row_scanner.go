@@ -195,22 +195,22 @@ func (rs *RowScanner) ScanMapSlice(rows *sql.Rows, output *[]map[string]interfac
 
 // ScanStructs scans `rows` into `output`. `output` should be a slice of structs.
 func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
-	sliceValue, err := getValueOfPointer(output)
+	sliceValue, err := valueOfAnyPtr(output)
 	if err != nil {
 		return 0, err
 	}
 
-	if !isSlice(sliceValue) {
+	if !isSliceKind(sliceValue) {
 		return 0, errors.New("ouput is not a slice")
 	}
 
-	elemType, isPtr := getTypeOfSliceElement(sliceValue)
+	elemType, isPtr := typeOfSliceElem(sliceValue)
 
 	var elemValue reflect.Value
 	if isPtr {
-		elemValue = newValuePointer(elemType)
+		elemValue = newValueOfSliceElemPtr(elemType)
 	} else {
-		elemValue = newValue(elemType)
+		elemValue = newValueOfSliceElem(elemType)
 	}
 
 	columns, err := rows.Columns()
@@ -241,9 +241,9 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		}
 
 		if isPtr {
-			elemValue = newValuePointer(elemType)
+			elemValue = newValueOfSliceElemPtr(elemType)
 		} else {
-			elemValue = newValue(elemType)
+			elemValue = newValueOfSliceElem(elemType)
 		}
 
 		initializeFieldsWithIndices(elemValue, fieldsToInitialize)
