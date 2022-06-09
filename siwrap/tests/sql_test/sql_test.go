@@ -376,3 +376,27 @@ func TestSqlDBQueryMapsBoolWithSqlColumn(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 
 }
+
+func TestSqlDBQueryStructsNoTag(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
+
+	query := `
+		select null as nil_value, 
+			123::integer as int_value,
+			123::decimal(24,4) as decimal_value,
+			'some string' as some_string_value,
+			'none' as none
+	`
+
+	tl := testmodels.TableWithNoTagList{}
+	_, err := sqldb.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	expected := `[{"nil_value":"","IntValue":123,"DecimalValue":123,"SomeStringValue":"some string"}]`
+	assert.Equal(t, expected, tl.String())
+}

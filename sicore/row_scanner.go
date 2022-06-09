@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"reflect"
+	"strings"
 )
 
 // const defaultUseSqlNullType = true
@@ -211,6 +212,9 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	columns, err := rows.Columns()
 	if err != nil {
 		return 0, err
+	}
+	for i := range columns {
+		columns[i] = strings.ToLower(columns[i])
 	}
 
 	n := 0 // num rows

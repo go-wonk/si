@@ -133,3 +133,22 @@ func (tl TableList) String() string {
 	b, _ := json.Marshal(tl)
 	return string(b)
 }
+
+type TableWithNoTag struct {
+	NilValue        string `json:"nil_value"`
+	IntValue        int
+	DecimalValue    float64
+	SomeStringValue string
+}
+
+func (t *TableWithNoTag) String() string {
+	b, _ := json.Marshal(t)
+	return string(b)
+}
+
+type TableWithNoTagList []TableWithNoTag
+
+func (t *TableWithNoTagList) String() string {
+	b, _ := json.Marshal(t)
+	return string(b)
+}
