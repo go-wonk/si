@@ -204,9 +204,13 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 		return 0, errors.New("ouput is not a slice")
 	}
 
-	elemValue, _, err := getSliceElement(sliceValue)
-	if err != nil {
-		return 0, err
+	elemType, isPtr := getTypeOfSliceElement(sliceValue)
+
+	var elemValue reflect.Value
+	if isPtr {
+		elemValue = newValuePointer(elemType)
+	} else {
+		elemValue = newValue(elemType)
 	}
 
 	columns, err := rows.Columns()
@@ -236,20 +240,22 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 			return 0, err
 		}
 
-		elem, isPtr, err := getSliceElement(sliceValue)
-		if err != nil {
-			return 0, err
+		if isPtr {
+			elemValue = newValuePointer(elemType)
+		} else {
+			elemValue = newValue(elemType)
 		}
-		initializeFieldsWithIndices(elem, fieldsToInitialize)
+
+		initializeFieldsWithIndices(elemValue, fieldsToInitialize)
 
 		// set values to the struct fields
-		setStructValues(elem, scannedRow, columns, tagNameMap)
+		setStructValues(elemValue, scannedRow, columns, tagNameMap)
 
 		// append element to slice
 		if isPtr {
-			elem = elem.Addr()
+			elemValue = elemValue.Addr()
 		}
-		sliceValue.Set(reflect.Append(sliceValue, elem))
+		sliceValue.Set(reflect.Append(sliceValue, elemValue))
 
 		n++
 	}

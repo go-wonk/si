@@ -17,7 +17,7 @@ func init() {
 
 func main() {
 	// sql storage
-	connStr := "host=127.0.0.1 port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
+	connStr := "host=testpghost port=5432 user=test password=test123 dbname=testdb sslmode=disable connect_timeout=60"
 	driver := "postgres"
 	db, err := sql.Open(driver, connStr)
 	if err != nil {

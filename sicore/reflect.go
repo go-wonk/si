@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// findTagName finds tag name with `tagKey` in `t`
 func findTagName(tagKey string, t reflect.StructTag) (string, error) {
 	if jt, ok := t.Lookup(tagKey); ok {
 		return strings.Split(jt, ",")[0], nil
@@ -28,6 +29,7 @@ func getValueOfPointer(v any) (reflect.Value, error) {
 	return rv.Elem(), nil
 }
 
+// isSlice returns true if `v` is a slice or array
 func isSlice(v reflect.Value) bool {
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
@@ -35,24 +37,29 @@ func isSlice(v reflect.Value) bool {
 	return true
 }
 
-// getSliceElement creates a new element of `sliceValue`.
-func getSliceElement(sliceValue reflect.Value) (reflect.Value, bool, error) {
-	var elem reflect.Value
-	rvTypeElem := sliceValue.Type().Elem()
-
-	isPtrElement := false
-	switch rvTypeElem.Kind() {
+// getTypeOfSliceElement returns `elemType` that is the type of `sv` and `isPtr` that is true only if `elemType` is pointer.
+func getTypeOfSliceElement(sv reflect.Value) (elemType reflect.Type, isPtr bool) {
+	elemType = sv.Type().Elem()
+	switch elemType.Kind() {
 	case reflect.Pointer:
-		// element is a pointer like []*Struct
-		elem = reflect.New(rvTypeElem.Elem()).Elem()
-		isPtrElement = true
+		isPtr = true
 	default:
-		// element is a value like []Struct
-		elem = reflect.New(rvTypeElem).Elem()
-		isPtrElement = false
+		isPtr = false
 	}
 
-	return elem, isPtrElement, nil
+	return
+}
+
+// newValue creates a new element of `elemType`.
+func newValue(elemType reflect.Type) (elem reflect.Value) {
+	elem = reflect.New(elemType).Elem()
+	return
+}
+
+// newValuePointer creates a new element of `elemType` when it is a pointer.
+func newValuePointer(elemType reflect.Type) (elem reflect.Value) {
+	elem = reflect.New(elemType.Elem()).Elem()
+	return
 }
 
 // initializeFields traverses all fields recursivley and initialize nil pointer struct
@@ -92,29 +99,10 @@ func initializeFields(v reflect.Value) {
 
 		// initialize struct's nested field
 		initializeFields(fieldValue)
-
-		// if field.Kind() == reflect.Pointer && field.Type().Elem().Kind() == reflect.Struct {
-		// 	switch field.Interface().(type) {
-		// 	// case *time.Time:
-		// 	// 	// do nothing
-		// 	default:
-		// 		if field.IsNil() {
-		// 			field.Set(reflect.New(field.Type().Elem()))
-		// 		}
-
-		// 		initializeFields(field.Elem())
-		// 	}
-		// } else if field.Type().Kind() == reflect.Struct {
-		// 	switch field.Interface().(type) {
-		// 	// case time.Time:
-		// 	// 	// do nothing
-		// 	default:
-		// 		initializeFields(field)
-		// 	}
-		// }
 	}
 }
 
+// initializeFieldsWithIndices initializes directly using `indices`
 func initializeFieldsWithIndices(v reflect.Value, indices [][]int) {
 	for _, s := range indices {
 		field := v.FieldByIndex(s)
@@ -137,6 +125,7 @@ type ScanValuer interface {
 func traverseFields(parent traversedField, result *[]traversedField, resultInitialize *[][]int) {
 	n := parent.field.NumField()
 	for i := 0; i < n; i++ {
+		// skip any unexported(private) fields
 		structField := parent.field.Type().Field(i)
 		if !structField.IsExported() {
 			continue
@@ -180,35 +169,6 @@ func traverseFields(parent traversedField, result *[]traversedField, resultIniti
 		default:
 			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, result, resultInitialize)
 		}
-
-		// if field.Kind() == reflect.Pointer &&
-		// 	field.Type().Elem().Kind() == reflect.Struct {
-
-		// 	switch field.Interface().(type) {
-		// 	case *time.Time, *sql.NullBool, *sql.NullByte, *sql.NullFloat64, *sql.NullInt16, *sql.NullInt32, *sql.NullInt64,
-		// 		*sql.NullString, *sql.NullTime:
-		// 		if field.IsNil() {
-		// 			field.Set(reflect.New(field.Type().Elem()))
-		// 		}
-		// 		*result = append(*result, traversedField{field.Elem(), append(parent.indices, i)})
-		// 	default:
-		// 		if field.IsNil() {
-		// 			field.Set(reflect.New(field.Type().Elem()))
-		// 		}
-		// 		traverseFields(traversedField{field.Elem(), append(parent.indices, i)}, result)
-		// 	}
-		// } else if field.Type().Kind() == reflect.Struct {
-		// 	switch field.Interface().(type) {
-		// 	case time.Time, sql.NullBool, sql.NullByte, sql.NullFloat64, sql.NullInt16, sql.NullInt32, sql.NullInt64,
-		// 		sql.NullString, sql.NullTime:
-		// 		*result = append(*result, traversedField{field, append(parent.indices, i)})
-		// 	default:
-		// 		traverseFields(traversedField{field, append(parent.indices, i)}, result)
-		// 	}
-		// } else {
-		// 	// handle tag key
-		// 	*result = append(*result, traversedField{field, append(parent.indices, i)})
-		// }
 	}
 }
 
