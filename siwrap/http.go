@@ -32,7 +32,7 @@ func (hc *HttpClient) Do(request *http.Request) (*http.Response, error) {
 	return hc.client.Do(request)
 }
 
-// setDefaultHeader sets defaultHeaders to request keeping already assigned headers of request
+// setDefaultHeader sets defaultHeaders to request. It doesn't replace headers that are already assigned to `request`
 func (hc *HttpClient) setDefaultHeader(request *http.Request) {
 	for k, v := range hc.defaultHeaders {
 		if request.Header.Get(k) != "" {
@@ -58,23 +58,6 @@ func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
 func (hc *HttpClient) PostReadBody(url string, header http.Header, body []byte) ([]byte, error) {
 	r := sicore.GetBytesReader(body)
 	defer sicore.PutBytesReader(r)
-
-	// req, err := http.NewRequest(http.MethodPost, url, r)
-	req, err := GetRequest(http.MethodPost, url, r)
-	if err != nil {
-		return nil, err
-	}
-	defer PutRequest(req)
-
-	setHeader(req, header)
-
-	return hc.DoReadBody(req)
-
-}
-
-func (hc *HttpClient) PostReadBody2(url string, header http.Header, body []byte) ([]byte, error) {
-	r := sicore.GetBytesBuffer(body)
-	defer sicore.PutBytesBuffer(r)
 
 	// req, err := http.NewRequest(http.MethodPost, url, r)
 	req, err := GetRequest(http.MethodPost, url, r)

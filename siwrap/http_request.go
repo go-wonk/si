@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
 	urlpkg "net/url"
 
@@ -14,40 +13,22 @@ import (
 	"golang.org/x/net/http/httpguts"
 )
 
-//
-func isNotToken(r rune) bool {
-	return !httpguts.IsTokenRune(r)
-}
-func validMethod(method string) bool {
-	/*
-	     Method         = "OPTIONS"                ; Section 9.2
-	                    | "GET"                    ; Section 9.3
-	                    | "HEAD"                   ; Section 9.4
-	                    | "POST"                   ; Section 9.5
-	                    | "PUT"                    ; Section 9.6
-	                    | "DELETE"                 ; Section 9.7
-	                    | "TRACE"                  ; Section 9.8
-	                    | "CONNECT"                ; Section 9.9
-	                    | extension-method
-	   extension-method = token
-	     token          = 1*<any CHAR except CTLs or separators>
-	*/
-	return len(method) > 0 && strings.IndexFunc(method, isNotToken) == -1
-}
-
-// Given a string of the form "host", "host:port", or "[ipv6::address]:port",
-// return true if the string includes a port.
-func hasPort(s string) bool { return strings.LastIndex(s, ":") > strings.LastIndex(s, "]") }
-
-// removeEmptyPort strips the empty port in ":port" to ""
-// as mandated by RFC 3986 Section 6.2.3.
-func removeEmptyPort(host string) string {
-	if hasPort(host) {
-		return strings.TrimSuffix(host, ":")
+// newHttpRequest creates a new http.Request.
+// `body` argument is not fed into NewRequest function, but is set using `setBody` after instantiating
+// a http.Request.
+func newHttpRequest(method string, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, err
 	}
-	return host
+
+	// Set Body, GetBody(), Content Length
+	setBody(req, body)
+
+	return req, nil
 }
 
+// setHeader sets `haeder` to `req`.
 func setHeader(req *http.Request, header http.Header) {
 	for k, val := range header {
 		for i, v := range val {
@@ -60,6 +41,9 @@ func setHeader(req *http.Request, header http.Header) {
 	}
 }
 
+// setBody sets `body` to `req`.
+// Most part of this function was brought from default net/http package's NewRequest function.
+// It handles `sicore.Reader` and `sicore.ReadWriter`
 func setBody(req *http.Request, body io.Reader) {
 	req.ContentLength = 0
 
@@ -128,6 +112,7 @@ func setBody(req *http.Request, body io.Reader) {
 	}
 }
 
+// setMethodAndURL sets method and url to `req`.
 func setMethodAndURL(req *http.Request, method string, url string) error {
 	if !validMethod(method) {
 		return fmt.Errorf("invalid method %q", method)
@@ -151,56 +136,46 @@ func setMethodAndURL(req *http.Request, method string, url string) error {
 	return nil
 }
 
-func newRequest(method string, url string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, nil)
-	if err != nil {
-		return nil, err
-	}
+/*
+Functions below are from the default package.
+They are needed to create/modify the way of creating http.Request.
+*/
 
-	// Set Body, GetBody(), Content Length
-	setBody(req, body)
-
-	return req, nil
+// isNotToken is brought from default package net/http(http.go).
+func isNotToken(r rune) bool {
+	return !httpguts.IsTokenRune(r)
 }
 
-// pool
-var (
-	_requestPool = sync.Pool{}
-)
-
-// GetRequest retrieves a request from a pool and returns it.
-func GetRequest(method string, url string, body io.Reader) (*http.Request, error) {
-	g := _requestPool.Get()
-	if g == nil {
-		return newRequest(method, url, body)
-	}
-	req := g.(*http.Request)
-
-	// Set Body, GetBody(), Content Length
-	setBody(req, body)
-
-	// Set method, url, host
-	if err := setMethodAndURL(req, method, url); err != nil {
-		return nil, err
-	}
-
-	// Clear headers
-	for k := range req.Header {
-		delete(req.Header, k)
-	}
-
-	// Clear trailers
-	for k := range req.Trailer {
-		delete(req.Trailer, k)
-	}
-
-	// Clear transfer encodings
-	req.TransferEncoding = req.TransferEncoding[:0]
-
-	return req, nil
+// validMethod checks whether `method` is valid.
+// This function is from default package net/http(request.go).
+func validMethod(method string) bool {
+	/*
+	     Method         = "OPTIONS"                ; Section 9.2
+	                    | "GET"                    ; Section 9.3
+	                    | "HEAD"                   ; Section 9.4
+	                    | "POST"                   ; Section 9.5
+	                    | "PUT"                    ; Section 9.6
+	                    | "DELETE"                 ; Section 9.7
+	                    | "TRACE"                  ; Section 9.8
+	                    | "CONNECT"                ; Section 9.9
+	                    | extension-method
+	   extension-method = token
+	     token          = 1*<any CHAR except CTLs or separators>
+	*/
+	return len(method) > 0 && strings.IndexFunc(method, isNotToken) == -1
 }
 
-func PutRequest(req *http.Request) {
-	req.Body.Close()
-	_requestPool.Put(req)
+// Given a string of the form "host", "host:port", or "[ipv6::address]:port",
+// return true if the string includes a port.
+// This function is from default package net/http(http.go).
+func hasPort(s string) bool { return strings.LastIndex(s, ":") > strings.LastIndex(s, "]") }
+
+// removeEmptyPort strips the empty port in ":port" to ""
+// as mandated by RFC 3986 Section 6.2.3.
+// This function is from default package net/http(http.go).
+func removeEmptyPort(host string) string {
+	if hasPort(host) {
+		return strings.TrimSuffix(host, ":")
+	}
+	return host
 }
