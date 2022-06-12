@@ -12,6 +12,7 @@ import (
 	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/sihttp"
 	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/tests/testmodels"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -323,5 +324,50 @@ func TestHttpClientRequestPut(t *testing.T) {
 
 	assert.EqualValues(t, sendData, string(respBody))
 	fmt.Println(string(respBody))
+
+}
+
+func TestHttpClientRequestPostJson(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+
+	url := "http://127.0.0.1:8080/test/echo"
+
+	student := testmodels.Student{
+		ID:           1,
+		Name:         "wonk",
+		EmailAddress: "wonk@wonk.org",
+	}
+	respBody, err := client.RequestPostJson(url, nil, &student)
+	siutils.AssertNilFail(t, err)
+
+	// assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(string(respBody))
+
+}
+
+func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+
+	url := "http://127.0.0.1:8080/test/echo"
+
+	student := testmodels.Student{
+		ID:           1,
+		Name:         "wonk",
+		EmailAddress: "wonk@wonk.org",
+	}
+	res := testmodels.Student{}
+	err := client.RequestPostJsonDecoded(url, nil, &student, &res)
+	siutils.AssertNilFail(t, err)
+
+	// assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(res.String())
 
 }
