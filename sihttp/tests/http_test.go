@@ -1,4 +1,4 @@
-package http_test
+package sihttp_test
 
 import (
 	"bytes"
@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/sihttp"
 	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/siwrap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,7 @@ func TestHttpClientDo(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, client)
 
-	hc := siwrap.NewHttpClient(client)
+	hc := sihttp.NewHttpClient(client)
 
 	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/test/hello", nil)
 	siutils.AssertNilFail(t, err)
@@ -206,7 +206,7 @@ func TestReuseRequestWithRequestPool(t *testing.T) {
 		sendData := fmt.Sprintf("%s-%d", data, i)
 		rw.Write([]byte(sendData))
 
-		req, err := siwrap.GetRequest(http.MethodPost, urls[i], rw)
+		req, err := sihttp.GetRequest(http.MethodPost, urls[i], rw)
 		siutils.AssertNilFail(t, err)
 
 		//////////////////////////////////////////////////////////
@@ -246,7 +246,7 @@ func TestReuseRequestWithRequestPool(t *testing.T) {
 
 		resp.Body.Close()
 
-		siwrap.PutRequest(req)
+		sihttp.PutRequest(req)
 	}
 }
 
@@ -255,7 +255,7 @@ func TestHttpClientRequestPostTls(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := siwrap.NewHttpClient(client)
+	client := sihttp.NewHttpClient(client)
 
 	data := "hey"
 	urls := []string{"http://127.0.0.1:8080/test/echo", "https://127.0.0.1:8081/test/echo"}
@@ -275,7 +275,7 @@ func TestHttpClientRequestGet(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := siwrap.NewHttpClient(client)
+	client := sihttp.NewHttpClient(client)
 
 	url := "http://127.0.0.1:8080/test/hello"
 
@@ -291,7 +291,7 @@ func TestHttpClientRequestPost(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := siwrap.NewHttpClient(client)
+	client := sihttp.NewHttpClient(client)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"
@@ -311,7 +311,7 @@ func TestHttpClientRequestPut(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := siwrap.NewHttpClient(client)
+	client := sihttp.NewHttpClient(client)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"

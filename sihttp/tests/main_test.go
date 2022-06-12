@@ -1,4 +1,4 @@
-package http_test
+package sihttp_test
 
 import (
 	"crypto/tls"

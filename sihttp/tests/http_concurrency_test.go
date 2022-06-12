@@ -1,4 +1,4 @@
-package http_test
+package sihttp_test
 
 import (
 	"errors"
@@ -8,11 +8,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-wonk/si/siwrap"
+	"github.com/go-wonk/si/sihttp"
 	"github.com/stretchr/testify/assert"
 )
 
-// func requestt(wg *sync.WaitGroup, client *siwrap.HttpClient, method, url string, numRequests int, id int) error {
+// func requestt(wg *sync.WaitGroup, client *sihttp.HttpClient, method, url string, numRequests int, id int) error {
 // 	// var err error
 // 	wg.Add(1)
 // 	go func(wg *sync.WaitGroup, id int) {
@@ -35,7 +35,7 @@ import (
 // 	return nil
 // }
 
-func request(client *siwrap.HttpClient, method, url string, numRequests int, id int) error {
+func request(client *sihttp.HttpClient, method, url string, numRequests int, id int) error {
 	var err error
 	for j := 0; j < numRequests; j++ {
 
@@ -87,7 +87,7 @@ func TestHttpClient_Concurrency_Request(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	client := siwrap.NewHttpClient(client)
+	client := sihttp.NewHttpClient(client)
 
 	numRoutines := 20
 	numRequests := 1000

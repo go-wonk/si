@@ -1,4 +1,4 @@
-package http_test
+package sihttp_test
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/sihttp"
 	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/siwrap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func BenchmarkBasicClientGet(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrap.NewHttpClient(client)
+	hc := sihttp.NewHttpClient(client)
 
 	for i := 0; i < b.N; i++ {
 
@@ -48,7 +48,7 @@ func BenchmarkHttpClientGet(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrap.NewHttpClient(client)
+	hc := sihttp.NewHttpClient(client)
 
 	for i := 0; i < b.N; i++ {
 
@@ -70,7 +70,7 @@ func BenchmarkHttpClientGetSize(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrap.NewHttpClient(client)
+	hc := sihttp.NewHttpClient(client)
 
 	for i := 0; i < b.N; i++ {
 
@@ -153,7 +153,7 @@ func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
 		headerData := fmt.Sprintf("%d", i)
 		r := sicore.GetBytesReader([]byte(sendData))
 
-		req, _ := siwrap.GetRequest(http.MethodPost, url, r)
+		req, _ := sihttp.GetRequest(http.MethodPost, url, r)
 		// siutils.AssertNilFailB(b, err)
 
 		req.Header.Set("custom_header", headerData)
@@ -171,7 +171,7 @@ func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
 		// fmt.Println(string(respBody))
 
 		resp.Body.Close()
-		siwrap.PutRequest(req)
+		sihttp.PutRequest(req)
 		sicore.PutBytesReader(r)
 	}
 }
@@ -182,7 +182,7 @@ func BenchmarkBasicClientPost(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := siwrap.NewHttpClient(client)
+	hc := sihttp.NewHttpClient(client)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
@@ -222,7 +222,7 @@ func BenchmarkHttpClientPost(b *testing.B) {
 		b.Skip("skipping online tests")
 	}
 
-	client := siwrap.NewHttpClient(client)
+	client := sihttp.NewHttpClient(client)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
