@@ -1,30 +1,24 @@
 package sihttp
 
-import (
-	"io"
+// type RequestOption interface {
+// 	apply(c *HttpClient)
+// }
+// type RequestOptionFunc func(c *HttpClient)
 
-	"github.com/go-wonk/si/sicore"
-)
+// func (o RequestOptionFunc) apply(c *HttpClient) {
+// 	o(c)
+// }
 
-type RequestOption interface {
-	apply(c *HttpClient)
-}
-type RequestOptionFunc func(c *HttpClient)
+// // WithEncoder sets Client's encoder
+// func WithEncoder(enc sicore.Encoder) RequestOptionFunc {
+// 	return RequestOptionFunc(func(c *HttpClient) {
+// 		// c.SetEncoder(enc)
+// 	})
+// }
 
-func (o RequestOptionFunc) apply(c *HttpClient) {
-	o(c)
-}
-
-// WithEncoder sets Client's encoder
-func WithEncoder(enc sicore.Encoder) RequestOptionFunc {
-	return RequestOptionFunc(func(c *HttpClient) {
-		// c.SetEncoder(enc)
-	})
-}
-
-func WithJsonEncoder(w io.Writer) RequestOptionFunc {
-	return RequestOptionFunc(func(c *HttpClient) {
-		// enc := json.NewEncoder(w)
-		// c.SetEncoder(enc)
-	})
-}
+// func WithJsonEncoder(w io.Writer) RequestOptionFunc {
+// 	return RequestOptionFunc(func(c *HttpClient) {
+// 		// enc := json.NewEncoder(w)
+// 		// c.SetEncoder(enc)
+// 	})
+// }

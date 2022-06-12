@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	// onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
-	onlinetest, _ = strconv.ParseBool("1")
-	// longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
-	longtest, _ = strconv.ParseBool("1")
+	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	// onlinetest, _ = strconv.ParseBool("1")
+	longtest, _ = strconv.ParseBool(os.Getenv("LONG_TEST"))
+	// longtest, _ = strconv.ParseBool("1")
 
 	client *http.Client
 )

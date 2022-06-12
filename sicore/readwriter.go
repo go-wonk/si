@@ -200,12 +200,18 @@ func newWriter(w io.Writer, opt ...WriterOption) *Writer {
 		for _, o := range opt {
 			o.apply(b)
 		}
+		if b.enc == nil {
+			b.enc = &DefaultEncoder{b}
+		}
 		return b
 	}
 	bw := bufio.NewWriter(w)
 	b := &Writer{bw: bw}
 	for _, o := range opt {
 		o.apply(b)
+	}
+	if b.enc == nil {
+		b.enc = &DefaultEncoder{b}
 	}
 	return b
 }
@@ -221,6 +227,12 @@ func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 				continue
 			}
 			o.apply(wr)
+		}
+	}
+
+	if w != nil {
+		if wr.enc == nil {
+			wr.enc = &DefaultEncoder{wr}
 		}
 	}
 }

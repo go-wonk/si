@@ -57,7 +57,7 @@ func BenchmarkHttpClientGet(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, _, err := hc.DoReadBody(request)
+		body, _, err := hc.DoRead(request)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -79,7 +79,7 @@ func BenchmarkHttpClientGetSize(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, _, err := hc.DoReadBody(request)
+		body, _, err := hc.DoRead(request)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -177,6 +177,7 @@ func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
 }
 
 func BenchmarkBasicClientPost(b *testing.B) {
+	// BenchmarkBasicClientPost-8   	    7180	    161840 ns/op	   32906 B/op	      88 allocs/op
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
@@ -215,9 +216,34 @@ func BenchmarkBasicClientPost(b *testing.B) {
 }
 
 func BenchmarkHttpClientPost(b *testing.B) {
-	/*
-		BenchmarkReuseRequestPostWithRequestPool-8   	      79	  14926903 ns/op	    4773 B/op	      66 allocs/op
-	*/
+	// BenchmarkReuseRequestPostWithRequestPool-8   	      79	  14926903 ns/op	    4773 B/op	      66 allocs/op
+	// BenchmarkHttpClientPost-8   	    7731	    144920 ns/op	   19764 B/op	      79 allocs/op // no default encoding, just bytes
+	// BenchmarkHttpClientPost2-8   	    7644	    145244 ns/op	   25158 B/op	      82 allocs/op // ReadWriter
+	// BenchmarkHttpClientPost2-8   	    7677	    143666 ns/op	   20380 B/op	      82 allocs/op // Writer
+	// BenchmarkHttpClientPost-8   	    7922	    146268 ns/op	   20371 B/op	      82 allocs/op
+	if !onlinetest {
+		b.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+
+	data := strings.Repeat(testData, testDataRepeats)
+	url := testUrl
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		sendData := fmt.Sprintf("%s-%d", data, i)
+		headerData := fmt.Sprintf("%d", i)
+
+		header := make(http.Header)
+		header["custom_header"] = []string{headerData}
+		client.RequestPost(url, header, []byte(sendData))
+	}
+}
+
+func BenchmarkHttpClientPost2(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}

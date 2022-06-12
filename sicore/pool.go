@@ -67,11 +67,14 @@ var (
 
 func getWriter(w io.Writer, opt ...WriterOption) *Writer {
 	g := _writerPool.Get()
+
+	var wr *Writer
 	if g == nil {
-		return newWriter(w, opt...)
+		wr = newWriter(w, opt...)
+	} else {
+		wr = g.(*Writer)
+		wr.Reset(w, opt...)
 	}
-	wr := g.(*Writer)
-	wr.Reset(w, opt...)
 	return wr
 }
 
