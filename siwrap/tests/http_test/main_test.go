@@ -13,8 +13,10 @@ import (
 )
 
 var (
-	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
-	// onlinetest, _ = strconv.ParseBool("1")
+	// onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	onlinetest, _ = strconv.ParseBool("1")
+	// longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
+	longtest, _ = strconv.ParseBool("1")
 
 	client *http.Client
 )
@@ -25,10 +27,11 @@ func openClient() *http.Client {
 	}
 
 	tr := &http.Transport{
-		MaxIdleConns:       3,
+		MaxIdleConns:       300,
 		IdleConnTimeout:    time.Duration(15) * time.Second,
 		DisableCompression: false,
 		TLSClientConfig:    tlsConfig,
+		DisableKeepAlives:  false,
 	}
 
 	client := &http.Client{

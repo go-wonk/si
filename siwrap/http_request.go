@@ -13,80 +13,112 @@ import (
 	"golang.org/x/net/http/httpguts"
 )
 
+type HttpRequest struct {
+	*http.Request
+}
+
 // newHttpRequest creates a new http.Request.
 // `body` argument is not fed into NewRequest function, but is set using `setBody` after instantiating
 // a http.Request.
-func newHttpRequest(method string, url string, body io.Reader) (*http.Request, error) {
+func newHttpRequest(method string, url string, body io.Reader) (*HttpRequest, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
+	httpReq := HttpRequest{
+		Request: req,
+	}
 
 	// Set Body, GetBody(), Content Length
-	setBody(req, body)
+	httpReq.setBody(body)
 
-	return req, nil
+	return &httpReq, nil
 }
 
-// setHeader sets `haeder` to `req`.
-func setHeader(req *http.Request, header http.Header) {
+func (hr *HttpRequest) Reset(method string, url string, body io.Reader) error {
+	// Set Body, GetBody(), Content Length
+	hr.setBody(body)
+
+	// Set method, url, host
+	if err := hr.setMethodAndURL(method, url); err != nil {
+		return err
+	}
+
+	// Clear headers
+	for k := range hr.Header {
+		delete(hr.Header, k)
+	}
+
+	// Clear trailers
+	for k := range hr.Trailer {
+		delete(hr.Trailer, k)
+	}
+
+	// Clear transfer encodings
+	hr.TransferEncoding = hr.TransferEncoding[:0]
+
+	return nil
+}
+
+// SetHeader sets `haeder` to underlying Request.
+func (hr *HttpRequest) SetHeader(header http.Header) {
 	for k, val := range header {
 		for i, v := range val {
 			if i == 0 {
-				req.Header.Set(k, v)
+				hr.Header.Set(k, v)
 				continue
 			}
-			req.Header.Add(k, v)
+			hr.Header.Add(k, v)
 		}
 	}
 }
 
-// setBody sets `body` to `req`.
+// setBody sets `body` to underlying Request.
 // Most part of this function was brought from default net/http package's NewRequest function.
 // It handles `sicore.Reader` and `sicore.ReadWriter`
-func setBody(req *http.Request, body io.Reader) {
-	req.ContentLength = 0
+func (hr *HttpRequest) setBody(body io.Reader) {
+	hr.ContentLength = 0
 
 	rc, ok := body.(io.ReadCloser)
 	if !ok && body != nil {
 		rc = io.NopCloser(body)
 	}
 
-	req.Body = rc
+	hr.Body = rc
 	if body != nil {
 		switch v := body.(type) {
 		case *bytes.Buffer:
-			req.ContentLength = int64(v.Len())
+			hr.ContentLength = int64(v.Len())
 			buf := v.Bytes()
-			req.GetBody = func() (io.ReadCloser, error) {
+			hr.GetBody = func() (io.ReadCloser, error) {
 				r := bytes.NewReader(buf)
 				return io.NopCloser(r), nil
 			}
 		case *bytes.Reader:
-			req.ContentLength = int64(v.Len())
+			hr.ContentLength = int64(v.Len())
 			snapshot := *v
-			req.GetBody = func() (io.ReadCloser, error) {
+			hr.GetBody = func() (io.ReadCloser, error) {
 				r := snapshot
 				return io.NopCloser(&r), nil
 			}
 		case *strings.Reader:
-			req.ContentLength = int64(v.Len())
+			hr.ContentLength = int64(v.Len())
 			snapshot := *v
-			req.GetBody = func() (io.ReadCloser, error) {
+			hr.GetBody = func() (io.ReadCloser, error) {
 				r := snapshot
 				return io.NopCloser(&r), nil
 			}
 		case *sicore.Reader:
-			req.ContentLength = int64(v.Len())
+			hr.ContentLength = int64(v.Len())
 			snapshot := *v
-			req.GetBody = func() (io.ReadCloser, error) {
+			hr.GetBody = func() (io.ReadCloser, error) {
 				r := snapshot
 				return io.NopCloser(&r), nil
 			}
 		case *sicore.ReadWriter:
-			req.ContentLength = int64(v.RLen())
+			hr.ContentLength = int64(v.RLen())
 			snapshot := *v
-			req.GetBody = func() (io.ReadCloser, error) {
+			hr.GetBody = func() (io.ReadCloser, error) {
 				r := snapshot
 				return io.NopCloser(&r), nil
 			}
@@ -105,15 +137,18 @@ func setBody(req *http.Request, body io.Reader) {
 		// so we use a well-known ReadCloser variable instead
 		// and have the http package also treat that sentinel
 		// variable to mean explicitly zero.
-		if req.GetBody != nil && req.ContentLength == 0 {
-			req.Body = http.NoBody
-			req.GetBody = func() (io.ReadCloser, error) { return http.NoBody, nil }
+		if hr.GetBody != nil && hr.ContentLength == 0 {
+			hr.Body = http.NoBody
+			hr.GetBody = func() (io.ReadCloser, error) { return http.NoBody, nil }
 		}
+	} else {
+		hr.GetBody = nil
+		hr.Body = nil
 	}
 }
 
-// setMethodAndURL sets method and url to `req`.
-func setMethodAndURL(req *http.Request, method string, url string) error {
+// setMethodAndURL sets method and url to underlying request.
+func (hr *HttpRequest) setMethodAndURL(method string, url string) error {
 	if !validMethod(method) {
 		return fmt.Errorf("invalid method %q", method)
 	}
@@ -125,13 +160,13 @@ func setMethodAndURL(req *http.Request, method string, url string) error {
 	// The host's colon:port should be normalized. See Issue 14836.
 	u.Host = removeEmptyPort(u.Host)
 
-	req.Method = method
-	req.URL = u
-	req.Host = u.Host
+	hr.Method = method
+	hr.URL = u
+	hr.Host = u.Host
 
-	// req.Proto = "HTTP/1.1"
-	// req.ProtoMajor = 1
-	// req.ProtoMinor = 1
+	// hr.Proto = "HTTP/1.1"
+	// hr.ProtoMajor = 1
+	// hr.ProtoMinor = 1
 
 	return nil
 }

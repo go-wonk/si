@@ -1,6 +1,8 @@
 package siwrap
 
 import (
+	"bytes"
+	"fmt"
 	"net/http"
 
 	"github.com/go-wonk/si/sicore"
@@ -9,6 +11,7 @@ import (
 // HttpClient is a wrapper of http.Client
 type HttpClient struct {
 	client         *http.Client
+	baseUrl        string
 	defaultHeaders map[string]string
 }
 
@@ -42,32 +45,72 @@ func (hc *HttpClient) setDefaultHeader(request *http.Request) {
 }
 
 // DoReadBody sends Do request and read all data from response.Body
-func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, error) {
+func (hc *HttpClient) DoReadBody(request *http.Request) ([]byte, int, error) {
 	resp, err := hc.Do(request)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	r := sicore.GetReader(resp.Body)
 	defer sicore.PutReader(r)
 
-	return r.ReadAll()
+	b, err := r.ReadAll()
+	return b, resp.StatusCode, err
 }
 
-func (hc *HttpClient) PostReadBody(url string, header http.Header, body []byte) ([]byte, error) {
-	r := sicore.GetBytesReader(body)
-	defer sicore.PutBytesReader(r)
-
-	// req, err := http.NewRequest(http.MethodPost, url, r)
-	req, err := GetRequest(http.MethodPost, url, r)
+func (hc *HttpClient) request(medhod string, url string, header http.Header, body []byte) ([]byte, error) {
+	var r *bytes.Reader
+	var req *HttpRequest
+	var err error
+	if len(body) > 0 {
+		r = sicore.GetBytesReader(body)
+		defer sicore.PutBytesReader(r)
+		req, err = GetRequest(medhod, url, r)
+	} else {
+		req, err = GetRequest(medhod, url, nil)
+	}
 	if err != nil {
 		return nil, err
 	}
 	defer PutRequest(req)
 
-	setHeader(req, header)
+	req.SetHeader(header)
 
-	return hc.DoReadBody(req)
+	respBody, statusCode, err := hc.DoReadBody(req.Request)
+	if err != nil {
+		return nil, err
+	}
 
+	if statusCode != http.StatusOK {
+		return respBody, fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
+	}
+
+	return respBody, nil
+}
+
+func (hc *HttpClient) Request(medhod string, url string, header http.Header, body []byte) ([]byte, error) {
+	return hc.request(medhod, hc.baseUrl+url, header, body)
+}
+
+func (hc *HttpClient) RequestGet(url string, header http.Header) ([]byte, error) {
+	return hc.request(http.MethodGet, hc.baseUrl+url, header, nil)
+
+}
+
+func (hc *HttpClient) RequestPost(url string, header http.Header, body []byte) ([]byte, error) {
+	return hc.request(http.MethodPost, hc.baseUrl+url, header, body)
+
+}
+
+func (hc *HttpClient) RequestPut(url string, header http.Header, body []byte) ([]byte, error) {
+	return hc.request(http.MethodPut, hc.baseUrl+url, header, body)
+}
+
+func (hc *HttpClient) RequestDelete(url string, header http.Header, body []byte) ([]byte, error) {
+	return hc.request(http.MethodDelete, hc.baseUrl+url, header, body)
+}
+
+func (hc *HttpClient) RequestHead(url string, header http.Header) ([]byte, error) {
+	return hc.request(http.MethodHead, hc.baseUrl+url, header, nil)
 }

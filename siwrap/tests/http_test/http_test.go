@@ -236,7 +236,7 @@ func TestReuseRequestWithRequestPool(t *testing.T) {
 		req.Header.Set("custom_header", sendData)
 		req.URL.RawQuery = "bar=foo"
 
-		resp, err := client.Do(req)
+		resp, err := client.Do(req.Request)
 		siutils.AssertNilFail(t, err)
 
 		respBody, err := io.ReadAll(resp.Body)
@@ -250,7 +250,7 @@ func TestReuseRequestWithRequestPool(t *testing.T) {
 	}
 }
 
-func TestHttpClientPostReadBody(t *testing.T) {
+func TestHttpClientRequestPostTls(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
@@ -262,10 +262,66 @@ func TestHttpClientPostReadBody(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		sendData := fmt.Sprintf("%s-%d", data, i)
 
-		respBody, err := client.PostReadBody(urls[i], nil, []byte(sendData))
+		respBody, err := client.RequestPost(urls[i], nil, []byte(sendData))
 		siutils.AssertNilFail(t, err)
 
 		assert.EqualValues(t, sendData, string(respBody))
 		fmt.Println(string(respBody))
 	}
+}
+
+func TestHttpClientRequestGet(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := siwrap.NewHttpClient(client)
+
+	url := "http://127.0.0.1:8080/test/hello"
+
+	respBody, err := client.RequestGet(url, nil)
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, "hello", string(respBody))
+	// fmt.Println(string(respBody))
+
+}
+func TestHttpClientRequestPost(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := siwrap.NewHttpClient(client)
+
+	data := "hey"
+	url := "http://127.0.0.1:8080/test/echo"
+
+	sendData := fmt.Sprintf("%s-%d", data, 0)
+
+	respBody, err := client.RequestPost(url, nil, []byte(sendData))
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(string(respBody))
+
+}
+
+func TestHttpClientRequestPut(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := siwrap.NewHttpClient(client)
+
+	data := "hey"
+	url := "http://127.0.0.1:8080/test/echo"
+
+	sendData := fmt.Sprintf("%s-%d", data, 0)
+
+	respBody, err := client.RequestPut(url, nil, []byte(sendData))
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(string(respBody))
+
 }

@@ -57,7 +57,7 @@ func BenchmarkHttpClientGet(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, err := hc.DoReadBody(request)
+		body, _, err := hc.DoReadBody(request)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -79,7 +79,7 @@ func BenchmarkHttpClientGetSize(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, err := hc.DoReadBody(request)
+		body, _, err := hc.DoReadBody(request)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -159,7 +159,7 @@ func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
 		req.Header.Set("custom_header", headerData)
 		// req.URL.RawQuery = "bar=foo"
 
-		resp, err := client.Do(req)
+		resp, err := client.Do(req.Request)
 		if err != nil {
 			b.FailNow()
 		}
@@ -176,7 +176,45 @@ func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
 	}
 }
 
-func BenchmarkReuseRequestPostWithHttpClient(b *testing.B) {
+func BenchmarkBasicClientPost(b *testing.B) {
+	if !onlinetest {
+		b.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFailB(b, client)
+
+	hc := siwrap.NewHttpClient(client)
+
+	data := strings.Repeat(testData, testDataRepeats)
+	url := testUrl
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		sendData := fmt.Sprintf("%s-%d", data, i)
+		headerData := fmt.Sprintf("%d", i)
+
+		request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(sendData)))
+		if err != nil {
+			b.FailNow()
+		}
+
+		request.Header.Set("custom_header", headerData)
+
+		resp, err := hc.Do(request)
+		if err != nil {
+			b.FailNow()
+		}
+
+		_, err = io.ReadAll(resp.Body)
+		if err != nil {
+			b.FailNow()
+		}
+		resp.Body.Close()
+	}
+}
+
+func BenchmarkHttpClientPost(b *testing.B) {
 	/*
 		BenchmarkReuseRequestPostWithRequestPool-8   	      79	  14926903 ns/op	    4773 B/op	      66 allocs/op
 	*/
@@ -198,6 +236,6 @@ func BenchmarkReuseRequestPostWithHttpClient(b *testing.B) {
 
 		header := make(http.Header)
 		header["custom_header"] = []string{headerData}
-		client.PostReadBody(url, header, []byte(sendData))
+		client.RequestPost(url, header, []byte(sendData))
 	}
 }
