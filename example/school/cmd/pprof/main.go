@@ -17,6 +17,7 @@ import (
 	"github.com/go-wonk/si/example/school/adaptor"
 	"github.com/go-wonk/si/example/school/core"
 	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/sihttp"
 	_ "github.com/lib/pq"
 )
 
@@ -29,12 +30,15 @@ var (
 	studentUsc   core.StudentUsecase
 	borrowingUsc core.BorrowingUsecase
 	bookUsc      core.BookUsecase
+
+	defaultClient *http.Client
+	client        *sihttp.HttpClient
 )
 
 func init() {
 
 	flag.StringVar(&ip, "i", "", "ip")
-	flag.IntVar(&port, "p", 8080, "port")
+	flag.IntVar(&port, "p", 8082, "port")
 	flag.BoolVar(&dump, "dump", false, "dump request")
 
 	flag.Parse()
@@ -53,6 +57,9 @@ func main() {
 	}
 	defer db.Close()
 
+	defaultClient = sihttp.DefaultInsecureClient()
+	client = sihttp.NewHttpClient(defaultClient)
+
 	txBeginner := adaptor.NewTxBeginner(db)
 	studentRepo := adaptor.NewPgStudentRepo(db)
 	bookRepo := adaptor.NewPgBookRepo(db)
@@ -69,8 +76,10 @@ func main() {
 	router.HandleFunc("/test/echo", HandleEcho)
 	router.HandleFunc("/test/pprof", HandlePprof)
 	router.HandleFunc("/test/gc", HandleGC)
-	router.HandleFunc("/test/findall", HandleFindAll)
-	router.HandleFunc("/test/repeat/findall", HandleRepeatFindAll)
+	router.HandleFunc("/test/findall", HandleFindAllStudent)
+	// router.HandleFunc("/test/repeat/findall", HandleRepeatFindAll)
+	router.HandleFunc("/test/sendfiles", HandlerSendFile)
+	router.HandleFunc("/test/repeat/sendfiles", HandlerRepeatSendFile)
 
 	// http 서버 생성
 	httpServer := &http.Server{
@@ -81,89 +90,59 @@ func main() {
 	}
 
 	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
+		log.Println(http.ListenAndServe(":56060", nil))
 	}()
 
 	log.Fatal(httpServer.ListenAndServe())
 }
 
-func HandleFindAll(w http.ResponseWriter, req *http.Request) {
+func HandleBasic(w http.ResponseWriter, req *http.Request) {
 	if dump {
 		dumpReq, _ := httputil.DumpRequest(req, true)
 		fmt.Println(string(dumpReq))
 	}
 
-	body := sicore.GetReader(req.Body, sicore.SetJsonDecoder())
-	defer sicore.PutReader(body)
-
-	var s core.Student
-	err := body.Decode(&s)
+	_, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-
-	list, err := studentUsc.FindAll()
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	f, err := os.OpenFile("./students.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-	defer f.Close()
-	fw := sicore.GetWriter(f)
-	defer sicore.PutWriter(fw)
-	for _, student := range list {
-		_, err := fw.Write([]byte(student.EmailAddress + "," + student.Name + "\n"))
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-	}
-	if err = fw.Flush(); err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	res := sicore.GetWriter(w, sicore.SetJsonEncoder())
-	defer sicore.PutWriter(res)
-
-	err = res.EncodeFlush(list)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
+	// log.Println(string(b))
+	w.Write([]byte("hello"))
 }
 
-func HandleRepeatFindAll(w http.ResponseWriter, req *http.Request) {
+func HandleEcho(w http.ResponseWriter, req *http.Request) {
 	if dump {
 		dumpReq, _ := httputil.DumpRequest(req, true)
 		fmt.Println(string(dumpReq))
 	}
 
-	body := sicore.GetReader(req.Body, sicore.SetJsonDecoder())
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	// log.Println(string(body))
+	w.Write(body)
+}
+
+func HandleGC(w http.ResponseWriter, req *http.Request) {
+	if dump {
+		dumpReq, _ := httputil.DumpRequest(req, true)
+		fmt.Println(string(dumpReq))
+	}
+
+	body := sicore.GetReader(req.Body)
 	defer sicore.PutReader(body)
 
-	var s core.Student
-	err := body.Decode(&s)
+	_, err := body.ReadAll()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	for i := 0; i < 100; i++ {
-		_, err := studentUsc.FindAll()
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-	}
-
-	w.Write([]byte("done"))
+	runtime.GC()
+	w.Write([]byte("manual gc done"))
 }
 
 func HandlePprof(w http.ResponseWriter, req *http.Request) {
@@ -204,51 +183,103 @@ func HandlePprof(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func HandleGC(w http.ResponseWriter, req *http.Request) {
+func HandleFindAllStudent(w http.ResponseWriter, req *http.Request) {
 	if dump {
 		dumpReq, _ := httputil.DumpRequest(req, true)
 		fmt.Println(string(dumpReq))
 	}
 
-	body := sicore.GetReader(req.Body)
+	// read request body
+	body := sicore.GetReader(req.Body, sicore.SetJsonDecoder())
 	defer sicore.PutReader(body)
 
-	_, err := body.ReadAll()
+	var s core.Student
+	err := body.Decode(&s)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+	//////////////////////////////////////////////////////////////////////////////////////
 
-	runtime.GC()
-	w.Write([]byte("manual gc done"))
+	// find all students
+	list, err := studentUsc.FindAll()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	// write to file
+	f, err := os.OpenFile("./students.txt", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	defer f.Close()
+	fw := sicore.GetWriter(f)
+	defer sicore.PutWriter(fw)
+	for _, student := range list {
+		_, err := fw.Write([]byte(student.EmailAddress + "," + student.Name + "\n"))
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+	if err = fw.Flush(); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	// write to client
+	res := sicore.GetWriter(w, sicore.SetJsonEncoder())
+	defer sicore.PutWriter(res)
+
+	err = res.EncodeFlush(list)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 }
 
-func HandleBasic(w http.ResponseWriter, req *http.Request) {
-	if dump {
-		dumpReq, _ := httputil.DumpRequest(req, true)
-		fmt.Println(string(dumpReq))
-	}
+var (
+	fileNames = []string{"account_black.png", "account-lock_black.png", "disconnected.png", "down_arrow.png", "down2_arrow.png", "expand_down.png", "expand_up.png"}
+)
 
-	_, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+func HandlerSendFile(w http.ResponseWriter, req *http.Request) {
+	for i, name := range fileNames {
+		params := make(map[string]string)
+		params["id"] = strconv.Itoa(i)
+		_, err := client.RequestPostFile("http://127.0.0.1:8080/test/file/upload", nil, params, "file_to_upload", "./data/"+name)
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 	}
-	// log.Println(string(b))
-	w.Write([]byte("hello"))
+	w.Write([]byte("success"))
 }
 
-func HandleEcho(w http.ResponseWriter, req *http.Request) {
-	if dump {
-		dumpReq, _ := httputil.DumpRequest(req, true)
-		fmt.Println(string(dumpReq))
+func HandlerRepeatSendFile(w http.ResponseWriter, req *http.Request) {
+	for j := 0; j < 5000; j++ {
+
+		for i, name := range fileNames {
+			params := make(map[string]string)
+			params["id"] = strconv.Itoa(i)
+			_, err := client.RequestPostFile("http://127.0.0.1:8080/test/file/upload", nil, params, "file_to_upload", "./data/"+name)
+			if err != nil {
+				fmt.Println(err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if j%100 == 0 {
+			fmt.Println("gcing...")
+			runtime.GC()
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-	// log.Println(string(body))
-	w.Write(body)
+	w.Write([]byte("success"))
 }

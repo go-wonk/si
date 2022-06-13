@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 
@@ -205,9 +207,11 @@ func TestReuseRequestWithRequestPool(t *testing.T) {
 	urls := []string{"http://127.0.0.1:8080/test/echo", "https://127.0.0.1:8081/test/echo"}
 	for i := 0; i < 2; i++ {
 		sendData := fmt.Sprintf("%s-%d", data, i)
+
+		io.Copy(io.Discard, rw)
 		rw.Write([]byte(sendData))
 
-		req, err := sihttp.GetRequest(http.MethodPost, urls[i], rw)
+		req, err := sihttp.GetRequest(http.MethodPost, urls[i], nil, sendData)
 		siutils.AssertNilFail(t, err)
 
 		//////////////////////////////////////////////////////////
@@ -347,7 +351,87 @@ func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
 	err := client.RequestPostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 
+	err = client.RequestPostDecode(url, nil, &student, &res)
+	siutils.AssertNilFail(t, err)
 	// assert.EqualValues(t, sendData, string(respBody))
 	fmt.Println(res.String())
+
+}
+
+func TestHttpClientRequestPostFileData(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+
+	url := "http://127.0.0.1:8080/test/echo"
+
+	f, err := os.OpenFile("./data/testfile.txt", os.O_RDONLY, 0777)
+	siutils.AssertNilFail(t, err)
+	defer f.Close()
+
+	header := make(http.Header)
+	header["Content-Type"] = []string{"multipart/form-data"}
+
+	res, err := client.RequestPostReader(url, header, f)
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(string(res))
+
+}
+
+func TestHttpClientRequestPostReaderFile(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+
+	url := "http://127.0.0.1:8080/test/file/upload"
+
+	f, err := os.OpenFile("./data/testfile.txt", os.O_RDONLY, 0777)
+	siutils.AssertNilFail(t, err)
+	defer f.Close()
+
+	contents, err := io.ReadAll(f)
+	siutils.AssertNilFail(t, err)
+
+	buf := bytes.NewBuffer(make([]byte, 0, 512))
+	mw := multipart.NewWriter(buf)
+
+	part, err := mw.CreateFormFile("file_to_upload", f.Name())
+	siutils.AssertNilFail(t, err)
+	part.Write(contents)
+
+	mw.WriteField("nam", "wonk")
+
+	header := make(http.Header)
+	header["Content-Type"] = []string{mw.FormDataContentType()}
+
+	err = mw.Close()
+	siutils.AssertNilFail(t, err)
+
+	// res, err := client.RequestPostFile(url, header, buf)
+	res, err := client.RequestPostReader(url, header, buf)
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(string(res))
+
+}
+
+func TestHttpClientRequestPostFile(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+
+	url := "http://127.0.0.1:8080/test/file/upload"
+
+	res, err := client.RequestPostFile(url, nil, nil, "file_to_upload", "./data/testfile.txt")
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(string(res))
 
 }

@@ -2,8 +2,14 @@ package sihttp
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-wonk/si/sicore"
 )
@@ -89,85 +95,15 @@ func (hc *HttpClient) DoDecode(request *http.Request, res any) (int, error) {
 	return resp.StatusCode, nil
 }
 
-// func (hc *HttpClient) request(method string, url string, header http.Header, body io.Reader) ([]byte, error) {
-// 	req, err := GetRequest(method, url, body)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer PutRequest(req)
-
-// 	req.SetHeader(header)
-
-// 	respBody, statusCode, err := hc.DoRead(req.Request)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	if statusCode != http.StatusOK {
-// 		return respBody, fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
-// 	}
-
-// 	return respBody, nil
-// }
-
-// func (hc *HttpClient) requestBytes(method string, url string, header http.Header, body []byte) ([]byte, error) {
-// 	var r *bytes.Reader
-// 	if len(body) > 0 {
-// 		r = sicore.GetBytesReader(body)
-// 		defer sicore.PutBytesReader(r)
-// 		return hc.request(method, url, header, r)
-// 	}
-
-// 	// argument of body must be nil if len(body) == 0
-// 	return hc.request(method, url, header, nil)
-// }
-
-// func (hc *HttpClient) requestEncode(method string, url string, header http.Header, body any) ([]byte, error) {
-// 	buf := sicore.GetBytesBuffer(make([]byte, 0, 512))
-// 	defer sicore.PutBytesBuffer(buf)
-
-// 	w := sicore.GetWriter(buf, hc.writerOpts...)
-// 	defer sicore.PutWriter(w)
-
-// 	if err := w.EncodeFlush(body); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return hc.request(method, url, header, buf)
-// }
-
-func (hc *HttpClient) makeReqBody(buf *bytes.Buffer, body any) error {
-	w := sicore.GetWriter(buf, hc.writerOpts...)
-	defer sicore.PutWriter(w)
-
-	if err := w.EncodeFlush(body); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (hc *HttpClient) request(method string, url string, header http.Header, body any) ([]byte, error) {
 	var req *HttpRequest
 	var err error
-	if body == nil {
-		req, err = GetRequest(method, url, nil)
-	} else {
-		buf := sicore.GetBytesBuffer(make([]byte, 0, 512))
-		defer sicore.PutBytesBuffer(buf)
 
-		if err := hc.makeReqBody(buf, body); err != nil {
-			return nil, err
-		}
-
-		req, err = GetRequest(method, url, buf)
-	}
+	req, err = GetRequest(method, url, header, body, hc.writerOpts...)
 	if err != nil {
 		return nil, err
 	}
 	defer PutRequest(req)
-
-	req.SetHeader(header)
 
 	respBody, statusCode, err := hc.DoRead(req.Request)
 	if err != nil {
@@ -184,24 +120,11 @@ func (hc *HttpClient) request(method string, url string, header http.Header, bod
 func (hc *HttpClient) requestDecode(method string, url string, header http.Header, body any, res any) error {
 	var req *HttpRequest
 	var err error
-	if body == nil {
-		req, err = GetRequest(method, url, nil)
-	} else {
-		buf := sicore.GetBytesBuffer(make([]byte, 0, 512))
-		defer sicore.PutBytesBuffer(buf)
-
-		if err := hc.makeReqBody(buf, body); err != nil {
-			return err
-		}
-
-		req, err = GetRequest(method, url, buf)
-	}
+	req, err = GetRequest(method, url, header, body, hc.writerOpts...)
 	if err != nil {
 		return err
 	}
 	defer PutRequest(req)
-
-	req.SetHeader(header)
 
 	statusCode, err := hc.DoDecode(req.Request, res)
 	if err != nil {
@@ -221,7 +144,6 @@ func (hc *HttpClient) Request(method string, url string, header http.Header, bod
 
 func (hc *HttpClient) RequestGet(url string, header http.Header) ([]byte, error) {
 	return hc.request(http.MethodGet, hc.baseUrl+url, header, nil)
-
 }
 
 func (hc *HttpClient) RequestPost(url string, header http.Header, body []byte) ([]byte, error) {
@@ -248,4 +170,83 @@ func (hc *HttpClient) RequestGetDecode(url string, header http.Header, res any) 
 }
 func (hc *HttpClient) RequestPostDecode(url string, header http.Header, body any, res any) error {
 	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, body, res)
+}
+
+func (hc *HttpClient) RequestPostReader(url string, header http.Header, body io.Reader) ([]byte, error) {
+	return hc.request(http.MethodPost, hc.baseUrl+url, header, body)
+}
+func (hc *HttpClient) RequestPostDecodeReader(url string, header http.Header, body io.Reader, res any) error {
+	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, body, res)
+}
+
+func (hc *HttpClient) RequestPostFile(url string, header http.Header,
+	params map[string]string, fileFieldName, fileName string) ([]byte, error) {
+
+	// open file
+	f, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	// create multipart.Writer
+	buf := bytes.NewBuffer(make([]byte, 0, 512))
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile(fileFieldName, f.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	// write file contents
+	sr := sicore.GetReader(f)
+	defer sicore.PutReader(sr)
+	_, err = sr.WriteTo(w)
+	if err != nil {
+		return nil, err
+	}
+
+	// set Content-Type, overwrite existing Content-Type
+	if header == nil {
+		header = make(http.Header)
+	}
+	header["Content-Type"] = []string{mw.FormDataContentType()}
+
+	// write params, this closes multipart.Writer
+	for k, v := range params {
+		mw.WriteField(k, v)
+	}
+
+	// close multipart writer
+	if err = mw.Close(); err != nil {
+		return nil, err
+	}
+
+	return hc.request(http.MethodPost, url, header, buf)
+}
+
+func DefaultInsecureClient() *http.Client {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	return DefaultClient(tlsConfig)
+}
+
+func DefaultClient(tlsConfig *tls.Config) *http.Client {
+
+	dialer := &net.Dialer{Timeout: 3 * time.Second}
+
+	tr := &http.Transport{
+		MaxIdleConns:       10,
+		IdleConnTimeout:    time.Duration(15) * time.Second,
+		DisableCompression: false,
+		TLSClientConfig:    tlsConfig,
+		DisableKeepAlives:  false,
+		Dial:               dialer.Dial,
+	}
+
+	client := &http.Client{
+		Timeout:   time.Duration(15) * time.Second,
+		Transport: tr,
+	}
+	return client
 }

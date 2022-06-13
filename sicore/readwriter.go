@@ -188,6 +188,10 @@ func (rd *Reader) Len() int {
 	return 0
 }
 
+func (rd *Reader) WriteTo(w io.Writer) (n int64, err error) {
+	return rd.br.WriteTo(w)
+}
+
 // Writer writes data to underlying Writer
 type Writer struct {
 	bw  *bufio.Writer

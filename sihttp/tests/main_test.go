@@ -3,6 +3,7 @@ package sihttp_test
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,9 +14,9 @@ import (
 )
 
 var (
-	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
-	// onlinetest, _ = strconv.ParseBool("1")
-	longtest, _ = strconv.ParseBool(os.Getenv("LONG_TEST"))
+	// onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	onlinetest, _ = strconv.ParseBool("1")
+	longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
 	// longtest, _ = strconv.ParseBool("1")
 
 	client *http.Client
@@ -26,12 +27,15 @@ func openClient() *http.Client {
 		InsecureSkipVerify: true,
 	}
 
+	dialer := &net.Dialer{Timeout: 3 * time.Second}
+
 	tr := &http.Transport{
 		MaxIdleConns:       300,
 		IdleConnTimeout:    time.Duration(15) * time.Second,
 		DisableCompression: false,
 		TLSClientConfig:    tlsConfig,
 		DisableKeepAlives:  false,
+		Dial:               dialer.Dial,
 	}
 
 	client := &http.Client{

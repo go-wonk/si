@@ -153,7 +153,7 @@ func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
 		headerData := fmt.Sprintf("%d", i)
 		r := sicore.GetBytesReader([]byte(sendData))
 
-		req, _ := sihttp.GetRequest(http.MethodPost, url, r)
+		req, _ := sihttp.GetRequest(http.MethodPost, url, nil, r)
 		// siutils.AssertNilFailB(b, err)
 
 		req.Header.Set("custom_header", headerData)

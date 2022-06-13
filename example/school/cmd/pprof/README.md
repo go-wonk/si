@@ -27,13 +27,13 @@ bombardier -c 20 -n 1000 \
 -H "Content-Type: application/json; charset=utf-8" \
 -m POST -k \
 -b '{"name":"wonk","email_address":"wonk@wonk.org"}' \
-http://172.16.200.82:8080/test/pprof
+http://127.0.0.1:8082/test/pprof
 
 bombardier -c 20 -n 1000 \
 -H "Content-Type: application/json; charset=utf-8" \
 -m POST -k \
 -b '{"name":"wonk","email_address":"wonk@wonk.org"}' \
-http://172.16.200.82:8080/test/findall
+http://127.0.0.1:8082/test/findall
 
 ### gc
 curl --insecure -H "Content-Type: application/json; charset=utf-8" \
@@ -44,10 +44,13 @@ http://127.0.0.1:8080/test/gc
 curl --insecure -H "Content-Type: application/json; charset=utf-8" \
 -X POST \
 -d '{"name":"wonk","email_address":"wonk@wonk.org"}' \
-http://127.0.0.1:8080/test/findall
+http://127.0.0.1:8082/test/findall
 
 curl --insecure -H "Content-Type: application/json; charset=utf-8" \
 -X POST \
 -d '{"name":"wonk","email_address":"wonk@wonk.org"}' \
 http://127.0.0.1:8080/test/repeat/findall
 
+curl --insecure -H "Content-Type: application/json; charset=utf-8" \
+-X GET \
+http://127.0.0.1:8082/test/sendfiles

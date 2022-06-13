@@ -15,29 +15,53 @@ import (
 
 type HttpRequest struct {
 	*http.Request
+	buf *bytes.Buffer
 }
 
 // newHttpRequest creates a new http.Request.
 // `body` argument is not fed into NewRequest function, but is set using `setBody` after instantiating
 // a http.Request.
-func newHttpRequest(method string, url string, body io.Reader) (*HttpRequest, error) {
+func newHttpRequest(method string, url string, header http.Header, body any, opts ...sicore.WriterOption) (*HttpRequest, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	httpReq := HttpRequest{
 		Request: req,
+		buf:     bytes.NewBuffer(make([]byte, 0, 512)),
 	}
 
-	// Set Body, GetBody(), Content Length
-	httpReq.setBody(body)
+	if r, ok := body.(io.Reader); ok {
+		httpReq.setBody(r)
+	} else {
+		if err := httpReq.writeAndSetBody(body, opts...); err != nil {
+			return nil, err
+		}
+	}
+
+	httpReq.SetHeader(header)
 
 	return &httpReq, nil
 }
 
-func (hr *HttpRequest) Reset(method string, url string, body io.Reader) error {
-	// Set Body, GetBody(), Content Length
-	hr.setBody(body)
+func (hr *HttpRequest) Reset(method string, url string, header http.Header, body any, opts ...sicore.WriterOption) error {
+
+	hr.Body = nil
+	hr.GetBody = nil
+
+	if body == nil {
+		hr.setBody(nil)
+	} else {
+		hr.buf.Reset()
+
+		if r, ok := body.(io.Reader); ok {
+			hr.setBody(r)
+		} else {
+			if err := hr.writeAndSetBody(body, opts...); err != nil {
+				return err
+			}
+		}
+	}
 
 	// Set method, url, host
 	if err := hr.setMethodAndURL(method, url); err != nil {
@@ -56,6 +80,8 @@ func (hr *HttpRequest) Reset(method string, url string, body io.Reader) error {
 
 	// Clear transfer encodings
 	hr.TransferEncoding = hr.TransferEncoding[:0]
+
+	hr.SetHeader(header)
 
 	return nil
 }
@@ -145,6 +171,18 @@ func (hr *HttpRequest) setBody(body io.Reader) {
 		hr.GetBody = nil
 		hr.Body = nil
 	}
+}
+
+func (hr *HttpRequest) writeAndSetBody(body any, opts ...sicore.WriterOption) error {
+	w := sicore.GetWriter(hr.buf, opts...)
+	defer sicore.PutWriter(w)
+
+	if err := w.EncodeFlush(body); err != nil {
+		return err
+	}
+
+	hr.setBody(hr.buf)
+	return nil
 }
 
 // setMethodAndURL sets method and url to underlying request.
