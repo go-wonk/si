@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-wonk/si/sisql"
 	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/siwrap"
 	"github.com/go-wonk/si/tests/testmodels"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +16,7 @@ func BenchmarkSqlDB_Exec(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := sisql.NewSqlDB(db)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -38,7 +38,7 @@ func BenchmarkSqlDB_QueryIntoMap(b *testing.B) {
 
 	// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		sqldb := sisql.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		// sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		// sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 
@@ -68,7 +68,7 @@ Benchmark on json and mapstructure
 
 goos: windows
 goarch: amd64
-pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+pkg: github.com/go-wonk/si/sisql/tests/sql_test
 cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
 BenchmarkSqlDB_QueryIntoAny_Struct-8                 100           1683737 ns/op            7236 B/op        151 allocs/op
 BenchmarkSqlDB_QueryIntoAny_Struct2-8                100           2903963 ns/op           11857 B/op        252 allocs/op
@@ -81,7 +81,7 @@ func BenchmarkSqlDB_QueryIntoAny_Struct(b *testing.B) {
 	siutils.AssertNotNilFailB(b, db)
 
 	for i := 0; i < b.N; i++ {
-		sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
+		sqldb := sisql.NewSqlDB(db) // sicore.SqlColumn{"decimal_", sicore.SqlColTypeFloat64},
 		// sicore.SqlColumn{"numeric_", sicore.SqlColTypeFloat64},
 		// sicore.SqlColumn{"char_arr_", sicore.SqlColTypeUints8},
 
@@ -113,7 +113,7 @@ func BenchmarkSqlDB_QueryMaps(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := sisql.NewSqlDB(db)
 	for i := 0; i < b.N; i++ {
 
 		query := `
@@ -141,7 +141,7 @@ func BenchmarkSqlDB_QueryStructs(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db)
+	sqldb := sisql.NewSqlDB(db)
 	query := `
 		select null as nil,
 			'123'::varchar(255) as str,
@@ -182,7 +182,7 @@ func BenchmarkSqlDB_QueryStructsWithColumn(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
+	sqldb := sisql.NewSqlDB(db) // sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
 	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},
 	// sicore.SqlColumn{Name: "char_arr_", Type: sicore.SqlColTypeUints8},
 
@@ -216,20 +216,20 @@ type Student struct {
 /*
 	goos: darwin
 	goarch: arm64
-	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	pkg: github.com/go-wonk/si/sisql/tests/sql_test
 	BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
 	PASS
 
 	goos: windows
 	goarch: amd64
-	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	pkg: github.com/go-wonk/si/sisql/tests/sql_test
 	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
 	BenchmarkSqlDB_QueryStructsStudent-8         100           8626656 ns/op          992037 B/op      31466 allocs/op
 	PASS
 
 	goos: windows
 	goarch: amd64
-	pkg: github.com/go-wonk/si/siwrap/tests/sql_test
+	pkg: github.com/go-wonk/si/sisql/tests/sql_test
 	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
 	BenchmarkSqlDB_QueryStructsStudent-8         100           7502967 ns/op          747775 B/op      25015 allocs/op
 	PASS
@@ -240,7 +240,7 @@ func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := siwrap.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 

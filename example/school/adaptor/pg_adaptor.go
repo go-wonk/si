@@ -7,20 +7,20 @@ import (
 	"time"
 
 	"github.com/go-wonk/si/example/school/core"
-	"github.com/go-wonk/si/siwrap"
+	"github.com/go-wonk/si/sisql"
 )
 
 type pgStudentRepo struct {
-	db *siwrap.SqlDB
+	db *sisql.SqlDB
 }
 
 func NewPgStudentRepo(db *sql.DB) *pgStudentRepo {
-	return &pgStudentRepo{db: siwrap.NewSqlDB(db)}
+	return &pgStudentRepo{db: sisql.NewSqlDB(db)}
 }
 
 func (o *pgStudentRepo) Add(student *core.Student, tx core.TxController) error {
-	sqlTx := siwrap.GetSqlTx(tx.(*sql.Tx))
-	defer siwrap.PutSqlTx(sqlTx)
+	sqlTx := sisql.GetSqlTx(tx.(*sql.Tx))
+	defer sisql.PutSqlTx(sqlTx)
 	if sqlTx == nil {
 		return errors.New("invalid tx")
 	}
@@ -70,8 +70,8 @@ func NewPgBookRepo(db *sql.DB) *pgBookRepo {
 }
 
 func (o *pgBookRepo) Add(book *core.Book, tx core.TxController) error {
-	sqlTx := siwrap.GetSqlTx(tx.(*sql.Tx))
-	defer siwrap.PutSqlTx(sqlTx)
+	sqlTx := sisql.GetSqlTx(tx.(*sql.Tx))
+	defer sisql.PutSqlTx(sqlTx)
 	if sqlTx == nil {
 		return errors.New("invalid tx")
 	}
@@ -97,8 +97,8 @@ func NewPgBorrowingRepo(db *sql.DB) *pgBorrowingRepo {
 }
 
 func (o *pgBorrowingRepo) Add(student *core.Student, book *core.Book, tx core.TxController) error {
-	sqlTx := siwrap.GetSqlTx(tx.(*sql.Tx))
-	defer siwrap.PutSqlTx(sqlTx)
+	sqlTx := sisql.GetSqlTx(tx.(*sql.Tx))
+	defer sisql.PutSqlTx(sqlTx)
 	if sqlTx == nil {
 		return errors.New("invalid tx")
 	}
