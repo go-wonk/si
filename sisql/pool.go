@@ -1,4 +1,4 @@
-package siwrap
+package sisql
 
 import (
 	"database/sql"

@@ -10,6 +10,7 @@ type Student struct {
 	ID           int    `json:"id"`
 	EmailAddress string `json:"email_address"`
 	Name         string `json:"name"`
+	Borrowed     bool   `json:"borrowed"`
 }
 
 type Book struct {

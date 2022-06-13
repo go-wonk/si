@@ -1,4 +1,4 @@
-package sql_test
+package sisql_test
 
 import (
 	"database/sql"
@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	// onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
-	onlinetest, _ = strconv.ParseBool("1")
-	longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
+	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
+	// onlinetest, _ = strconv.ParseBool("1")
+	longtest, _ = strconv.ParseBool(os.Getenv("LONG_TEST"))
 
 	db *sql.DB
 )
