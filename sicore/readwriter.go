@@ -93,6 +93,7 @@ func (rd *Reader) ReadAll() ([]byte, error) {
 }
 
 func (rd *Reader) readAll() ([]byte, error) {
+	rd.bufAll = rd.bufAll[:0]
 	for {
 		if len(rd.bufAll) == cap(rd.bufAll) {
 			if err := growCap(&rd.bufAll, defaultBufferSize); err != nil {
