@@ -20,20 +20,22 @@ type HttpClient struct {
 	baseUrl        string
 	defaultHeaders map[string]string
 
-	writerOpts []sicore.WriterOption
-	readerOpts []sicore.ReaderOption
+	requestOpts []RequestOption
+	writerOpts  []sicore.WriterOption
+	readerOpts  []sicore.ReaderOption
 }
 
 // NewHttpClient returns default HttpClient
-func NewHttpClient(client *http.Client) *HttpClient {
-	return NewHttpClientWithHeader(client, nil)
+func NewHttpClient(client *http.Client, opts ...RequestOption) *HttpClient {
+	return NewHttpClientWithHeader(client, nil, opts...)
 }
 
 // NewHttpClientWithHeader returns HttpClient with specified defaultHeaders that will be set on every request
-func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]string) *HttpClient {
+func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]string, opts ...RequestOption) *HttpClient {
 	c := &HttpClient{
 		client:         client,
 		defaultHeaders: defaultHeaders,
+		requestOpts:    opts,
 	}
 
 	return c
@@ -55,6 +57,9 @@ func (hc *HttpClient) setDefaultHeader(request *http.Request) {
 	}
 }
 
+func (hc *HttpClient) SetRequestOptions(opts ...RequestOption) {
+	hc.requestOpts = opts
+}
 func (hc *HttpClient) SetWriterOptions(opts ...sicore.WriterOption) {
 	hc.writerOpts = opts
 }
@@ -105,6 +110,10 @@ func (hc *HttpClient) request(method string, url string, header http.Header, bod
 	}
 	defer PutRequest(req)
 
+	for _, v := range hc.requestOpts {
+		v.apply(req)
+	}
+
 	respBody, statusCode, err := hc.DoRead(req.Request)
 	if err != nil {
 		return nil, err
@@ -125,6 +134,10 @@ func (hc *HttpClient) requestDecode(method string, url string, header http.Heade
 		return err
 	}
 	defer PutRequest(req)
+
+	for _, v := range hc.requestOpts {
+		v.apply(req)
+	}
 
 	statusCode, err := hc.DoDecode(req.Request, res)
 	if err != nil {
@@ -224,6 +237,7 @@ func (hc *HttpClient) RequestPostFile(url string, header http.Header,
 	return hc.request(http.MethodPost, url, header, buf)
 }
 
+// DefaultInsecureClient instantiate http.Client with InsecureSkipVerify set to true
 func DefaultInsecureClient() *http.Client {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
@@ -231,6 +245,7 @@ func DefaultInsecureClient() *http.Client {
 	return DefaultClient(tlsConfig)
 }
 
+// DefaultClient instantiate http.Client with input parameter `tlsConfig`
 func DefaultClient(tlsConfig *tls.Config) *http.Client {
 
 	dialer := &net.Dialer{Timeout: 3 * time.Second}
