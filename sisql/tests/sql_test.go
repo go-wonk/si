@@ -34,6 +34,46 @@ func TestSqlDB_QueryRow(t *testing.T) {
 	assert.Equal(t, expected, tim.Time.String())
 }
 
+func TestSqlDB_QueryRowStruct(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+
+	query := `
+		select id, name, email_address, borrowed, 23 as book_id from student order by id limit 1
+	`
+
+	// tl := Table{}
+	var tl testmodels.Student
+	err := sqldb.QueryRowStruct(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	expected := `{"id":1,"email_address":"wonk@wonk.org","name":"wonk","borrowed":false,"book_id":23}`
+	assert.Equal(t, expected, tl.String())
+}
+
+func TestSqlDB_QueryRowPrimary(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+
+	query := `
+		select 12 as id
+	`
+
+	var tl int
+	err := sqldb.QueryRowPrimary(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, 12, tl)
+}
+
 func TestSqlDBQueryStructsBasicDataType(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")

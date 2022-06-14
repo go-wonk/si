@@ -40,24 +40,24 @@ func (o *SqlTx) PrepareContext(ctx context.Context, query string) (*sql.Stmt, er
 	return o.tx.PrepareContext(ctx, query)
 }
 
-func (o *SqlTx) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
-	return o.tx.Query(query, args...)
-}
-
 func (o *SqlTx) QueryRow(query string, args ...any) *sql.Row {
 	return o.tx.QueryRow(query, args...)
 }
 
-func (o *SqlTx) Exec(query string, args ...any) (sql.Result, error) {
-	return o.tx.Exec(query, args...)
+func (o *SqlTx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	return o.tx.QueryRowContext(ctx, query, args...)
+}
+
+func (o *SqlTx) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return o.tx.Query(query, args...)
 }
 
 func (o *SqlTx) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	return o.tx.QueryContext(ctx, query, args...)
 }
 
-func (o *SqlTx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	return o.tx.QueryRowContext(ctx, query, args...)
+func (o *SqlTx) Exec(query string, args ...any) (sql.Result, error) {
+	return o.tx.Exec(query, args...)
 }
 
 func (o *SqlTx) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
@@ -65,11 +65,7 @@ func (o *SqlTx) ExecContext(ctx context.Context, query string, args ...any) (sql
 }
 
 func (o *SqlTx) ExecRowsAffected(query string, args ...any) (int64, error) {
-	res, err := o.tx.Exec(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	return res.RowsAffected()
+	return o.ExecContextRowsAffected(context.Background(), query, args...)
 }
 func (o *SqlTx) ExecContextRowsAffected(ctx context.Context, query string, args ...any) (int64, error) {
 	res, err := o.tx.ExecContext(ctx, query, args...)
@@ -80,34 +76,7 @@ func (o *SqlTx) ExecContextRowsAffected(ctx context.Context, query string, args 
 }
 
 func (o *SqlTx) QueryMaps(query string, output *[]map[string]interface{}, args ...any) (int, error) {
-	rows, err := o.tx.Query(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	rs := sicore.GetRowScanner(o.opts...)
-	defer sicore.PutRowScanner(rs)
-
-	return rs.ScanMapSlice(rows, output)
-}
-
-func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error) {
-	rows, err := o.tx.Query(query, args...)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	rs := sicore.GetRowScanner(o.opts...)
-	defer sicore.PutRowScanner(rs)
-
-	n, err := rs.ScanStructs(rows, output)
-	if err != nil {
-		return 0, err
-	}
-
-	return n, nil
+	return o.QueryContextMaps(context.Background(), query, output, args...)
 }
 
 func (o *SqlTx) QueryContextMaps(ctx context.Context, query string, output *[]map[string]interface{}, args ...any) (int, error) {
@@ -121,6 +90,50 @@ func (o *SqlTx) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	defer sicore.PutRowScanner(rs)
 
 	return rs.ScanMapSlice(rows, output)
+}
+
+func (o *SqlTx) QueryRowPrimary(query string, output any, args ...any) error {
+	return o.QueryRowContextPrimary(context.Background(), query, output, args...)
+}
+
+func (o *SqlTx) QueryRowContextPrimary(ctx context.Context, query string, output any, args ...any) error {
+	row := o.tx.QueryRowContext(ctx, query, args...)
+
+	rs := sicore.GetRowScanner(o.opts...)
+	defer sicore.PutRowScanner(rs)
+
+	err := rs.ScanPrimary(row, output)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *SqlTx) QueryRowStruct(query string, output any, args ...any) error {
+	return o.QueryRowContextStruct(context.Background(), query, output, args...)
+}
+
+func (o *SqlTx) QueryRowContextStruct(ctx context.Context, query string, output any, args ...any) error {
+	rows, err := o.tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	rs := sicore.GetRowScanner(o.opts...)
+	defer sicore.PutRowScanner(rs)
+
+	err = rs.ScanStruct(rows, output)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *SqlTx) QueryStructs(query string, output any, args ...any) (int, error) {
+	return o.QueryContextStructs(context.Background(), query, output, args...)
 }
 
 func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output any, args ...any) (int, error) {
