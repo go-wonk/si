@@ -91,6 +91,13 @@ func (o *SqlDB) QueryMaps(query string, output *[]map[string]interface{}, args .
 	return rs.ScanMapSlice(rows, output)
 }
 
+func (o *SqlDB) QueryRowPrimary(query string, output any, args ...any) error {
+	return o.QueryRowContextPrimary(context.Background(), query, output, args...)
+}
+func (o *SqlDB) QueryRowStruct(query string, output any, args ...any) error {
+	return o.QueryRowContextStruct(context.Background(), query, output, args...)
+}
+
 // QueryStructs queries a database then scan resultset into output of any type
 func (o *SqlDB) QueryStructs(query string, output any, args ...any) (int, error) {
 	rows, err := o.db.Query(query, args...)
@@ -122,6 +129,37 @@ func (o *SqlDB) QueryContextMaps(ctx context.Context, query string, output *[]ma
 	defer sicore.PutRowScanner(rs)
 
 	return rs.ScanMapSlice(rows, output)
+}
+
+func (o *SqlDB) QueryRowContextPrimary(ctx context.Context, query string, output any, args ...any) error {
+	row := o.db.QueryRowContext(ctx, query, args...)
+
+	rs := sicore.GetRowScanner(o.opts...)
+	defer sicore.PutRowScanner(rs)
+
+	err := rs.ScanPrimary(row, output)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (o *SqlDB) QueryRowContextStruct(ctx context.Context, query string, output any, args ...any) error {
+	rows, err := o.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	rs := sicore.GetRowScanner(o.opts...)
+	defer sicore.PutRowScanner(rs)
+
+	err = rs.ScanStruct(rows, output)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // QueryContextStructs queries a database with context then scan resultset into output of any type

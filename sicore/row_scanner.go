@@ -268,3 +268,70 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 
 	return n, nil
 }
+
+// ScanStructs scans `rows` into `output`. `output` should be a slice of structs.
+func (rs *RowScanner) ScanStruct(rows *sql.Rows, output any) error {
+	rv, err := valueOfAnyPtr(output)
+	if err != nil {
+		return err
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+	for i := range columns {
+		columns[i] = strings.ToLower(columns[i])
+	}
+
+	var traversedFields []traversedField
+	var fieldsToInitialize [][]int
+	traverseFields(traversedField{rv, []int{}}, &traversedFields, &fieldsToInitialize)
+	tagNameMap := makeNameMap(rv, rs.tagKey, traversedFields)
+
+	dest, err := buildDestinations(columns, tagNameMap, rv)
+	if err != nil {
+		return err
+	}
+	if rows.Next() {
+
+		// scan the values
+		err = rows.Scan(dest...)
+		if err != nil {
+			return err
+		}
+
+		// set values to the struct fields
+		setStructValues(rv, dest, columns, tagNameMap)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ScanStructs scans `rows` into `output`. `output` should be a slice of structs.
+func (rs *RowScanner) ScanPrimary(row *sql.Row, output any) error {
+	rv, err := valueOfAnyPtr(output)
+	if err != nil {
+		return err
+	}
+
+	dest := reflect.New(reflect.PointerTo(rv.Type())).Interface()
+
+	// scan the values
+	err = row.Scan(dest)
+	if err != nil {
+		return err
+	}
+
+	// set values to the struct fields
+	if refValue := reflect.Indirect(reflect.Indirect(reflect.ValueOf(dest))); refValue.IsValid() {
+		rv.Set(refValue)
+	}
+
+	return nil
+}
