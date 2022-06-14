@@ -27,20 +27,18 @@ func putRowScanner(rs *RowScanner) {
 	_rowScannerPool.Put(rs)
 }
 
+// GetRowScanner retrieves RowScanner from a pool or creates a new.
 func GetRowScanner(opts ...RowScannerOption) *RowScanner {
 	return getRowScanner(opts...)
 }
+
+// PutRowScanner puts RowScanner back to the pool.
 func PutRowScanner(rs *RowScanner) {
 	putRowScanner(rs)
 }
 
 var (
-	// smallBufferSize  = 128
-	// mediumBufferSize = 1024
-
 	_readerPool = sync.Pool{}
-	// _readerPoolSmall  = sync.Pool{}
-	// _readerPoolMedium = sync.Pool{}
 )
 
 func getReader(r io.Reader, opt ...ReaderOption) *Reader {
@@ -57,9 +55,12 @@ func putReader(r *Reader) {
 	_readerPool.Put(r)
 }
 
+// GetReader retrieves Reader from a pool or creates a new.
 func GetReader(r io.Reader, opt ...ReaderOption) *Reader {
 	return getReader(r, opt...)
 }
+
+// PutReader puts Reader back to the pool.
 func PutReader(r *Reader) {
 	putReader(r)
 }
@@ -86,9 +87,12 @@ func putWriter(w *Writer) {
 	_writerPool.Put(w)
 }
 
+// GetWriter retrieves Writer from a pool or creates a new.
 func GetWriter(w io.Writer, opt ...WriterOption) *Writer {
 	return getWriter(w, opt...)
 }
+
+// PutWriter puts Writer back to the pool.
 func PutWriter(w *Writer) {
 	putWriter(w)
 }
@@ -117,20 +121,23 @@ func putReadWriter(rw *ReadWriter) {
 	_readwriterPool.Put(rw)
 }
 
+// GetReadWriter retrieves ReadWriter from a pool or creates a new.
 func GetReadWriter(r io.Reader, w io.Writer) *ReadWriter {
 	return getReadWriter(r, nil, w, nil)
 }
 
+// GetReadWriterWithOptions retrieves ReadWriter from a pool or creates a new with Reader and Writer options.
 func GetReadWriterWithOptions(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
 	return getReadWriter(r, ro, w, wo)
 }
 
+// PutReadWriter puts ReadWriter back to the pool.
 func PutReadWriter(rw *ReadWriter) {
 	putReadWriter(rw)
 }
 
-// bytes.Reader pool
 var (
+	// bytes.Reader pool
 	_bytesReaderPool = sync.Pool{}
 )
 
@@ -156,8 +163,8 @@ func PutBytesReader(r *bytes.Reader) {
 	putBytesReader(r)
 }
 
-// bytes.Buffer pool
 var (
+	// bytes.Buffer pool
 	_bytesBufferPool = sync.Pool{
 		New: func() interface{} {
 			return bytes.NewBuffer(make([]byte, 0, 512))
@@ -189,8 +196,8 @@ func PutBytesBuffer(b *bytes.Buffer) {
 	putBytesBuffer(b)
 }
 
-// MapSlice pool
 var (
+	// MapSlice pool
 	_msPool = sync.Pool{
 		New: func() interface{} {
 			ms := make([]map[string]interface{}, 0, 100)
@@ -214,10 +221,6 @@ func putMapSlice(ms []map[string]interface{}) {
 	ms = ms[:0]
 	_msPool.Put(ms)
 }
-
-// const maxInt = int(^uint(0) >> 1)
-
-// var ErrTooLarge = errors.New("buf too large")
 
 func growMapSlice(ms *[]map[string]interface{}, s int) (int, error) {
 	c := cap(*ms)
@@ -251,6 +254,7 @@ func makeMapIfNil(m *map[string]interface{}) {
 	}
 }
 
+// HmacSha256HashPool wraps Get and Put methods.
 type HmacSha256HashPool interface {
 	Get() interface{}
 	Put(v interface{})
@@ -270,10 +274,12 @@ func getHmacSha256Pool(secret string) HmacSha256HashPool {
 	return p.(HmacSha256HashPool)
 }
 
+// GetHmacSha256Hash retrieve a Hash with secret from a pool or create a new.
 func GetHmacSha256Hash(secret string) hash.Hash {
 	return getHmacSha256Pool(secret).Get().(hash.Hash)
 }
 
+// PutHmacSha256Hash puts Hash with secret back into a pool.
 func PutHmacSha256Hash(secret string, h hash.Hash) {
 	h.Reset()
 	getHmacSha256Pool(secret).Put(h)

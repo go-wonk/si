@@ -14,11 +14,12 @@ type Flusher interface {
 	Flush() error
 }
 
+// Lengther wraps Len medhod
 type Lengther interface {
 	Len() int
 }
 
-// Reader
+// Reader is a wrapper of buifio.Reader.
 type Reader struct {
 	r   io.Reader
 	br  *bufio.Reader
@@ -49,33 +50,13 @@ func newReader(r io.Reader, opt ...ReaderOption) *Reader {
 	}
 	return b
 }
-func newReaderSize(r io.Reader, bufferSize int, opt ...ReaderOption) *Reader {
-	if br, ok := r.(*bufio.Reader); ok {
-		b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
-		for _, o := range opt {
-			o.apply(b)
-		}
-		if b.chk == nil {
-			b.chk = &DefaultEofChecker{}
-		}
-		return b
-	}
-	br := bufio.NewReaderSize(r, bufferSize)
-	b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
-	for _, o := range opt {
-		o.apply(b)
-	}
-	if b.chk == nil {
-		b.chk = &DefaultEofChecker{}
-	}
-	return b
-}
 
+// SetEofChecker sets EofChecker to underlying Reader.
 func (rd *Reader) SetEofChecker(chk EofChecker) {
 	rd.chk = chk
 }
 
-// Reset r, bufferSize and validator of Reader
+// Reset resets underlying Reader with r and opt.
 func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 	rd.bufAll = rd.bufAll[:0]
 	rd.r = r
@@ -99,13 +80,13 @@ func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 	}
 }
 
-// Read reads the data of underlying io.Reader into p
+// Read reads the data of underlying Reader(rd.br) into p.
 func (rd *Reader) Read(p []byte) (n int, err error) {
 	n, err = rd.br.Read(p)
 	return
 }
 
-// ReadAll reads all data from r.r and returns it.
+// ReadAll reads all data from underlying Reader(rd.br) and returns it.
 func (rd *Reader) ReadAll() ([]byte, error) {
 	// return readAll(rd.br, rd.chk)
 	return rd.readAll()
@@ -162,6 +143,7 @@ func readAll(r io.Reader, chk EofChecker) ([]byte, error) {
 
 var ErrNoDecoder = errors.New("no decoder was provided")
 
+// Decode decodes data from underlying Reader(rd.br) and saves it to the value pointed by v.
 func (rd *Reader) Decode(v any) error {
 	if rd.dec == nil {
 		return ErrNoDecoder
@@ -169,18 +151,25 @@ func (rd *Reader) Decode(v any) error {
 	return rd.dec.Decode(v)
 }
 
+// Peek returns next n bytes of underlying Reader(rd.br) without advancing the Reader.
 func (rd *Reader) Peek(n int) ([]byte, error) {
 	return rd.br.Peek(n)
 }
 
+// Buffered returns the number of bytes that can be read from the buffer of underlying Reader(rd.br).
 func (rd *Reader) Buffered() int {
 	return rd.br.Buffered()
 }
 
+// Size returns size of buffer of underlying Reader(rd.br).
+// eg. len(buf)
 func (rd *Reader) Size() int {
 	return rd.br.Size()
 }
 
+// Len returns the length of underlying Reader(rd.r) if rd.r implements Len() method.
+// It returns 0 otherwise.
+// This is different from Buffered. Buffered returns the length of temporary data in a buffer.
 func (rd *Reader) Len() int {
 	if l, ok := rd.r.(Lengther); ok {
 		return l.Len()
@@ -188,11 +177,12 @@ func (rd *Reader) Len() int {
 	return 0
 }
 
+// WriteTo writes data of underlying Reader(rd.br) into w.
 func (rd *Reader) WriteTo(w io.Writer) (n int64, err error) {
 	return rd.br.WriteTo(w)
 }
 
-// Writer writes data to underlying Writer
+// Writer is a wrapper of bufio.Writer.
 type Writer struct {
 	bw  *bufio.Writer
 	enc Encoder
@@ -220,6 +210,7 @@ func newWriter(w io.Writer, opt ...WriterOption) *Writer {
 	return b
 }
 
+// Reset resets underlying Writer(wr) with w and opt.
 func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	wr.bw.Reset(w)
 
@@ -241,19 +232,23 @@ func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	}
 }
 
+// Write writes p into underlying Writer(wr.bw).
 func (wr *Writer) Write(p []byte) (n int, err error) {
 	n, err = wr.bw.Write(p)
 	return
 }
 
+// Flush writes the data left in buffer to the underlying Writer(wr.bw).
 func (wr *Writer) Flush() error {
 	return wr.bw.Flush()
 }
 
+// Buffered returns the number of bytes that have been written to the buffer.
 func (wr *Writer) Buffered() int {
 	return wr.bw.Buffered()
 }
 
+// WriteFlush writes p to underlying Writer followed by Flush.
 func (wr *Writer) WriteFlush(p []byte) (n int, err error) {
 	n, err = wr.Write(p)
 	if err != nil {
@@ -266,6 +261,7 @@ func (wr *Writer) WriteFlush(p []byte) (n int, err error) {
 	return
 }
 
+// ReadFrom reads from r into underlying Writer(wr.bw).
 func (wr *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 	n, err = wr.bw.ReadFrom(r)
 	return
@@ -273,7 +269,7 @@ func (wr *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 
 var ErrNoEncoder = errors.New("no encoder was provided")
 
-// Encode writes encoded data into underlying Writer.
+// Encode writes encoded data into underlying Writer(wr.bw).
 func (wr *Writer) Encode(p any) (err error) {
 	if wr.enc == nil {
 		return ErrNoEncoder
