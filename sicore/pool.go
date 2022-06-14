@@ -2,6 +2,9 @@ package sicore
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"hash"
 	"io"
 	"sync"
 )
@@ -246,4 +249,32 @@ func makeMapIfNil(m *map[string]interface{}) {
 		*m = make(map[string]interface{})
 		return
 	}
+}
+
+type HmacSha256HashPool interface {
+	Get() interface{}
+	Put(v interface{})
+}
+
+var (
+	_hmacSha256HashMap sync.Map
+)
+
+func getHmacSha256Pool(secret string) HmacSha256HashPool {
+	p, _ := _hmacSha256HashMap.LoadOrStore(secret, &sync.Pool{
+		New: func() interface{} {
+			return hmac.New(sha256.New, []byte(secret))
+		},
+	})
+
+	return p.(HmacSha256HashPool)
+}
+
+func GetHmacSha256Hash(secret string) hash.Hash {
+	return getHmacSha256Pool(secret).Get().(hash.Hash)
+}
+
+func PutHmacSha256Hash(secret string, h hash.Hash) {
+	h.Reset()
+	getHmacSha256Pool(secret).Put(h)
 }
