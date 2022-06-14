@@ -1,9 +1,6 @@
 package sihttp
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"strings"
 
 	"github.com/go-wonk/si/sicore"
@@ -43,18 +40,10 @@ func WithHeaderHmac256(key string, secret []byte) RequestOptionFunc {
 			return err
 		}
 
-		body, err := sicore.ReadAll(r)
+		hashed, err := sicore.HmacSha256HexEncodedWithReader(string(secret), r)
 		if err != nil {
 			return err
 		}
-
-		m := hmac.New(sha256.New, secret)
-		_, err = sicore.WriteAll(m, body)
-		if err != nil {
-			return err
-		}
-
-		hashed := hex.EncodeToString(m.Sum(nil))
 		header[key] = []string{hashed}
 
 		return nil

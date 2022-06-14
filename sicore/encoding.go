@@ -1,6 +1,7 @@
 package sicore
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -59,4 +60,25 @@ func SetJsonDecoder() ReaderOption {
 	return ReaderOptionFunc(func(r *Reader) {
 		r.dec = json.NewDecoder(r)
 	})
+}
+
+// HmacSha256HexEncoded returns hmac sha256 hash's hex string.
+func HmacSha256HexEncoded(secret string, message []byte) (string, error) {
+	hm := GetHmacSha256Hash(secret)
+	defer PutHmacSha256Hash(secret, hm)
+	_, err := hm.Write(message)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hm.Sum(nil)), nil
+}
+
+// HmacSha256HexEncodedWithReader returns hmac sha256 hash's hex string.
+func HmacSha256HexEncodedWithReader(secret string, r io.Reader) (string, error) {
+	body, err := ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+	return HmacSha256HexEncoded(secret, body)
 }
