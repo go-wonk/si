@@ -22,6 +22,10 @@ type DefaultEncoder struct {
 }
 
 func (de *DefaultEncoder) Encode(v any) error {
+	if v == nil {
+		return nil
+	}
+
 	switch c := v.(type) {
 	case []byte:
 		_, err := de.w.Write(c)

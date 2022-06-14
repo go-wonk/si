@@ -426,6 +426,7 @@ func TestHttpClientRequestPostFile(t *testing.T) {
 	}
 
 	client := sihttp.NewHttpClient(client)
+	client.SetRequestOptions(sihttp.WithHeaderHmac256("hmacKey", []byte("1234")))
 
 	url := "http://127.0.0.1:8080/test/file/upload"
 
@@ -433,5 +434,68 @@ func TestHttpClientRequestPostFile(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 
 	fmt.Println(string(res))
+
+}
+
+func TestHttpClientRequestGetWithHeaderHmac256(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client, sihttp.WithHeaderHmac256("hmac-hash", []byte("1234")))
+
+	url := "http://127.0.0.1:8080/test/hello"
+
+	respBody, err := client.RequestGet(url, nil)
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, "hello", string(respBody))
+
+}
+func TestHttpClientRequestPostWithHeaderHmac256(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client, sihttp.WithHeaderHmac256("hmac-hash", []byte("1234")))
+
+	data := "hey"
+	url := "http://127.0.0.1:8080/test/echo"
+
+	sendData := fmt.Sprintf("%s-%d", data, 0)
+
+	respBody, err := client.RequestPost(url, nil, []byte(sendData))
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(string(respBody))
+
+}
+
+func TestHttpClientRequestPostJsonDecodedWithHeaderHmac256(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client)
+	client.SetRequestOptions(sihttp.WithHeaderHmac256("hmacKey", []byte("1234")))
+	client.SetWriterOptions(sicore.SetJsonEncoder())
+	client.SetReaderOptions(sicore.SetJsonDecoder())
+
+	url := "http://127.0.0.1:8080/test/echo"
+
+	student := testmodels.Student{
+		ID:           1,
+		Name:         "wonk",
+		EmailAddress: "wonk@wonk.org",
+	}
+	res := testmodels.Student{}
+	err := client.RequestPostDecode(url, nil, &student, &res)
+	siutils.AssertNilFail(t, err)
+
+	err = client.RequestPostDecode(url, nil, &student, &res)
+	siutils.AssertNilFail(t, err)
+	// assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(res.String())
 
 }

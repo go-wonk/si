@@ -1,5 +1,66 @@
 package sihttp
 
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
+
+	"github.com/go-wonk/si/sicore"
+)
+
+type RequestOption interface {
+	apply(c *HttpRequest) error
+}
+
+type RequestOptionFunc func(c *HttpRequest) error
+
+func (o RequestOptionFunc) apply(c *HttpRequest) error {
+	return o(c)
+}
+
+func WithHeaderHmac256(key string, secret []byte) RequestOptionFunc {
+	return RequestOptionFunc(func(req *HttpRequest) error {
+		header := req.Header
+		if _, ok := header[key]; ok {
+			// skip
+			return nil
+		}
+
+		contentType := header.Get("Content-Type")
+		if strings.Contains(contentType, "multipart/form-data") {
+			// skip
+			return nil
+		}
+
+		if req.GetBody == nil {
+			// skip
+			return nil
+		}
+
+		r, err := req.GetBody()
+		if err != nil {
+			return err
+		}
+
+		body, err := sicore.ReadAll(r)
+		if err != nil {
+			return err
+		}
+
+		m := hmac.New(sha256.New, secret)
+		_, err = sicore.WriteAll(m, body)
+		if err != nil {
+			return err
+		}
+
+		hashed := hex.EncodeToString(m.Sum(nil))
+		header[key] = []string{hashed}
+
+		return nil
+	})
+}
+
 // type RequestOption interface {
 // 	apply(c *HttpClient)
 // }
