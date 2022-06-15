@@ -52,7 +52,7 @@ func TestTraverseFields(t *testing.T) {
 
 	var traversedFields []traversedField
 	var fieldsToInitialize [][]int
-	traverseFields(traversedField{elem, []int{}}, &traversedFields, &fieldsToInitialize)
+	traverseFields(traversedField{elem, []int{}}, "json", &traversedFields, &fieldsToInitialize)
 
 	// fmt.Println(traversedFields)
 	// for _, v := range traversedFields {
@@ -92,7 +92,7 @@ func TestStructReflectType(t *testing.T) {
 
 	var traversedFields []traversedField
 	var fieldsToInitialize [][]int
-	traverseFields(traversedField{rve, []int{}}, &traversedFields, &fieldsToInitialize)
+	traverseFields(traversedField{rve, []int{}}, "json", &traversedFields, &fieldsToInitialize)
 	fmt.Println(rve)                // {0   false {"book_id":0}}
 	fmt.Println(traversedFields)    // [{{0x1005d43a0 0x1400002d180 386} [0]} {{0x1005d4d20 0x1400002d188 408} [1]} {{0x1005d4d20 0x1400002d198 408} [2]} {{0x1005d2ce0 0x1400002d1a8 385} [3]} {{0x1005d43a0 0x140000190d0 386} [4 0]}]
 	fmt.Println(fieldsToInitialize) // [[4]]
