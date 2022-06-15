@@ -226,7 +226,7 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 
 	var traversedFields []traversedField
 	var fieldsToInitialize [][]int
-	traverseFields(traversedField{elemValue, []int{}}, &traversedFields, &fieldsToInitialize)
+	traverseFields(traversedField{elemValue, []int{}}, rs.tagKey, &traversedFields, &fieldsToInitialize)
 	tagNameMap := makeNameMap(elemValue, rs.tagKey, traversedFields)
 
 	scannedRow, err := buildDestinations(columns, tagNameMap, elemValue)
@@ -286,7 +286,7 @@ func (rs *RowScanner) ScanStruct(rows *sql.Rows, output any) error {
 
 	var traversedFields []traversedField
 	var fieldsToInitialize [][]int
-	traverseFields(traversedField{rv, []int{}}, &traversedFields, &fieldsToInitialize)
+	traverseFields(traversedField{rv, []int{}}, rs.tagKey, &traversedFields, &fieldsToInitialize)
 	tagNameMap := makeNameMap(rv, rs.tagKey, traversedFields)
 
 	dest, err := buildDestinations(columns, tagNameMap, rv)

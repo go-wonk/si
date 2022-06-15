@@ -123,12 +123,18 @@ type ScanValuer interface {
 	Value() (driver.Value, error)
 }
 
-func traverseFields(parent traversedField, result *[]traversedField, resultInitialize *[][]int) {
+func traverseFields(parent traversedField, tagKey string, result *[]traversedField, resultInitialize *[][]int) {
 	n := parent.field.NumField()
 	for i := 0; i < n; i++ {
 		// skip any unexported(private) fields
 		structField := parent.field.Type().Field(i)
 		if !structField.IsExported() {
+			continue
+		}
+
+		// ignore tag with "-"
+		tagName, _ := findTagName(tagKey, structField.Tag)
+		if tagName == "-" {
 			continue
 		}
 
@@ -168,7 +174,7 @@ func traverseFields(parent traversedField, result *[]traversedField, resultIniti
 
 			*result = append(*result, traversedField{fieldValue, append(parent.indices, i)})
 		default:
-			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, result, resultInitialize)
+			traverseFields(traversedField{fieldValue, append(parent.indices, i)}, tagKey, result, resultInitialize)
 		}
 	}
 }

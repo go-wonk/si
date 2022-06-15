@@ -43,7 +43,7 @@ func TestSqlDB_QueryRowStruct(t *testing.T) {
 	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
 
 	query := `
-		select id, name, email_address, borrowed, 23 as book_id from student order by id limit 1
+		select 1 as id, 'wonk' as name, 'wonk@wonk.org' as email_address, 0 as borrowed, 23 as book_id
 	`
 
 	// tl := Table{}
@@ -371,17 +371,18 @@ func TestSqlDBQueryMapsBoolWithSqlColumn(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+	sqldb := sisql.NewSqlDB(db).WithTagKey("si").WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
 	// sicore.SqlColumn{Name: "true_1", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "true_2", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "false_1", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "false_2", Type: sicore.SqlColTypeBool},
 
 	type BoolTest struct {
-		True_1  bool `json:"true_1"`
-		True_2  bool `json:"true_2"`
-		False_1 bool `json:"false_1"`
-		False_2 bool `json:"false_2"`
+		True_1   bool   `json:"true_1" si:"true_1"`
+		True_2   bool   `json:"true_2" si:"true_2"`
+		False_1  bool   `json:"false_1" si:"false_1"`
+		False_2  bool   `json:"false_2" si:"false_2"`
+		Ignore_3 string `si:"-"`
 	}
 	query := `
 		select null as nil,
@@ -457,4 +458,45 @@ func TestSqlDBQueryStructsPtrElem(t *testing.T) {
 
 	expected := `[{"nil_value":"","IntValue":123,"DecimalValue":123,"SomeStringValue":"some string"},{"nil_value":"not null","IntValue":987,"DecimalValue":654,"SomeStringValue":"2some string2"}]`
 	assert.Equal(t, expected, tl.String())
+}
+
+func TestSqlDBQueryMapsBoolWithIgnore(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	sqldb := sisql.NewSqlDB(db).WithTagKey("si").WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+
+	type BoolTest struct {
+		Nil      string `json:"nil" si:"nil"`
+		True_1   bool   `json:"true_1" si:"true_1"`
+		True_2   bool   `json:"true_2" si:"true_2"`
+		False_1  bool   `json:"false_1" si:"false_1"`
+		False_2  bool   `json:"false_2" si:"false_2"`
+		Ignore_3 string `si:"-"`
+	}
+	query := `
+		select null as nil,
+			null as true_1, '1' as true_2, 
+			0 as false_1, '0' as false_2
+		union all
+		select null as nil,
+			1 as true_1, '1' as true_2,
+			0 as false_1, '0' as false_2
+	`
+
+	m := []BoolTest{}
+	_, err := sqldb.QueryStructs(query, &m)
+	siutils.AssertNilFail(t, err)
+
+	expected := `[{"nil":"","true_1":false,"true_2":true,"false_1":false,"false_2":false,"Ignore_3":""},{"nil":"","true_1":true,"true_2":true,"false_1":false,"false_2":false,"Ignore_3":""}]`
+	mb, _ := json.Marshal(m)
+	// fmt.Println(string(mb))
+	assert.Equal(t, expected, string(mb))
+
+	bt := make([]BoolTest, 0)
+	err = siutils.DecodeAny(m, &bt)
+	siutils.AssertNilFail(t, err)
+
 }
