@@ -24,6 +24,11 @@ type DefaultEncoder struct {
 	w io.Writer
 }
 
+// Reset resets underyling Writer
+func (de *DefaultEncoder) Reset(w io.Writer) {
+	de.w = w
+}
+
 // Encode writes v to underyling Writer only when its type is []byte, string or pointer to these two.
 func (de *DefaultEncoder) Encode(v any) error {
 	if v == nil {
