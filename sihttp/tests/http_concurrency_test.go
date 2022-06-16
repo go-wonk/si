@@ -89,8 +89,8 @@ func TestHttpClient_Concurrency_Request(t *testing.T) {
 
 	client := sihttp.NewHttpClient(client)
 
-	numRoutines := 20
-	numRequests := 1000
+	numRoutines := 10
+	numRequests := 100
 	var wg sync.WaitGroup
 	// wg.Add(numRoutines)
 	for i := 0; i < numRoutines; i++ {

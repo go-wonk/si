@@ -19,6 +19,10 @@ type Lengther interface {
 	Len() int
 }
 
+type WriterResetter interface {
+	Reset(w io.Writer)
+}
+
 // Reader is a wrapper of buifio.Reader.
 type Reader struct {
 	r   io.Reader
@@ -30,25 +34,20 @@ type Reader struct {
 }
 
 func newReader(r io.Reader, opt ...ReaderOption) *Reader {
-	if br, ok := r.(*bufio.Reader); ok {
-		b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
-		for _, o := range opt {
-			o.apply(b)
-		}
-		if b.chk == nil {
-			b.chk = &DefaultEofChecker{}
-		}
-		return b
+	var br *bufio.Reader
+	var ok bool
+	if br, ok = r.(*bufio.Reader); !ok {
+		br = bufio.NewReader(r)
 	}
-	br := bufio.NewReader(r)
-	b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
+
+	rd := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
 	for _, o := range opt {
-		o.apply(b)
+		o.apply(rd)
 	}
-	if b.chk == nil {
-		b.chk = &DefaultEofChecker{}
+	if rd.chk == nil {
+		rd.chk = DefaultEofChecker
 	}
-	return b
+	return rd
 }
 
 // SetEofChecker sets EofChecker to underlying Reader.
@@ -73,10 +72,10 @@ func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 			o.apply(rd)
 		}
 	}
+
+	// always set DefaultEofChecker if `rd.chk` is not set
 	if r != nil && rd.chk == nil {
-		if rd.chk == nil {
-			rd.chk = &DefaultEofChecker{}
-		}
+		rd.chk = DefaultEofChecker
 	}
 }
 
@@ -183,53 +182,47 @@ func (rd *Reader) WriteTo(w io.Writer) (n int64, err error) {
 	return rd.br.WriteTo(w)
 }
 
-// Writer is a wrapper of bufio.Writer.
+// Writer is a wrapper of bufio.Writer with Encoder.
 type Writer struct {
 	bw  *bufio.Writer
 	enc Encoder
 }
 
 func newWriter(w io.Writer, opt ...WriterOption) *Writer {
-	if bw, ok := w.(*bufio.Writer); ok {
-		b := &Writer{bw: bw}
-		for _, o := range opt {
-			o.apply(b)
-		}
-		if b.enc == nil {
-			b.enc = &DefaultEncoder{b}
-		}
-		return b
+	var bw *bufio.Writer
+	var ok bool
+	if bw, ok = w.(*bufio.Writer); !ok {
+		bw = bufio.NewWriter(w)
 	}
-	bw := bufio.NewWriter(w)
-	b := &Writer{bw: bw}
+	wr := &Writer{bw: bw}
 	for _, o := range opt {
-		o.apply(b)
+		o.apply(wr)
 	}
-	if b.enc == nil {
-		b.enc = &DefaultEncoder{b}
+	if wr.enc == nil {
+		wr.enc = &DefaultEncoder{wr}
 	}
-	return b
+	return wr
 }
 
 // Reset resets underlying Writer(wr) with w and opt.
 func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	wr.bw.Reset(w)
 
-	if len(opt) == 0 {
-		wr.enc = nil
+	if rs, ok := wr.enc.(WriterResetter); ok {
+		rs.Reset(w)
 	} else {
-		for _, o := range opt {
-			if o == nil {
-				continue
-			}
-			o.apply(wr)
-		}
+		wr.enc = nil
 	}
 
-	if w != nil {
-		if wr.enc == nil {
-			wr.enc = &DefaultEncoder{wr}
+	for _, o := range opt {
+		if o == nil {
+			continue
 		}
+		o.apply(wr)
+	}
+
+	if w != nil && wr.enc == nil {
+		wr.enc = &DefaultEncoder{wr}
 	}
 }
 

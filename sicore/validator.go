@@ -6,9 +6,11 @@ type EofChecker interface {
 	Check([]byte, error) (bool, error)
 }
 
-type DefaultEofChecker struct{}
+var DefaultEofChecker = defaultEofChecker{}
 
-func (c DefaultEofChecker) Check(b []byte, errIn error) (bool, error) {
+type defaultEofChecker struct{}
+
+func (c defaultEofChecker) Check(b []byte, errIn error) (bool, error) {
 	if errIn != nil {
 		if errIn == io.EOF {
 			return true, nil
@@ -21,7 +23,7 @@ func (c DefaultEofChecker) Check(b []byte, errIn error) (bool, error) {
 
 func SetDefaultEOFChecker() ReaderOption {
 	return ReaderOptionFunc(func(r *Reader) {
-		r.SetEofChecker(&DefaultEofChecker{})
+		r.SetEofChecker(&defaultEofChecker{})
 	})
 }
 
