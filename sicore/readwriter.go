@@ -19,6 +19,10 @@ type Lengther interface {
 	Len() int
 }
 
+type WriterResetter interface {
+	Reset(w io.Writer)
+}
+
 // Reader is a wrapper of buifio.Reader.
 type Reader struct {
 	r   io.Reader
@@ -30,30 +34,38 @@ type Reader struct {
 }
 
 func newReader(r io.Reader, opt ...ReaderOption) *Reader {
-	if br, ok := r.(*bufio.Reader); ok {
-		b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
-		for _, o := range opt {
-			o.apply(b)
+	var br *bufio.Reader
+	var ok bool
+	if br, ok = r.(*bufio.Reader); !ok {
+		br = bufio.NewReader(r)
+	}
+
+	rd := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
+	rd.ApplyOptions(opt...)
+	return rd
+}
+
+func (rd *Reader) ApplyOptions(opts ...ReaderOption) {
+	for _, o := range opts {
+		if o == nil {
+			continue
 		}
-		if b.chk == nil {
-			b.chk = &DefaultEofChecker{}
-		}
-		return b
+		o.apply(rd)
 	}
-	br := bufio.NewReader(r)
-	b := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
-	for _, o := range opt {
-		o.apply(b)
+
+	// always set DefaultEofChecker if `rd.chk` is not set
+	if rd.r != nil && rd.chk == nil {
+		rd.chk = DefaultEofChecker
 	}
-	if b.chk == nil {
-		b.chk = &DefaultEofChecker{}
-	}
-	return b
 }
 
 // SetEofChecker sets EofChecker to underlying Reader.
 func (rd *Reader) SetEofChecker(chk EofChecker) {
 	rd.chk = chk
+}
+
+func (rd *Reader) SetDecoder(dec Decoder) {
+	rd.dec = dec
 }
 
 // Reset resets underlying Reader with r and opt.
@@ -65,19 +77,9 @@ func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 	if len(opt) == 0 {
 		rd.dec = nil
 		rd.chk = nil
-	} else {
-		for _, o := range opt {
-			if o == nil {
-				continue
-			}
-			o.apply(rd)
-		}
 	}
-	if r != nil && rd.chk == nil {
-		if rd.chk == nil {
-			rd.chk = &DefaultEofChecker{}
-		}
-	}
+
+	rd.ApplyOptions(opt...)
 }
 
 // Read reads the data of underlying Reader(rd.br) into p.
@@ -183,54 +185,51 @@ func (rd *Reader) WriteTo(w io.Writer) (n int64, err error) {
 	return rd.br.WriteTo(w)
 }
 
-// Writer is a wrapper of bufio.Writer.
+// Writer is a wrapper of bufio.Writer with Encoder.
 type Writer struct {
+	w   io.Writer
 	bw  *bufio.Writer
 	enc Encoder
 }
 
 func newWriter(w io.Writer, opt ...WriterOption) *Writer {
-	if bw, ok := w.(*bufio.Writer); ok {
-		b := &Writer{bw: bw}
-		for _, o := range opt {
-			o.apply(b)
+	var bw *bufio.Writer
+	var ok bool
+	if bw, ok = w.(*bufio.Writer); !ok {
+		bw = bufio.NewWriter(w)
+	}
+	wr := &Writer{w: w, bw: bw}
+	wr.ApplyOptions(opt...)
+	return wr
+}
+
+func (wr *Writer) ApplyOptions(opts ...WriterOption) {
+	for _, o := range opts {
+		if o == nil {
+			continue
 		}
-		if b.enc == nil {
-			b.enc = &DefaultEncoder{b}
-		}
-		return b
+		o.apply(wr)
 	}
-	bw := bufio.NewWriter(w)
-	b := &Writer{bw: bw}
-	for _, o := range opt {
-		o.apply(b)
+	if wr.w != nil && wr.enc == nil {
+		wr.enc = &DefaultEncoder{wr}
 	}
-	if b.enc == nil {
-		b.enc = &DefaultEncoder{b}
-	}
-	return b
+}
+
+func (wr *Writer) SetEncoder(enc Encoder) {
+	wr.enc = enc
 }
 
 // Reset resets underlying Writer(wr) with w and opt.
 func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
+	wr.w = w
 	wr.bw.Reset(w)
 
-	if len(opt) == 0 {
-		wr.enc = nil
+	if rs, ok := wr.enc.(WriterResetter); ok {
+		rs.Reset(w)
 	} else {
-		for _, o := range opt {
-			if o == nil {
-				continue
-			}
-			o.apply(wr)
-		}
+		wr.enc = nil
 	}
-
-	if w != nil {
-		if wr.enc == nil {
-			wr.enc = &DefaultEncoder{wr}
-		}
-	}
+	wr.ApplyOptions(opt...)
 }
 
 // Write writes p into underlying Writer(wr.bw).

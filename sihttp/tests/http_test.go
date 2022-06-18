@@ -49,7 +49,7 @@ func TestCheckRequestState(t *testing.T) {
 	data := "hey"
 
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
+	rw := sicore.GetReadWriterWithReadWriter(buf)
 	defer sicore.PutReadWriter(rw)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
@@ -85,7 +85,7 @@ func TestReuseRequest(t *testing.T) {
 	data := "hey"
 
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
+	rw := sicore.GetReadWriterWithReadWriter(buf)
 	defer sicore.PutReadWriter(rw)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
@@ -118,7 +118,7 @@ func TestReuseRequestInGoroutinePanic(t *testing.T) {
 	data := "hey"
 
 	buf := bytes.NewBuffer(make([]byte, 0, 1024))
-	rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
+	rw := sicore.GetReadWriterWithReadWriter(buf)
 	defer sicore.PutReadWriter(rw)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", rw)
@@ -163,7 +163,7 @@ func TestReuseRequestInGoroutine(t *testing.T) {
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, routineNumber int) {
 			buf := bytes.NewBuffer(make([]byte, 0, 1024))
-			rw := sicore.GetReadWriterWithOptions(buf, nil, buf, nil)
+			rw := sicore.GetReadWriterWithReadWriter(buf)
 
 			req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/test/echo", nil)
 			siutils.AssertNilFail(t, err)

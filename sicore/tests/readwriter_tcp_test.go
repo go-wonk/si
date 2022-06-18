@@ -142,7 +142,9 @@ func TestReadWriter_Tcp_Request(t *testing.T) {
 	// w := sicore.GetWriter(conn)
 	// rw := sicore.NewReadWriter(r, w)
 
-	rw := sicore.GetReadWriterWithOptions(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+	// rw := sicore.GetReadWriterWithOptions(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+	rw := sicore.GetReadWriterWithReadWriter(conn)
+	rw.Reader.ApplyOptions(SetTcpEofChecker())
 
 	recv, err := rw.Request(createDataToSend())
 	siutils.AssertNilFail(t, err)
@@ -152,7 +154,9 @@ func TestReadWriter_Tcp_Request(t *testing.T) {
 	assert.Equal(t, l, len(recv))
 	sicore.PutReadWriter(rw)
 
-	rw = sicore.GetReadWriterWithOptions(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+	// rw = sicore.GetReadWriterWithOptions(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+	rw = sicore.GetReadWriterWithReadWriter(conn)
+	rw.Reader.ApplyOptions(SetTcpEofChecker())
 	recv, err = rw.Request(createSmallDataToSend())
 	siutils.AssertNilFail(t, err)
 

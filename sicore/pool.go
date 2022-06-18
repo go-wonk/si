@@ -101,16 +101,16 @@ var (
 	_readwriterPool = sync.Pool{}
 )
 
-func getReadWriter(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
+func getReadWriter(r io.Reader, w io.Writer) *ReadWriter {
 	g := _readwriterPool.Get()
 	if g == nil {
-		rd := GetReader(r, ro...)
-		wr := GetWriter(w, wo...)
+		rd := GetReader(r)
+		wr := GetWriter(w)
 		return newReadWriter(rd, wr)
 	}
 	rw := g.(*ReadWriter)
-	rw.Reader.Reset(r, ro...)
-	rw.Writer.Reset(w, wo...)
+	rw.Reader.Reset(r)
+	rw.Writer.Reset(w)
 
 	return rw
 }
@@ -123,13 +123,17 @@ func putReadWriter(rw *ReadWriter) {
 
 // GetReadWriter retrieves ReadWriter from a pool or creates a new.
 func GetReadWriter(r io.Reader, w io.Writer) *ReadWriter {
-	return getReadWriter(r, nil, w, nil)
+	return getReadWriter(r, w)
+}
+
+func GetReadWriterWithReadWriter(rw io.ReadWriter) *ReadWriter {
+	return getReadWriter(rw, rw)
 }
 
 // GetReadWriterWithOptions retrieves ReadWriter from a pool or creates a new with Reader and Writer options.
-func GetReadWriterWithOptions(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
-	return getReadWriter(r, ro, w, wo)
-}
+// func GetReadWriterWithOptions(r io.Reader, ro []ReaderOption, w io.Writer, wo []WriterOption) *ReadWriter {
+// 	return getReadWriter(r, ro, w, wo)
+// }
 
 // PutReadWriter puts ReadWriter back to the pool.
 func PutReadWriter(rw *ReadWriter) {

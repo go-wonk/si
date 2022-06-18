@@ -4,6 +4,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/sisql"
 	"github.com/go-wonk/si/siutils"
 	"github.com/stretchr/testify/assert"
@@ -71,7 +72,9 @@ func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db) // sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeInt},
+	sqldb := sisql.NewSqlDB(db).WithType("id", sicore.SqlColTypeInt).
+		WithType("id2", sicore.SqlColTypeInt)
+	// sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeInt},
 	// sicore.SqlColumn{Name: "id2", Type: sicore.SqlColTypeInt},
 	// sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},
 	// sicore.SqlColumn{Name: "numeric_", Type: sicore.SqlColTypeFloat64},

@@ -9,10 +9,10 @@ func ReadAll(r io.Reader) ([]byte, error) {
 	return sr.ReadAll()
 }
 
-// WriteAll writes b to w.
-func WriteAll(w io.Writer, b []byte) (n int, err error) {
-	sw := GetWriter(w)
+// WriteAll writes src to dst.
+func WriteAll(dst io.Writer, src []byte) (n int, err error) {
+	sw := GetWriter(dst)
 	defer PutWriter(sw)
 
-	return sw.WriteFlush(b)
+	return sw.WriteFlush(src)
 }

@@ -155,7 +155,9 @@ func Benchmark_Tcp_Request(b *testing.B) {
 	siutils.AssertNilFailB(b, err)
 
 	for i := 0; i < b.N; i++ {
-		rw := sicore.GetReadWriterWithOptions(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+		// rw := sicore.GetReadWriterWithOptions(conn, []sicore.ReaderOption{SetTcpEofChecker()}, conn, nil)
+		rw := sicore.GetReadWriterWithReadWriter(conn)
+		rw.Reader.ApplyOptions(SetTcpEofChecker())
 		rw.Request(createSmallDataToSend())
 		sicore.PutReadWriter(rw)
 
