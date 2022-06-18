@@ -9,6 +9,48 @@ import (
 	"github.com/go-wonk/si/siutils"
 )
 
+func BenchmarkHttpHandlerReaderWriterTiny(b *testing.B) {
+	router := http.NewServeMux()
+	router.HandleFunc("/test", handleTestReaderWriterTiny)
+
+	data := stuReqSml.String()
+
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		buf := bytes.NewBuffer([]byte(data))
+		req, err := http.NewRequest("POST", "/test", buf)
+		siutils.AssertNilFailB(b, err)
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		// fmt.Println(rec)
+	}
+}
+
+func BenchmarkHttpHandlerBasicTiny(b *testing.B) {
+	router := http.NewServeMux()
+	router.HandleFunc("/test", handleTestBasicTiny)
+
+	data := stuReqSml.String()
+
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		buf := bytes.NewBuffer([]byte(data))
+		req, err := http.NewRequest("POST", "/test", buf)
+		siutils.AssertNilFailB(b, err)
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		// fmt.Println(rec)
+	}
+}
+
 func BenchmarkHttpHandlerReaderWriterSml(b *testing.B) {
 	router := http.NewServeMux()
 	router.HandleFunc("/test", handleTestReaderWriterSml)

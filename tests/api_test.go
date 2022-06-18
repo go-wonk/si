@@ -30,13 +30,48 @@ func makeStuRes(num int) testmodels.StudentList {
 }
 
 var (
-	stuReqSml = makeStuReq(8)
-	stuResSml = makeStuRes(8)
-	stuReqMed = makeStuReq(128)
-	stuResMed = makeStuRes(128)
-	stuReqLrg = makeStuReq(512)
-	stuResLrg = makeStuRes(512)
+	stuReqTiny = makeStuReq(1)
+	stuResTiny = makeStuRes(1)
+	stuReqSml  = makeStuReq(8)
+	stuResSml  = makeStuRes(8)
+	stuReqMed  = makeStuReq(128)
+	stuResMed  = makeStuRes(128)
+	stuReqLrg  = makeStuReq(512)
+	stuResLrg  = makeStuRes(512)
 )
+
+func handleTestBasicTiny(w http.ResponseWriter, r *http.Request) {
+	var req testmodels.StudentList
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if err = json.Unmarshal(b, &req); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(&stuResTiny); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+}
+func handleTestReaderWriterTiny(w http.ResponseWriter, r *http.Request) {
+	var req testmodels.StudentList
+	if err := si.DecodeJson(&req, r.Body); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := si.EncodeJson(w, &stuResTiny); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+}
 
 func handleTestBasicSml(w http.ResponseWriter, r *http.Request) {
 	var req testmodels.StudentList
