@@ -41,18 +41,31 @@ func newReader(r io.Reader, opt ...ReaderOption) *Reader {
 	}
 
 	rd := &Reader{r: r, br: br, bufAll: make([]byte, 0, defaultBufferSize)}
-	for _, o := range opt {
+	rd.ApplyOptions(opt...)
+	return rd
+}
+
+func (rd *Reader) ApplyOptions(opts ...ReaderOption) {
+	for _, o := range opts {
+		if o == nil {
+			continue
+		}
 		o.apply(rd)
 	}
-	if rd.chk == nil {
+
+	// always set DefaultEofChecker if `rd.chk` is not set
+	if rd.r != nil && rd.chk == nil {
 		rd.chk = DefaultEofChecker
 	}
-	return rd
 }
 
 // SetEofChecker sets EofChecker to underlying Reader.
 func (rd *Reader) SetEofChecker(chk EofChecker) {
 	rd.chk = chk
+}
+
+func (rd *Reader) SetDecoder(dec Decoder) {
+	rd.dec = dec
 }
 
 // Reset resets underlying Reader with r and opt.
@@ -64,19 +77,9 @@ func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 	if len(opt) == 0 {
 		rd.dec = nil
 		rd.chk = nil
-	} else {
-		for _, o := range opt {
-			if o == nil {
-				continue
-			}
-			o.apply(rd)
-		}
 	}
 
-	// always set DefaultEofChecker if `rd.chk` is not set
-	if r != nil && rd.chk == nil {
-		rd.chk = DefaultEofChecker
-	}
+	rd.ApplyOptions(opt...)
 }
 
 // Read reads the data of underlying Reader(rd.br) into p.
@@ -184,6 +187,7 @@ func (rd *Reader) WriteTo(w io.Writer) (n int64, err error) {
 
 // Writer is a wrapper of bufio.Writer with Encoder.
 type Writer struct {
+	w   io.Writer
 	bw  *bufio.Writer
 	enc Encoder
 }
@@ -194,18 +198,30 @@ func newWriter(w io.Writer, opt ...WriterOption) *Writer {
 	if bw, ok = w.(*bufio.Writer); !ok {
 		bw = bufio.NewWriter(w)
 	}
-	wr := &Writer{bw: bw}
-	for _, o := range opt {
+	wr := &Writer{w: w, bw: bw}
+	wr.ApplyOptions(opt...)
+	return wr
+}
+
+func (wr *Writer) ApplyOptions(opts ...WriterOption) {
+	for _, o := range opts {
+		if o == nil {
+			continue
+		}
 		o.apply(wr)
 	}
-	if wr.enc == nil {
+	if wr.w != nil && wr.enc == nil {
 		wr.enc = &DefaultEncoder{wr}
 	}
-	return wr
+}
+
+func (wr *Writer) SetEncoder(enc Encoder) {
+	wr.enc = enc
 }
 
 // Reset resets underlying Writer(wr) with w and opt.
 func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
+	wr.w = w
 	wr.bw.Reset(w)
 
 	if rs, ok := wr.enc.(WriterResetter); ok {
@@ -213,17 +229,7 @@ func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	} else {
 		wr.enc = nil
 	}
-
-	for _, o := range opt {
-		if o == nil {
-			continue
-		}
-		o.apply(wr)
-	}
-
-	if w != nil && wr.enc == nil {
-		wr.enc = &DefaultEncoder{wr}
-	}
+	wr.ApplyOptions(opt...)
 }
 
 // Write writes p into underlying Writer(wr.bw).

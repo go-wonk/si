@@ -15,7 +15,7 @@ type Encoder interface {
 // SetJsonEncoder is a WriterOption to encode w's data in json format
 func SetJsonEncoder() WriterOption {
 	return WriterOptionFunc(func(w *Writer) {
-		w.enc = json.NewEncoder(w)
+		w.SetEncoder(json.NewEncoder(w))
 	})
 }
 
@@ -57,7 +57,7 @@ func (de *DefaultEncoder) Encode(v any) error {
 // SetDefaultEncoder sets DefaultEncoder to w
 func SetDefaultEncoder() WriterOption {
 	return WriterOptionFunc(func(w *Writer) {
-		w.enc = &DefaultEncoder{w}
+		w.SetEncoder(&DefaultEncoder{w})
 	})
 }
 
@@ -69,7 +69,7 @@ type Decoder interface {
 // SetJsonDecoder sets json.Decoder to r.
 func SetJsonDecoder() ReaderOption {
 	return ReaderOptionFunc(func(r *Reader) {
-		r.dec = json.NewDecoder(r)
+		r.SetDecoder(json.NewDecoder(r))
 	})
 }
 
