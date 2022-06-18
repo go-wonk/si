@@ -9,11 +9,10 @@ import (
 )
 
 func TestNewFile(t *testing.T) {
-	osf, err := os.OpenFile("./tests/data/test.txt", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0777)
+	f, err := OpenFile("./tests/data/test.txt", os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_TRUNC, 0777)
 	siutils.AssertNilFail(t, err)
-	defer osf.Close()
+	defer f.Close()
 
-	f := NewFile(osf)
 	byt, err := f.ReadAll()
 	siutils.AssertNilFail(t, err)
 	fmt.Println(string(byt) + "1")
