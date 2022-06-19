@@ -219,6 +219,26 @@ func (wr *Writer) SetEncoder(enc Encoder) {
 	wr.enc = enc
 }
 
+func (wr *Writer) Available() int {
+	return wr.bw.Available()
+}
+
+// Buffered returns the number of bytes that have been written to the buffer.
+func (wr *Writer) Buffered() int {
+	return wr.bw.Buffered()
+}
+
+// Flush writes the data left in buffer to the underlying Writer(wr.bw).
+func (wr *Writer) Flush() error {
+	return wr.bw.Flush()
+}
+
+// ReadFrom reads from r into underlying Writer(wr.bw).
+func (wr *Writer) ReadFrom(r io.Reader) (n int64, err error) {
+	n, err = wr.bw.ReadFrom(r)
+	return
+}
+
 // Reset resets underlying Writer(wr) with w and opt.
 func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	wr.w = w
@@ -232,20 +252,26 @@ func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	wr.ApplyOptions(opt...)
 }
 
+func (wr *Writer) Size() int {
+	return wr.bw.Size()
+}
+
 // Write writes p into underlying Writer(wr.bw).
 func (wr *Writer) Write(p []byte) (n int, err error) {
 	n, err = wr.bw.Write(p)
 	return
 }
 
-// Flush writes the data left in buffer to the underlying Writer(wr.bw).
-func (wr *Writer) Flush() error {
-	return wr.bw.Flush()
+func (wr *Writer) WriteByte(c byte) error {
+	return wr.bw.WriteByte(c)
 }
 
-// Buffered returns the number of bytes that have been written to the buffer.
-func (wr *Writer) Buffered() int {
-	return wr.bw.Buffered()
+func (wr *Writer) WriteRune(r rune) (size int, err error) {
+	return wr.bw.WriteRune(r)
+}
+
+func (wr *Writer) WriteString(s string) (n int, err error) {
+	return wr.bw.WriteString(s)
 }
 
 // WriteFlush writes p to underlying Writer followed by Flush.
@@ -258,12 +284,6 @@ func (wr *Writer) WriteFlush(p []byte) (n int, err error) {
 		n = 0
 		return
 	}
-	return
-}
-
-// ReadFrom reads from r into underlying Writer(wr.bw).
-func (wr *Writer) ReadFrom(r io.Reader) (n int64, err error) {
-	n, err = wr.bw.ReadFrom(r)
 	return
 }
 
