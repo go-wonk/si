@@ -41,6 +41,11 @@ func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]stri
 	return c
 }
 
+func (hc *HttpClient) WithBaseUrl(baseUrl string) *HttpClient {
+	hc.baseUrl = baseUrl
+	return hc
+}
+
 // Do is a wrapper of http.Client.Do
 func (hc *HttpClient) Do(request *http.Request) (*http.Response, error) {
 	hc.setDefaultHeader(request)
@@ -234,7 +239,7 @@ func (hc *HttpClient) RequestPostFile(url string, header http.Header,
 		return nil, err
 	}
 
-	return hc.request(http.MethodPost, url, header, buf)
+	return hc.request(http.MethodPost, hc.baseUrl+url, header, buf)
 }
 
 // DefaultInsecureClient instantiate http.Client with InsecureSkipVerify set to true
