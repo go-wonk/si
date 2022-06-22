@@ -174,6 +174,10 @@ func (hr *HttpRequest) setBody(body io.Reader) {
 }
 
 func (hr *HttpRequest) writeAndSetBody(body any, opts ...sicore.WriterOption) error {
+	if body == nil {
+		hr.setBody(nil)
+		return nil
+	}
 	w := sicore.GetWriter(hr.buf, opts...)
 	defer sicore.PutWriter(w)
 
