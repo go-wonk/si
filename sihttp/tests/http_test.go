@@ -211,12 +211,30 @@ func TestReuseRequestWithRequestPool(t *testing.T) {
 		io.Copy(io.Discard, rw)
 		rw.Write([]byte(sendData))
 
+		queries := make(map[string]string)
+		queries["name"] = "wonk"
+
 		req, err := sihttp.GetRequest(http.MethodPost, urls[i], nil, sendData)
 		siutils.AssertNilFail(t, err)
+
+		if len(queries) > 0 {
+			q := req.URL.Query()
+			for k, v := range queries {
+				q.Add(k, v)
+			}
+			req.URL.RawQuery = q.Encode()
+		}
 
 		//////////////////////////////////////////////////////////
 		// Check if pooled request is porperly reset
 		expected, err := http.NewRequest(http.MethodPost, urls[i], rw)
+		if len(queries) > 0 {
+			q := expected.URL.Query()
+			for k, v := range queries {
+				q.Add(k, v)
+			}
+			expected.URL.RawQuery = q.Encode()
+		}
 		siutils.AssertNilFail(t, err)
 		assert.EqualValues(t, expected.Method, req.Method)
 		assert.EqualValues(t, expected.URL, req.URL)
@@ -284,7 +302,11 @@ func TestHttpClientRequestGet(t *testing.T) {
 
 	url := "http://127.0.0.1:8080/test/hello"
 
-	respBody, err := client.RequestGet(url, nil)
+	queries := make(map[string]string)
+	queries["name"] = "wonk"
+	queries["kor"] = "길동"
+
+	respBody, err := client.RequestGet(url, nil, queries)
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, "hello", string(respBody))
@@ -446,7 +468,7 @@ func TestHttpClientRequestGetWithHeaderHmac256(t *testing.T) {
 
 	url := "http://127.0.0.1:8080/test/hello"
 
-	respBody, err := client.RequestGet(url, nil)
+	respBody, err := client.RequestGet(url, nil, nil)
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, "hello", string(respBody))
