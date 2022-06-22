@@ -41,7 +41,7 @@ func request(client *sihttp.HttpClient, method, url string, numRequests int, id 
 
 		var respBody []byte
 		if method == http.MethodGet {
-			respBody, err = client.Request(method, url, nil, nil)
+			respBody, err = client.Request(method, url, nil, nil, nil)
 			if err != nil {
 				fmt.Println(err)
 				break
@@ -53,7 +53,7 @@ func request(client *sihttp.HttpClient, method, url string, numRequests int, id 
 			}
 		} else {
 			body := fmt.Sprintf("%s-%d-%d", method+" hello", id, j)
-			respBody, err = client.Request(method, url, nil, []byte(body))
+			respBody, err = client.Request(method, url, nil, nil, []byte(body))
 			if err != nil {
 				fmt.Println(err)
 				break
