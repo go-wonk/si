@@ -299,6 +299,7 @@ func TestHttpClientRequestGet(t *testing.T) {
 	}
 
 	client := sihttp.NewHttpClient(client)
+	client.SetWriterOptions(sicore.SetJsonEncoder())
 
 	url := "http://127.0.0.1:8080/test/hello"
 
