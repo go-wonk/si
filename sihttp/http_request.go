@@ -134,20 +134,20 @@ func (hr *HttpRequest) setBody(body io.Reader) {
 				r := snapshot
 				return io.NopCloser(&r), nil
 			}
-		case *sicore.Reader:
-			hr.ContentLength = int64(v.Len())
-			snapshot := *v
-			hr.GetBody = func() (io.ReadCloser, error) {
-				r := snapshot
-				return io.NopCloser(&r), nil
-			}
-		case *sicore.ReadWriter:
-			hr.ContentLength = int64(v.RLen())
-			snapshot := *v
-			hr.GetBody = func() (io.ReadCloser, error) {
-				r := snapshot
-				return io.NopCloser(&r), nil
-			}
+		// case *sicore.Reader:
+		// 	hr.ContentLength = int64(v.Len())
+		// 	snapshot := *v
+		// 	hr.GetBody = func() (io.ReadCloser, error) {
+		// 		r := snapshot
+		// 		return io.NopCloser(&r), nil
+		// 	}
+		// case *sicore.ReadWriter:
+		// 	hr.ContentLength = int64(v.RLen())
+		// 	snapshot := *v
+		// 	hr.GetBody = func() (io.ReadCloser, error) {
+		// 		r := snapshot
+		// 		return io.NopCloser(&r), nil
+		// 	}
 		default:
 			// This is where we'd set it to -1 (at least
 			// if body != NoBody) to mean unknown, but
