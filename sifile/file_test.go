@@ -20,21 +20,21 @@ func TestNewFile(t *testing.T) {
 	_, err = f.WriteFlush([]byte("hey\n"))
 	siutils.AssertNilFail(t, err)
 
-	byt, err = f.ReadAllFrom(0)
+	byt, err = f.ReadAllAt(0)
 	siutils.AssertNilFail(t, err)
 	fmt.Println(string(byt) + "2")
 
 	_, err = f.WriteFlush([]byte("hey2\n"))
 	siutils.AssertNilFail(t, err)
 
-	byt, err = f.ReadAllFrom(0)
+	byt, err = f.ReadAllAt(0)
 	siutils.AssertNilFail(t, err)
 	fmt.Println(string(byt) + "3")
 
 	_, err = f.WriteFlush([]byte("hey3\n"))
 	siutils.AssertNilFail(t, err)
 
-	byt, err = f.ReadAllFrom(0)
+	byt, err = f.ReadAllAt(0)
 	siutils.AssertNilFail(t, err)
 	fmt.Println(string(byt) + "4")
 }

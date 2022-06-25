@@ -30,3 +30,4 @@ debug
 /example/auser/data/user/*.json
 /sicore/tests/data/*.txt
 /sicore/tests/data/*.json
+/sifile/tests/data/*
