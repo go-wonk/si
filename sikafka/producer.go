@@ -30,7 +30,7 @@ func DefaultSyncProducer(brokers []string) (sarama.SyncProducer, error) {
 	config.Producer.Return.Successes = true
 	config.Net.MaxOpenRequests = 50
 	config.ChannelBufferSize = 4096
-	// config.Producer.Timeout = 2000 * time.Millisecond
+	config.Producer.Timeout = 3000 * time.Millisecond
 	// config.Producer.Flush.Frequency = 250 * time.Millisecond
 	// config.Producer.Flush.Messages = 1000
 
@@ -78,5 +78,5 @@ func (ap *AsyncProducer) Produce(key []byte, value []byte) (partition int32, off
 	}
 	ap.Input() <- msg
 
-	return
+	return 0, 0, nil
 }
