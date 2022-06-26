@@ -2,7 +2,9 @@ package sifile
 
 import (
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/go-wonk/si/sicore"
 )
@@ -14,8 +16,18 @@ type File struct {
 	rw *sicore.ReadWriter
 }
 
+// OpenFile opens file with name then returns File.
 func OpenFile(name string, flag int, perm os.FileMode) (*File, error) {
 	f, err := os.OpenFile(name, flag, perm)
+	if err != nil {
+		return nil, err
+	}
+	return newFile(f), nil
+}
+
+// Create wraps io.Create function.
+func Create(name string) (*File, error) {
+	f, err := os.Create(name)
 	if err != nil {
 		return nil, err
 	}
@@ -93,11 +105,13 @@ func (f *File) WriteString(s string) (n int, err error) {
 	return f.rw.WriteString(s)
 }
 
+// ReadAll reads all data.
 func (f *File) ReadAll() ([]byte, error) {
 	return f.rw.ReadAll()
 }
 
-func (f *File) ReadAllFrom(offset int64) ([]byte, error) {
+// ReadAllAt reads all data from underlying file starting at offset.
+func (f *File) ReadAllAt(offset int64) ([]byte, error) {
 	_, err := f.Seek(offset, 0)
 	if err != nil {
 		return nil, err
@@ -105,6 +119,7 @@ func (f *File) ReadAllFrom(offset int64) ([]byte, error) {
 	return f.rw.ReadAll()
 }
 
+// WriteFlush writes p to underlying f then flush.
 func (f *File) WriteFlush(p []byte) (n int, err error) {
 	n, err = f.Write(p)
 	if err != nil {
@@ -116,4 +131,33 @@ func (f *File) WriteFlush(p []byte) (n int, err error) {
 	}
 
 	return n, err
+}
+
+// DirEntryWithPath is a wrapper of fs.DirEntry with path(relative path)
+type DirEntryWithPath struct {
+	Path string
+	fs.DirEntry
+}
+
+// ListDir walks file tree from root and returns a slice of DirEntryWithPath.
+func ListDir(root string) ([]DirEntryWithPath, error) {
+	list := make([]DirEntryWithPath, 0)
+	err := filepath.WalkDir(root,
+		func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if path != root {
+				list = append(list, DirEntryWithPath{
+					Path:     path,
+					DirEntry: d,
+				})
+			}
+			return nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
 }
