@@ -56,7 +56,7 @@ func (hc *HttpClient) Do(request *http.Request) (*http.Response, error) {
 // setDefaultHeader sets defaultHeaders to request. It doesn't replace headers that are already assigned to `request`
 func (hc *HttpClient) setDefaultHeader(request *http.Request) {
 	for k, v := range hc.defaultHeaders {
-		if request.Header.Get(k) != "" {
+		if request.Header.Get(k) == "" {
 			request.Header.Set(k, v)
 		}
 	}
