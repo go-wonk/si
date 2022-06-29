@@ -30,7 +30,7 @@ func DecodeJson(dst any, src io.Reader) error {
 // DecodeJsonCopied read src with json bytes then decode it into dst.
 // It also write the data read from src into a bytes.Buffer then returns it.
 func DecodeJsonCopied(dst any, src io.Reader) (*bytes.Buffer, error) {
-	bb := GetBytesBuffer(make([]byte, 0, 128))
+	bb := GetBytesBuffer(nil)
 	r := io.TeeReader(src, bb)
 	sr := GetReader(r, SetJsonDecoder())
 	defer PutReader(sr)
@@ -47,7 +47,7 @@ func EncodeJson(dst io.Writer, src any) error {
 // EncodeJsonCopied encode src into json bytes then write to dst.
 // It also write encoded bytes of src to a bytes.Buffer then returns it.
 func EncodeJsonCopied(dst io.Writer, src any) (*bytes.Buffer, error) {
-	bb := GetBytesBuffer(make([]byte, 0, 128))
+	bb := GetBytesBuffer(nil)
 	mw := io.MultiWriter(dst, bb)
 	sw := GetWriter(mw, SetJsonEncoder())
 	defer PutWriter(sw)
