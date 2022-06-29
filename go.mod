@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/Shopify/sarama v1.34.1
+	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/lib/pq v1.10.6
 	github.com/mitchellh/mapstructure v1.5.0

@@ -12,7 +12,7 @@ func TestProducer_Produce(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	producer, err := sikafka.DefaultSyncProducer([]string{"kafkahost:9092"})
+	producer, err := sikafka.DefaultSyncProducer([]string{"testkafkahost:9092"})
 	siutils.AssertNilFail(t, err)
 	defer producer.Close()
 
@@ -26,7 +26,7 @@ func TestProducer_ProduceWithTopic(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	producer, err := sikafka.DefaultSyncProducer([]string{"kafkahost:9092"})
+	producer, err := sikafka.DefaultSyncProducer([]string{"testkafkahost:9092"})
 	siutils.AssertNilFail(t, err)
 	defer producer.Close()
 

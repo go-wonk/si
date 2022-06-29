@@ -24,7 +24,7 @@ func (h *messageHandler) Handle(message *sarama.ConsumerMessage) {
 }
 
 func produce(key, value string) error {
-	producer, err := sikafka.DefaultSyncProducer([]string{"kafkahost:9092"})
+	producer, err := sikafka.DefaultSyncProducer([]string{"testkafkahost:9092"})
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func TestConsumerGroup(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	defClient, err := sikafka.DefaultConsumerGroup([]string{"kafkahost:9092"}, "tp-consumer-test-grp1", "3.1.0", "range", true)
+	defClient, err := sikafka.DefaultConsumerGroup([]string{"testkafkahost:9092"}, "tp-consumer-test-grp1", "3.1.0", "range", true)
 	siutils.AssertNilFail(t, err)
 
 	consumer := sikafka.NewCgConsumer(&messageHandler{})
