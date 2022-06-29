@@ -259,3 +259,14 @@ func TestHttpHandlerSml(t *testing.T) {
 
 	fmt.Println(rec)
 }
+
+func TestDecodeJsonCopied_FailToDecode(t *testing.T) {
+	str := `[{"id":1,"email_address":"wonk@wonk.org","name":"wonk","borrowed":false,"book_id":23}`
+	r := bytes.NewReader([]byte(str))
+
+	res := testmodels.StudentList{}
+	c, err := si.DecodeJsonCopied(&res, r)
+	siutils.AssertNotNilFail(t, err)
+	siutils.AssertNotNilFail(t, c)
+	fmt.Println(c.String())
+}
