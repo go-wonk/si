@@ -182,15 +182,15 @@ func (hc *HttpClient) RequestGet(url string, header http.Header, queries map[str
 	return hc.request(http.MethodGet, hc.baseUrl+url, header, queries, nil)
 }
 
-func (hc *HttpClient) RequestPost(url string, header http.Header, body []byte) ([]byte, error) {
+func (hc *HttpClient) RequestPost(url string, header http.Header, body any) ([]byte, error) {
 	return hc.request(http.MethodPost, hc.baseUrl+url, header, nil, body)
 }
 
-func (hc *HttpClient) RequestPut(url string, header http.Header, body []byte) ([]byte, error) {
+func (hc *HttpClient) RequestPut(url string, header http.Header, body any) ([]byte, error) {
 	return hc.request(http.MethodPut, hc.baseUrl+url, header, nil, body)
 }
 
-func (hc *HttpClient) RequestDelete(url string, header http.Header, body []byte) ([]byte, error) {
+func (hc *HttpClient) RequestDelete(url string, header http.Header, body any) ([]byte, error) {
 	return hc.request(http.MethodDelete, hc.baseUrl+url, header, nil, body)
 }
 

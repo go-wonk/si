@@ -62,6 +62,15 @@ func (sp *SyncProducer) Produce(key []byte, value []byte) (partition int32, offs
 	partition, offset, err = sp.SendMessage(msg)
 	return
 }
+func (sp *SyncProducer) ProduceWithTopic(topic string, key []byte, value []byte) (partition int32, offset int64, err error) {
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Key:   sarama.ByteEncoder(key),
+		Value: sarama.ByteEncoder(value),
+	}
+	partition, offset, err = sp.SendMessage(msg)
+	return
+}
 
 type AsyncProducer struct {
 	sarama.AsyncProducer
@@ -75,6 +84,17 @@ func NewAsyncProducer(producer sarama.AsyncProducer, topic string) *AsyncProduce
 func (ap *AsyncProducer) Produce(key []byte, value []byte) (partition int32, offset int64, err error) {
 	msg := &sarama.ProducerMessage{
 		Topic: ap.topic,
+		Key:   sarama.ByteEncoder(key),
+		Value: sarama.ByteEncoder(value),
+	}
+	ap.Input() <- msg
+
+	return 0, 0, nil
+}
+
+func (ap *AsyncProducer) ProduceWithTopic(topic string, key []byte, value []byte) (partition int32, offset int64, err error) {
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
 		Key:   sarama.ByteEncoder(key),
 		Value: sarama.ByteEncoder(value),
 	}
