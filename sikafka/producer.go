@@ -15,6 +15,8 @@ func DefaultAsyncProducer(brokers []string) (sarama.AsyncProducer, error) {
 	config.Producer.Flush.Messages = 1000
 	config.Producer.Flush.MaxMessages = 4096
 	config.Producer.Compression = sarama.CompressionSnappy
+	config.Producer.Return.Successes = false
+	config.Producer.Return.Errors = false
 
 	producer, err := sarama.NewAsyncProducer(brokers, config)
 	if err != nil {

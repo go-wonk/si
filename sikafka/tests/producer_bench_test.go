@@ -31,7 +31,7 @@ func BenchmarkAsyncProducer_Produce(b *testing.B) {
 
 	producer, err := sikafka.DefaultAsyncProducer([]string{"kafkahost:9092"})
 	siutils.AssertNilFailB(b, err)
-	defer producer.Close()
+	defer producer.AsyncClose()
 
 	sp := sikafka.NewAsyncProducer(producer, "tp-test-15")
 
