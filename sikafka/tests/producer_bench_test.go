@@ -13,7 +13,7 @@ func BenchmarkSyncProducer_Produce(b *testing.B) {
 		b.Skip("skipping online tests")
 	}
 
-	producer, err := sikafka.DefaultSyncProducer([]string{"kafkahost:9092"})
+	producer, err := sikafka.DefaultSyncProducer([]string{"testkafkahost:9092"})
 	siutils.AssertNilFailB(b, err)
 	defer producer.Close()
 
@@ -29,7 +29,7 @@ func BenchmarkSyncProducer_Produce(b *testing.B) {
 
 func BenchmarkAsyncProducer_Produce(b *testing.B) {
 
-	producer, err := sikafka.DefaultAsyncProducer([]string{"kafkahost:9092"})
+	producer, err := sikafka.DefaultAsyncProducer([]string{"testkafkahost:9092"})
 	siutils.AssertNilFailB(b, err)
 	defer producer.AsyncClose()
 

@@ -14,7 +14,7 @@ func (h *testMessageHandler) Handle(message *sarama.ConsumerMessage) {
 }
 func main() {
 
-	defClient, err := sikafka.DefaultConsumerGroup([]string{"kafkahost:9092"}, "tp-test-grp1", "3.1.0", "range", true)
+	defClient, err := sikafka.DefaultConsumerGroup([]string{"testkafkahost:9092"}, "tp-test-grp1", "3.1.0", "range", true)
 	if err != nil {
 		fmt.Println(err)
 		return
