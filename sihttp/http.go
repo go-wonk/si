@@ -105,16 +105,20 @@ func (hc *HttpClient) DoDecode(request *http.Request, res any) (int, error) {
 	return resp.StatusCode, nil
 }
 
-func (hc *HttpClient) request(method string, url string, header http.Header, queries map[string]string, body any) ([]byte, error) {
-	var req *HttpRequest
-	var err error
-
-	req, err = GetRequest(method, url, header, body, hc.writerOpts...)
-	if err != nil {
-		return nil, err
+// setHeader sets `haeder` to underlying Request.
+func setHeader(req *http.Request, header http.Header) {
+	for k, val := range header {
+		for i, v := range val {
+			if i == 0 {
+				req.Header.Set(k, v)
+				continue
+			}
+			req.Header.Add(k, v)
+		}
 	}
-	defer PutRequest(req)
+}
 
+func setQueries(req *http.Request, queries map[string]string) {
 	if len(queries) > 0 {
 		q := req.URL.Query()
 		for k, v := range queries {
@@ -122,12 +126,35 @@ func (hc *HttpClient) request(method string, url string, header http.Header, que
 		}
 		req.URL.RawQuery = q.Encode()
 	}
+}
+
+func (hc *HttpClient) request(method string, url string,
+	header http.Header, queries map[string]string, body any) ([]byte, error) {
+
+	var req *http.Request
+	var err error
+	if r, ok := body.(io.Reader); ok {
+		req, err = http.NewRequest(method, url, r)
+	} else {
+		w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
+		defer sicore.PutWriterAndBuffer(w, buf)
+		if err := w.EncodeFlush(body); err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequest(method, url, buf)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	setHeader(req, header)
+	setQueries(req, queries)
 
 	for _, v := range hc.requestOpts {
 		v.apply(req)
 	}
 
-	respBody, statusCode, err := hc.DoRead(req.Request)
+	respBody, statusCode, err := hc.DoRead(req)
 	if err != nil {
 		return nil, err
 	}
@@ -141,27 +168,31 @@ func (hc *HttpClient) request(method string, url string, header http.Header, que
 }
 
 func (hc *HttpClient) requestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any) error {
-	var req *HttpRequest
+
+	var req *http.Request
 	var err error
-	req, err = GetRequest(method, url, header, body, hc.writerOpts...)
+	if r, ok := body.(io.Reader); ok {
+		req, err = http.NewRequest(method, url, r)
+	} else {
+		w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
+		defer sicore.PutWriterAndBuffer(w, buf)
+		if err := w.EncodeFlush(body); err != nil {
+			return err
+		}
+		req, err = http.NewRequest(method, url, buf)
+	}
 	if err != nil {
 		return err
 	}
-	defer PutRequest(req)
 
-	if len(queries) > 0 {
-		q := req.URL.Query()
-		for k, v := range queries {
-			q.Add(k, v)
-		}
-		req.URL.RawQuery = q.Encode()
-	}
+	setHeader(req, header)
+	setQueries(req, queries)
 
 	for _, v := range hc.requestOpts {
 		v.apply(req)
 	}
 
-	statusCode, err := hc.DoDecode(req.Request, res)
+	statusCode, err := hc.DoDecode(req, res)
 	if err != nil {
 		return err
 	}

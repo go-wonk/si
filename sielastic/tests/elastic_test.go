@@ -26,7 +26,7 @@ func TestElasticClient_IndexDocument(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 	body := d.String()
-	res, err := ec.IndexDocument(context.Background(), "idx-test", "", []byte(body), true)
+	res, err := ec.IndexDocument(context.Background(), "idx-test", []byte(body))
 	siutils.AssertNilFail(t, err)
 
 	fmt.Println(res)

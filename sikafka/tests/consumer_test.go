@@ -59,7 +59,7 @@ func TestConsumerGroup(t *testing.T) {
 		t.FailNow()
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	assert.EqualValues(t, "this-is-a-test-message", consumedMessage)
 	siutils.AssertNilFail(t, cg.Finish())
 }

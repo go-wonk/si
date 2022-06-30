@@ -1,23 +1,24 @@
 package sihttp
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/go-wonk/si/sicore"
 )
 
 type RequestOption interface {
-	apply(c *HttpRequest) error
+	apply(c *http.Request) error
 }
 
-type RequestOptionFunc func(c *HttpRequest) error
+type RequestOptionFunc func(c *http.Request) error
 
-func (o RequestOptionFunc) apply(c *HttpRequest) error {
+func (o RequestOptionFunc) apply(c *http.Request) error {
 	return o(c)
 }
 
 func WithHeaderHmac256(key string, secret []byte) RequestOptionFunc {
-	return RequestOptionFunc(func(req *HttpRequest) error {
+	return RequestOptionFunc(func(req *http.Request) error {
 		header := req.Header
 		if _, ok := header[key]; ok {
 			// skip

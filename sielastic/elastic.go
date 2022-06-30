@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,12 +33,12 @@ func NewClient(client *elasticsearch.Client) *Client {
 	return &Client{client}
 }
 
-func (c *Client) IndexDocument(ctx context.Context, indexName string, docID string, body []byte, refresh bool) (map[string]interface{}, error) {
+func (c *Client) IndexDocument(ctx context.Context, indexName string, body []byte) (map[string]interface{}, error) {
 	req := esapi.IndexRequest{
-		Index:      indexName,
-		DocumentID: docID,
-		Body:       bytes.NewReader(body),
-		Refresh:    strconv.FormatBool(refresh),
+		Index: indexName,
+		// DocumentID: docID,
+		Body: bytes.NewReader(body),
+		// Refresh:    strconv.FormatBool(refresh),
 	}
 
 	res, err := req.Do(ctx, c)
@@ -62,7 +61,7 @@ func (c *Client) IndexDocument(ctx context.Context, indexName string, docID stri
 
 func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map[string]interface{}) (map[string]interface{}, error) {
 
-	buf := sicore.GetBytesBuffer(make([]byte, 0, 128))
+	buf := sicore.GetBytesBuffer(nil)
 	defer sicore.PutBytesBuffer(buf)
 
 	if err := sicore.EncodeJson(buf, body); err != nil {
