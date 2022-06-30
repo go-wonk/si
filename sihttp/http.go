@@ -136,11 +136,8 @@ func (hc *HttpClient) request(method string, url string,
 	if r, ok := body.(io.Reader); ok {
 		req, err = http.NewRequest(method, url, r)
 	} else {
-		buf := sicore.GetBytesBuffer(nil)
-		defer sicore.PutBytesBuffer(buf)
-
-		w := sicore.GetWriter(buf, hc.writerOpts...)
-		defer sicore.PutWriter(w)
+		w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
+		defer sicore.PutWriterAndBuffer(w, buf)
 		if err := w.EncodeFlush(body); err != nil {
 			return nil, err
 		}
@@ -177,11 +174,8 @@ func (hc *HttpClient) requestDecode(method string, url string, header http.Heade
 	if r, ok := body.(io.Reader); ok {
 		req, err = http.NewRequest(method, url, r)
 	} else {
-		buf := sicore.GetBytesBuffer(nil)
-		defer sicore.PutBytesBuffer(buf)
-
-		w := sicore.GetWriter(buf, hc.writerOpts...)
-		defer sicore.PutWriter(w)
+		w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
+		defer sicore.PutWriterAndBuffer(w, buf)
 		if err := w.EncodeFlush(body); err != nil {
 			return err
 		}

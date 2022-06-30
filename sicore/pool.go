@@ -92,9 +92,20 @@ func GetWriter(w io.Writer, opt ...WriterOption) *Writer {
 	return getWriter(w, opt...)
 }
 
+func GetWriterAndBuffer(opt ...WriterOption) (*Writer, *bytes.Buffer) {
+	buf := GetBytesBuffer(nil)
+	wr := GetWriter(buf, opt...)
+	return wr, buf
+}
+
 // PutWriter puts Writer back to the pool.
 func PutWriter(w *Writer) {
 	putWriter(w)
+}
+
+func PutWriterAndBuffer(w *Writer, buf *bytes.Buffer) {
+	PutWriter(w)
+	PutBytesBuffer(buf)
 }
 
 var (
