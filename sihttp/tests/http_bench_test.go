@@ -88,8 +88,8 @@ func BenchmarkHttpClient_RequestGet(b *testing.B) {
 
 const (
 	testData = "a"
-	// testDataRepeats = 1100
-	testDataRepeats = 128
+	// testDataRepeats = 128
+	testDataRepeats = 4096
 	testUrl         = "https://127.0.0.1:8081/test/echo"
 )
 
@@ -131,48 +131,6 @@ func BenchmarkReuseRequestPost(b *testing.B) {
 		// fmt.Println(string(respBody))
 
 		resp.Body.Close()
-	}
-}
-
-func BenchmarkReuseRequestPostWithRequestPool(b *testing.B) {
-	/*
-		BenchmarkReuseRequestPostWithRequestPool-8   	      79	  14926903 ns/op	    4773 B/op	      66 allocs/op
-	*/
-	if !onlinetest {
-		b.Skip("skipping online tests")
-	}
-
-	data := strings.Repeat(testData, testDataRepeats)
-	url := testUrl
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-
-		sendData := fmt.Sprintf("%s-%d", data, i)
-		headerData := fmt.Sprintf("%d", i)
-		r := sicore.GetBytesReader([]byte(sendData))
-
-		req, _ := sihttp.GetRequest(http.MethodPost, url, nil, r)
-		// siutils.AssertNilFailB(b, err)
-
-		req.Header.Set("custom_header", headerData)
-		// req.URL.RawQuery = "bar=foo"
-
-		resp, err := client.Do(req.Request)
-		if err != nil {
-			b.FailNow()
-		}
-		// siutils.AssertNilFailB(b, err)
-
-		io.ReadAll(resp.Body)
-		// siutils.AssertNilFailB(b, err)
-		// assert.EqualValues(b, sendData, string(respBody))
-		// fmt.Println(string(respBody))
-
-		resp.Body.Close()
-		sihttp.PutRequest(req)
-		sicore.PutBytesReader(r)
 	}
 }
 
@@ -297,28 +255,5 @@ func BenchmarkHttpClient_RequestPost(b *testing.B) {
 		header["custom_header"] = []string{headerData}
 		_, err := client.RequestPost(url, header, []byte(sendData))
 		siutils.AssertNilFailB(b, err)
-	}
-}
-
-func BenchmarkHttpClientPost2(b *testing.B) {
-	if !onlinetest {
-		b.Skip("skipping online tests")
-	}
-
-	client := sihttp.NewHttpClient(client)
-
-	data := strings.Repeat(testData, testDataRepeats)
-	url := testUrl
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-
-		sendData := fmt.Sprintf("%s-%d", data, i)
-		headerData := fmt.Sprintf("%d", i)
-
-		header := make(http.Header)
-		header["custom_header"] = []string{headerData}
-		client.RequestPost(url, header, []byte(sendData))
 	}
 }
