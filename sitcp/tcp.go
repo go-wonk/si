@@ -46,7 +46,7 @@ type Conn struct {
 	// readBufferSize      int
 }
 
-func NewClient(conn net.Conn) *Conn {
+func NewConn(conn net.Conn) *Conn {
 	tcpConn := &Conn{Conn: conn}
 	return tcpConn
 }
