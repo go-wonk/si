@@ -50,7 +50,7 @@ func TestConn_Request(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	defer defaultConn.Close()
 
-	conn := sitcp.NewClient(defaultConn)
+	conn := sitcp.NewConn(defaultConn)
 	conn.SetReaderOption(sicore.SetEofChecker(&TcpEOFChecker{}))
 
 	res, err := conn.Request(createSmallDataToSend())
