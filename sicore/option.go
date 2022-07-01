@@ -26,6 +26,12 @@ func (o ReaderOptionFunc) apply(r *Reader) {
 	o(r)
 }
 
+func SetEofChecker(chk EofChecker) ReaderOption {
+	return ReaderOptionFunc(func(r *Reader) {
+		r.SetEofChecker(chk)
+	})
+}
+
 // RowScannerOption is an interface that wraps an apply method.
 type RowScannerOption interface {
 	apply(rs *RowScanner)
