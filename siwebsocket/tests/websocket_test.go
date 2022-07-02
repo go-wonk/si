@@ -1,0 +1,128 @@
+package siwebsocket_test
+
+import (
+	"log"
+	"math/rand"
+	"net/url"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/siwebsocket"
+)
+
+func TestWebsocket(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	defer conn.Close()
+
+	siconn := siwebsocket.NewConn(conn)
+	go siconn.ReadPump()
+	for i := 0; i < 20; i++ {
+		go func(i int) {
+			defer func() {
+				log.Println("returning", i)
+			}()
+			for {
+				// time.Sleep(100 * time.Millisecond)
+
+				rn := rand.Intn(1000)
+				if err := siconn.Send([]byte(strconv.Itoa(rn))); err != nil {
+					if err != siwebsocket.ErrDataChannelClosed {
+						log.Println(err)
+					}
+					return
+				}
+			}
+
+		}(i)
+	}
+
+	// go func() {
+	time.Sleep(6 * time.Second)
+	siconn.Stop()
+	siconn.Wait()
+	log.Println("terminated")
+	// siconn.CloseGracefully()
+	// }()
+
+}
+
+func TestWebsocket2(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo/randomclose"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	defer conn.Close()
+
+	siconn := siwebsocket.NewConn(conn)
+	go siconn.ReadPump()
+	for i := 0; i < 20; i++ {
+		go func(i int) {
+			defer func() {
+				log.Println("returning", i)
+			}()
+			for {
+				// time.Sleep(100 * time.Millisecond)
+
+				rn := rand.Intn(1000)
+				// rn = 1001
+				if err := siconn.Send([]byte(strconv.Itoa(rn))); err != nil {
+					if err != siwebsocket.ErrDataChannelClosed {
+						log.Println(err)
+					}
+					return
+				}
+			}
+
+		}(i)
+	}
+
+	siconn.Wait()
+	log.Println("terminated")
+
+}
+
+func TestWebsocket3(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	c := siwebsocket.NewConn(conn)
+	go c.ReadPump()
+	time.Sleep(12 * time.Second)
+	c.Stop()
+	c.Wait()
+	log.Println("terminated 1")
+
+	for i := 0; i < 5; i++ {
+		time.Sleep(100 * time.Millisecond)
+		u2 := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
+		conn2, _, err := siwebsocket.DefaultConn(u2, nil)
+		siutils.AssertNilFail(t, err)
+		c2 := siwebsocket.NewConn(conn2)
+		go c2.ReadPump()
+		time.Sleep(12 * time.Second)
+		c2.Stop()
+		c2.Wait()
+		log.Println("terminated 2")
+	}
+
+}
+
+func TestWebsocket4(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/idle"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	c := siwebsocket.NewConn(conn)
+	go c.ReadPump()
+	time.Sleep(12000 * time.Second)
+	c.Stop()
+	c.Wait()
+	log.Println("terminated 1")
+
+}
