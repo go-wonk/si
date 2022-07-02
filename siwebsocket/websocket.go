@@ -55,7 +55,8 @@ var (
 
 type Conn struct {
 	// dialer *websocket.Dialer
-	conn *websocket.Conn
+	conn    *websocket.Conn
+	handler MessageHandler
 
 	data     chan []byte
 	sendDone chan struct{}
@@ -64,7 +65,7 @@ type Conn struct {
 	readWg *sync.WaitGroup
 }
 
-func NewConn(conn *websocket.Conn) *Conn {
+func NewConn(conn *websocket.Conn, opts ...WebsocketOption) *Conn {
 
 	c := &Conn{
 		conn:     conn,
@@ -72,6 +73,7 @@ func NewConn(conn *websocket.Conn) *Conn {
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
+		handler:  &DefaultMessageHandler{},
 	}
 
 	go c.stop()
@@ -80,6 +82,10 @@ func NewConn(conn *websocket.Conn) *Conn {
 	go c.writePump()
 
 	return c
+}
+
+func (c *Conn) SetMessageHandler(h MessageHandler) {
+	c.handler = h
 }
 
 func (c *Conn) stop() {
@@ -136,7 +142,7 @@ func (c *Conn) ReadPump() {
 	cnt := 0 // TODO: for testing
 	for {
 		// messageType, message, err := c.conn.ReadMessage()
-		_, _, err := c.conn.ReadMessage()
+		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			// if e, ok := err.(*websocket.CloseError); ok {
 			// 	if e.Code == websocket.CloseNormalClosure {
@@ -147,6 +153,7 @@ func (c *Conn) ReadPump() {
 			return
 		}
 		// fmt.Println(messageType, string(message))
+		c.handler.Handle(message)
 		cnt++
 	}
 }

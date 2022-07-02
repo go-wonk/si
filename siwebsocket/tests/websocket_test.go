@@ -158,3 +158,18 @@ func TestWebsocket_EchoStop(t *testing.T) {
 	// if network is kept disconnected, then "read tcp 192.168.0.12:63300->192.168.0.92:48080: i/o timeout" error occurs.
 	// else if network is reconnected, then "websocket: close 1000 (normal)" error occurs.
 }
+
+func TestWebsocket_Push(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	c := siwebsocket.NewConn(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+	go c.ReadPump()
+
+	time.Sleep(10 * time.Second)
+	c.Stop()
+
+	c.Wait()
+	log.Println("terminated 1")
+}
