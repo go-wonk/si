@@ -115,7 +115,7 @@ func TestWebsocket3(t *testing.T) {
 
 func TestWebsocket4(t *testing.T) {
 
-	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/idle"}
+	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/idle"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewConn(conn)
@@ -125,4 +125,36 @@ func TestWebsocket4(t *testing.T) {
 	c.Wait()
 	log.Println("terminated 1")
 
+}
+
+func TestWebsocket_EchoIdle(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	c := siwebsocket.NewConn(conn)
+	go c.ReadPump()
+
+	c.Wait()
+	log.Println("terminated 1")
+
+}
+
+func TestWebsocket_EchoStop(t *testing.T) {
+
+	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
+	conn, _, err := siwebsocket.DefaultConn(u, nil)
+	siutils.AssertNilFail(t, err)
+	c := siwebsocket.NewConn(conn)
+	go c.ReadPump()
+
+	time.Sleep(10 * time.Second)
+	c.Stop()
+
+	c.Wait()
+	log.Println("terminated 1")
+
+	// disconnect network right after readPump. Stop results in calling closeMessage.
+	// if network is kept disconnected, then "read tcp 192.168.0.12:63300->192.168.0.92:48080: i/o timeout" error occurs.
+	// else if network is reconnected, then "websocket: close 1000 (normal)" error occurs.
 }

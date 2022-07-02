@@ -172,6 +172,8 @@ func (c *Conn) writePump() {
 			// Stop method has been called
 			if err := c.closeMessage(""); err == nil {
 				normalClose = true
+			} else {
+				log.Println("write:", err)
 			}
 			return
 		// nothing will close c.data channel
