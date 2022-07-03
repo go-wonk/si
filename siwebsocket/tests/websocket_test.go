@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwebsocket"
 )
@@ -167,7 +168,9 @@ func TestWebsocket_Push(t *testing.T) {
 		log.Println("connect")
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
-		c := siwebsocket.NewConn(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+		c := siwebsocket.NewConn(conn,
+			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}),
+			siwebsocket.WithReaderOpt(sicore.SetJsonDecoder()))
 		go c.ReadPump()
 
 		time.Sleep(1 * time.Second)

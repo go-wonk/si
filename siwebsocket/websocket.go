@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-wonk/si"
+	"github.com/go-wonk/si/sicore"
 	"github.com/gorilla/websocket"
 )
 
@@ -68,6 +69,12 @@ type Conn struct {
 
 	readErr  error
 	writeErr error
+
+	readOpts []sicore.ReaderOption
+}
+
+func (c *Conn) appendReaderOpt(ro sicore.ReaderOption) {
+	c.readOpts = append(c.readOpts, ro)
 }
 
 func (c *Conn) ReadErr() error {
@@ -168,20 +175,13 @@ func (c *Conn) ReadPump() {
 
 	cnt := 0 // TODO: for testing
 	for {
-		// messageType, message, err := c.conn.ReadMessage()
-		_, message, err := c.ReadMessage()
+		_, r, err := c.conn.NextReader()
 		if err != nil {
-			// if e, ok := err.(*websocket.CloseError); ok {
-			// 	if e.Code == websocket.CloseNormalClosure {
-			// 		return
-			// 	}
-			// }
 			c.readErr = err
-			log.Println("read:", err, cnt)
 			return
 		}
-		// fmt.Println(messageType, string(message))
-		c.handler.Handle(message)
+		c.handler.Handle(r)
+
 		cnt++
 	}
 }
