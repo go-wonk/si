@@ -3,12 +3,14 @@ package siwebsocket
 import (
 	"crypto/tls"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
+	"github.com/go-wonk/si"
 	"github.com/gorilla/websocket"
 )
 
@@ -63,6 +65,17 @@ type Conn struct {
 	stopSend chan string
 
 	readWg *sync.WaitGroup
+
+	readErr  error
+	writeErr error
+}
+
+func (c *Conn) ReadErr() error {
+	return c.readErr
+}
+
+func (c *Conn) WriteErr() error {
+	return c.writeErr
 }
 
 func NewConn(conn *websocket.Conn, opts ...WebsocketOption) *Conn {
@@ -73,7 +86,11 @@ func NewConn(conn *websocket.Conn, opts ...WebsocketOption) *Conn {
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
-		handler:  &DefaultMessageHandler{},
+		handler:  &NopMessageHandler{},
+	}
+
+	for _, o := range opts {
+		o.apply(c)
 	}
 
 	go c.stop()
@@ -124,6 +141,16 @@ func (c *Conn) closeMessage(msg string) error {
 	return c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, msg))
 }
 
+func (c *Conn) ReadMessage() (messageType int, p []byte, err error) {
+	var r io.Reader
+	messageType, r, err = c.conn.NextReader()
+	if err != nil {
+		return messageType, nil, err
+	}
+	p, err = si.ReadAll(r)
+	return messageType, p, err
+}
+
 func (c *Conn) ReadPump() {
 	defer func() {
 		log.Println("return readPump")
@@ -142,13 +169,14 @@ func (c *Conn) ReadPump() {
 	cnt := 0 // TODO: for testing
 	for {
 		// messageType, message, err := c.conn.ReadMessage()
-		_, message, err := c.conn.ReadMessage()
+		_, message, err := c.ReadMessage()
 		if err != nil {
 			// if e, ok := err.(*websocket.CloseError); ok {
 			// 	if e.Code == websocket.CloseNormalClosure {
 			// 		return
 			// 	}
 			// }
+			c.readErr = err
 			log.Println("read:", err, cnt)
 			return
 		}
@@ -181,6 +209,7 @@ func (c *Conn) writePump() {
 				normalClose = true
 			} else {
 				log.Println("write:", err)
+				c.writeErr = err
 			}
 			return
 		// nothing will close c.data channel
@@ -195,6 +224,7 @@ func (c *Conn) writePump() {
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Println(err)
+				c.writeErr = err
 				return
 			}
 			w.Write(message)
@@ -209,11 +239,13 @@ func (c *Conn) writePump() {
 
 			if err := w.Close(); err != nil {
 				log.Println(err)
+				c.writeErr = err
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				c.writeErr = err
 				return
 			}
 		}

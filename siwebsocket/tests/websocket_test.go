@@ -156,20 +156,39 @@ func TestWebsocket_EchoStop(t *testing.T) {
 
 	// disconnect network right after readPump. Stop results in calling closeMessage.
 	// if network is kept disconnected, then "read tcp 192.168.0.12:63300->192.168.0.92:48080: i/o timeout" error occurs.
-	// else if network is reconnected, then "websocket: close 1000 (normal)" error occurs.
+	// else if network is reconnected, then "websocket: close 1000 (normal)" error occurs.(same result shown when there is no ping from client)
 }
 
 func TestWebsocket_Push(t *testing.T) {
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
-	conn, _, err := siwebsocket.DefaultConn(u, nil)
-	siutils.AssertNilFail(t, err)
-	c := siwebsocket.NewConn(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-	go c.ReadPump()
 
-	time.Sleep(10 * time.Second)
-	c.Stop()
+	for i := 0; i < 5; i++ {
+		log.Println("connect")
+		conn, _, err := siwebsocket.DefaultConn(u, nil)
+		siutils.AssertNilFail(t, err)
+		c := siwebsocket.NewConn(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+		go c.ReadPump()
 
-	c.Wait()
-	log.Println("terminated 1")
+		time.Sleep(1 * time.Second)
+		c.Stop()
+		c.Wait()
+	}
+
+	for i := 0; i < 3; i++ {
+		log.Println("connect")
+		conn, _, err := siwebsocket.DefaultConn(u, nil)
+		siutils.AssertNilFail(t, err)
+		c := siwebsocket.NewConn(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+		go c.ReadPump()
+
+		c.Wait()
+		if err := c.ReadErr(); err != nil {
+			log.Println(err)
+		}
+		if err := c.WriteErr(); err != nil {
+			log.Println(err)
+		}
+	}
+	log.Println("terminated")
 }
