@@ -257,12 +257,12 @@ func (o *StudentMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption)
 }
 
 func TestWebsocket_PushStudent(t *testing.T) {
-	// if !onlinetest {
-	// 	t.Skip("skipping online tests")
-	// }
-	// if !longtest {
-	// 	t.Skip("skipping long tests")
-	// }
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/student"}
 
