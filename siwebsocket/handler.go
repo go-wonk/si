@@ -2,7 +2,6 @@ package siwebsocket
 
 import (
 	"io"
-	"log"
 
 	"github.com/go-wonk/si/sicore"
 )
@@ -25,10 +24,11 @@ func (o *DefaultMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption)
 	sr := sicore.GetReader(r, opts...)
 	defer sicore.PutReader(sr)
 
-	b, err := sr.ReadAll()
+	_, err := sr.ReadAll()
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return
 	}
-	log.Println(string(b))
+
+	// log.Println(string(b))
 }

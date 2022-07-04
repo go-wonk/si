@@ -57,6 +57,9 @@ func (rd *Reader) ApplyOptions(opts ...ReaderOption) {
 	if rd.r != nil && rd.chk == nil {
 		rd.chk = DefaultEofChecker
 	}
+	if rd.r != nil && rd.dec == nil {
+		rd.dec = &DefaultDecoder{rd}
+	}
 }
 
 // SetEofChecker sets EofChecker to underlying Reader.

@@ -56,7 +56,7 @@ var (
 	space   = []byte{' '}
 )
 
-type Conn struct {
+type Client struct {
 	// dialer *websocket.Dialer
 	conn    *websocket.Conn
 	handler MessageHandler
@@ -73,21 +73,21 @@ type Conn struct {
 	readOpts []sicore.ReaderOption
 }
 
-func (c *Conn) appendReaderOpt(ro sicore.ReaderOption) {
+func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
 	c.readOpts = append(c.readOpts, ro)
 }
 
-func (c *Conn) ReadErr() error {
+func (c *Client) ReadErr() error {
 	return c.readErr
 }
 
-func (c *Conn) WriteErr() error {
+func (c *Client) WriteErr() error {
 	return c.writeErr
 }
 
-func NewConn(conn *websocket.Conn, opts ...WebsocketOption) *Conn {
+func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 
-	c := &Conn{
+	c := &Client{
 		conn:     conn,
 		data:     make(chan []byte),
 		sendDone: make(chan struct{}),
@@ -100,7 +100,7 @@ func NewConn(conn *websocket.Conn, opts ...WebsocketOption) *Conn {
 		o.apply(c)
 	}
 
-	go c.stop()
+	go c.waitStopSend()
 	c.readWg.Add(1)
 	// go c.readPump()
 	go c.writePump()
@@ -108,18 +108,18 @@ func NewConn(conn *websocket.Conn, opts ...WebsocketOption) *Conn {
 	return c
 }
 
-func (c *Conn) SetMessageHandler(h MessageHandler) {
+func (c *Client) SetMessageHandler(h MessageHandler) {
 	c.handler = h
 }
 
-func (c *Conn) stop() {
+func (c *Client) waitStopSend() {
 	<-c.stopSend
 	close(c.sendDone)
 }
 
 var ErrStopChannelFull = errors.New("stop channel is full")
 
-func (c *Conn) Stop() error {
+func (c *Client) Stop() error {
 	select {
 	case c.stopSend <- "stop":
 	default:
@@ -128,13 +128,13 @@ func (c *Conn) Stop() error {
 	return nil
 }
 
-func (c *Conn) Wait() {
+func (c *Client) Wait() {
 	c.readWg.Wait()
 }
 
 var ErrDataChannelClosed = errors.New("send data channel closed")
 
-func (c *Conn) Send(b []byte) error {
+func (c *Client) Send(b []byte) error {
 	select {
 	case <-c.sendDone:
 		return ErrDataChannelClosed
@@ -143,12 +143,12 @@ func (c *Conn) Send(b []byte) error {
 	return nil
 }
 
-func (c *Conn) closeMessage(msg string) error {
+func (c *Client) closeMessage(msg string) error {
 	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, msg))
 }
 
-func (c *Conn) ReadMessage() (messageType int, p []byte, err error) {
+func (c *Client) ReadMessage() (messageType int, p []byte, err error) {
 	var r io.Reader
 	messageType, r, err = c.conn.NextReader()
 	if err != nil {
@@ -158,7 +158,7 @@ func (c *Conn) ReadMessage() (messageType int, p []byte, err error) {
 	return messageType, p, err
 }
 
-func (c *Conn) ReadPump() {
+func (c *Client) ReadPump() {
 	defer func() {
 		log.Println("return readPump")
 		c.readWg.Done()
@@ -186,7 +186,7 @@ func (c *Conn) ReadPump() {
 	}
 }
 
-func (c *Conn) writePump() {
+func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	normalClose := false
 	defer func() {

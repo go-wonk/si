@@ -1,6 +1,7 @@
 package siwebsocket_test
 
 import (
+	"io"
 	"log"
 	"math/rand"
 	"net/url"
@@ -11,16 +12,22 @@ import (
 	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwebsocket"
+	"github.com/go-wonk/si/tests/testmodels"
 )
 
 func TestWebsocket(t *testing.T) {
-
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	defer conn.Close()
 
-	siconn := siwebsocket.NewConn(conn)
+	siconn := siwebsocket.NewClient(conn)
 	go siconn.ReadPump()
 	for i := 0; i < 20; i++ {
 		go func(i int) {
@@ -53,13 +60,19 @@ func TestWebsocket(t *testing.T) {
 }
 
 func TestWebsocket2(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo/randomclose"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	defer conn.Close()
 
-	siconn := siwebsocket.NewConn(conn)
+	siconn := siwebsocket.NewClient(conn)
 	go siconn.ReadPump()
 	for i := 0; i < 20; i++ {
 		go func(i int) {
@@ -88,11 +101,17 @@ func TestWebsocket2(t *testing.T) {
 }
 
 func TestWebsocket3(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
-	c := siwebsocket.NewConn(conn)
+	c := siwebsocket.NewClient(conn)
 	go c.ReadPump()
 	time.Sleep(12 * time.Second)
 	c.Stop()
@@ -104,7 +123,7 @@ func TestWebsocket3(t *testing.T) {
 		u2 := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
 		conn2, _, err := siwebsocket.DefaultConn(u2, nil)
 		siutils.AssertNilFail(t, err)
-		c2 := siwebsocket.NewConn(conn2)
+		c2 := siwebsocket.NewClient(conn2)
 		go c2.ReadPump()
 		time.Sleep(12 * time.Second)
 		c2.Stop()
@@ -115,11 +134,17 @@ func TestWebsocket3(t *testing.T) {
 }
 
 func TestWebsocket4(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/idle"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
-	c := siwebsocket.NewConn(conn)
+	c := siwebsocket.NewClient(conn)
 	go c.ReadPump()
 	time.Sleep(12000 * time.Second)
 	c.Stop()
@@ -129,11 +154,17 @@ func TestWebsocket4(t *testing.T) {
 }
 
 func TestWebsocket_EchoIdle(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
-	c := siwebsocket.NewConn(conn)
+	c := siwebsocket.NewClient(conn)
 	go c.ReadPump()
 
 	c.Wait()
@@ -142,11 +173,17 @@ func TestWebsocket_EchoIdle(t *testing.T) {
 }
 
 func TestWebsocket_EchoStop(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
-	c := siwebsocket.NewConn(conn)
+	c := siwebsocket.NewClient(conn)
 	go c.ReadPump()
 
 	time.Sleep(10 * time.Second)
@@ -161,6 +198,12 @@ func TestWebsocket_EchoStop(t *testing.T) {
 }
 
 func TestWebsocket_Push(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
 
@@ -168,9 +211,8 @@ func TestWebsocket_Push(t *testing.T) {
 		log.Println("connect")
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
-		c := siwebsocket.NewConn(conn,
-			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}),
-			siwebsocket.WithReaderOpt(sicore.SetJsonDecoder()))
+		c := siwebsocket.NewClient(conn,
+			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
 		go c.ReadPump()
 
 		time.Sleep(1 * time.Second)
@@ -182,7 +224,65 @@ func TestWebsocket_Push(t *testing.T) {
 		log.Println("connect")
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
-		c := siwebsocket.NewConn(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+		c := siwebsocket.NewClient(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+		go c.ReadPump()
+
+		c.Wait()
+		if err := c.ReadErr(); err != nil {
+			log.Println(err)
+		}
+		if err := c.WriteErr(); err != nil {
+			log.Println(err)
+		}
+	}
+	log.Println("terminated")
+}
+
+type StudentMessageHandler struct{}
+
+func (o *StudentMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) {
+	// log.Println(string(b))
+	sr := sicore.GetReader(r, opts...)
+	defer sicore.PutReader(sr)
+
+	sr.ApplyOptions(sicore.SetJsonDecoder())
+	var student testmodels.Student
+	if err := sr.Decode(&student); err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println(student.String())
+}
+
+func TestWebsocket_PushStudent(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/student"}
+
+	for i := 0; i < 5; i++ {
+		log.Println("connect")
+		conn, _, err := siwebsocket.DefaultConn(u, nil)
+		siutils.AssertNilFail(t, err)
+		c := siwebsocket.NewClient(conn,
+			siwebsocket.WithMessageHandler(&StudentMessageHandler{}))
+		go c.ReadPump()
+
+		time.Sleep(1 * time.Second)
+		c.Stop()
+		c.Wait()
+	}
+
+	for i := 0; i < 3; i++ {
+		log.Println("connect")
+		conn, _, err := siwebsocket.DefaultConn(u, nil)
+		siutils.AssertNilFail(t, err)
+		c := siwebsocket.NewClient(conn, siwebsocket.WithMessageHandler(&StudentMessageHandler{}))
 		go c.ReadPump()
 
 		c.Wait()
