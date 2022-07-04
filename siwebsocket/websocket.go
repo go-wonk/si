@@ -134,7 +134,6 @@ func (c *Client) Start() error {
 	if v != 0 {
 		return errors.New("already started")
 	}
-
 	atomic.AddInt32(&c.started, 1)
 	c.readPump()
 	return nil
@@ -161,10 +160,6 @@ func (c *Client) Stop() error {
 }
 
 func (c *Client) Wait() {
-	v := atomic.LoadInt32(&c.started)
-	if v == 0 {
-		c.readWg.Done()
-	}
 	c.readWg.Wait()
 }
 
