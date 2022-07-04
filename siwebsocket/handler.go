@@ -7,28 +7,27 @@ import (
 )
 
 type MessageHandler interface {
-	Handle(r io.Reader, opts ...sicore.ReaderOption)
+	Handle(r io.Reader, opts ...sicore.ReaderOption) error
 }
 
 type NopMessageHandler struct{}
 
-func (o *NopMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) {
-	// do nothing
-	io.Copy(io.Discard, r)
+func (o *NopMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) error {
+	// discard reader data
+	_, err := io.Copy(io.Discard, r)
+	return err
 }
 
 type DefaultMessageHandler struct{}
 
-func (o *DefaultMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) {
-	// log.Println(string(b))
+func (o *DefaultMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) error {
 	sr := sicore.GetReader(r, opts...)
 	defer sicore.PutReader(sr)
 
 	_, err := sr.ReadAll()
 	if err != nil {
-		// log.Println(err)
-		return
+		return err
 	}
 
-	// log.Println(string(b))
+	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -178,7 +177,7 @@ func (c *Client) ReadMessage() (messageType int, p []byte, err error) {
 
 func (c *Client) ReadPump() {
 	defer func() {
-		log.Println("return readPump")
+		// log.Println("return readPump")
 		c.readWg.Done()
 		c.conn.Close()
 		c.Stop()
@@ -200,7 +199,10 @@ func (c *Client) ReadPump() {
 			c.readErr = err
 			return
 		}
-		c.handler.Handle(r)
+		if err := c.handler.Handle(r); err != nil {
+			c.readErr = err
+			return
+		}
 
 		cnt++
 	}

@@ -240,7 +240,7 @@ func TestWebsocket_Push(t *testing.T) {
 
 type StudentMessageHandler struct{}
 
-func (o *StudentMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) {
+func (o *StudentMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption) error {
 	// log.Println(string(b))
 	sr := sicore.GetReader(r, opts...)
 	defer sicore.PutReader(sr)
@@ -249,10 +249,11 @@ func (o *StudentMessageHandler) Handle(r io.Reader, opts ...sicore.ReaderOption)
 	var student testmodels.Student
 	if err := sr.Decode(&student); err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 
 	log.Println(student.String())
+	return nil
 }
 
 func TestWebsocket_PushStudent(t *testing.T) {
