@@ -210,11 +210,11 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(c.pingPeriod)
 	normalClose := false
 	defer func() {
-		log.Println("return writePump")
+		// log.Println("return writePump")
 		ticker.Stop()
 
 		if !normalClose {
-			log.Println("abnormal write")
+			// log.Println("abnormal write")
 			c.conn.Close()
 		}
 		// c.conn.Close() // TODO: should be closed here?
@@ -228,7 +228,7 @@ func (c *Client) writePump() {
 			if err := c.closeMessage(""); err == nil {
 				normalClose = true
 			} else {
-				log.Println("write:", err)
+				// log.Println("write:", err)
 				c.writeErr = err
 			}
 			return
@@ -243,7 +243,7 @@ func (c *Client) writePump() {
 			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Println(err)
+				// log.Println(err)
 				c.writeErr = err
 				return
 			}
@@ -258,7 +258,7 @@ func (c *Client) writePump() {
 			}
 
 			if err := w.Close(); err != nil {
-				log.Println(err)
+				// log.Println(err)
 				c.writeErr = err
 				return
 			}
