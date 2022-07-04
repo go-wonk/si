@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-wonk/si"
@@ -68,6 +69,8 @@ type Client struct {
 	writeErr error
 
 	readOpts []sicore.ReaderOption
+
+	started int32
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -101,6 +104,8 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
+
+		started: 0,
 	}
 
 	for _, o := range opts {
@@ -108,8 +113,6 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	}
 
 	go c.waitStopSend()
-	c.readWg.Add(1)
-	// go c.readPump()
 	go c.writePump()
 
 	return c
@@ -119,10 +122,22 @@ func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	writeWait := 10 * time.Second
 	readWait := 60 * time.Second
 	// pingPeriod := (pongWait * 9) / 10
-	maxMessageSize := 512
+	maxMessageSize := 4096
 	usePingPong := false
 
 	return NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
+}
+
+func (c *Client) Start() error {
+	v := atomic.LoadInt32(&c.started)
+	if v != 0 {
+		return errors.New("already started")
+	}
+
+	atomic.AddInt32(&c.started, 1)
+	c.readWg.Add(1)
+	c.readPump()
+	return nil
 }
 
 func (c *Client) SetMessageHandler(h MessageHandler) {
@@ -175,7 +190,7 @@ func (c *Client) ReadMessage() (messageType int, p []byte, err error) {
 	return messageType, p, err
 }
 
-func (c *Client) ReadPump() {
+func (c *Client) readPump() {
 	defer func() {
 		// log.Println("return readPump")
 		c.readWg.Done()
