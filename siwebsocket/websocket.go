@@ -254,11 +254,11 @@ func (c *Client) readPump() {
 	defer func() {
 		c.Stop()
 		c.conn.Close()
-		c.readWg.Done()
 		if c.hub != nil {
 			c.hub.removeClient(c)
 		}
 		log.Println("return readPump")
+		c.readWg.Done()
 	}()
 
 	c.conn.SetReadLimit(int64(c.maxMessageSize))

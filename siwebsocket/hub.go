@@ -69,8 +69,8 @@ func (h *Hub) Run() {
 			} else {
 				log.Println("not found client:", client.id)
 			}
-			client.Stop()
-			client.Wait()
+			// client.Stop()
+			// client.Wait()
 		case message := <-h.broadcast:
 			h.clients.Range(func(key interface{}, value interface{}) bool {
 				err := value.(*Client).Send(message)
@@ -84,10 +84,10 @@ func (h *Hub) Run() {
 }
 
 func (h *Hub) waitStop() {
-	<-h.stop // wait until Stop method is called
-	close(h.registerDone)
-	h.CloseAllClients()
-	close(h.done)
+	<-h.stop              // wait until Stop method is called
+	close(h.registerDone) // prevent from sending into register/unregister/broadcast channel
+	h.removeAllClients()  // stops and closes all clients and remove from clients map
+	close(h.done)         // stops Run method
 }
 
 func (h *Hub) Stop() error {
@@ -113,18 +113,37 @@ func (h *Hub) AddClient(client *Client) error {
 }
 
 func (h *Hub) removeClient(client *Client) error {
-	h.unregister <- client
+	select {
+	case <-h.registerDone:
+		return errors.New("register buffer closed")
+	case h.unregister <- client:
+	}
+	// h.unregister <- client
 	return nil
 }
 
-func (h *Hub) CloseAllClients() error {
+func (h *Hub) removeAllClients() error {
+	h.clients.Range(func(key interface{}, value interface{}) bool {
+		err := value.(*Client).Stop()
+		if err != nil {
+			log.Println("CloseAllClients err:", err)
+		}
+		value.(*Client).Wait()
+		h.clients.Delete(value.(*Client).id)
+		return true
+	})
+
+	return nil
+}
+
+func (h *Hub) RemoveRandomClient() error {
 	h.clients.Range(func(key interface{}, value interface{}) bool {
 		err := value.(*Client).Stop()
 		if err != nil {
 			log.Println("CloseAllClients err:", err)
 		}
 		// value.(*Client).Wait()
-		return true
+		return false
 	})
 
 	return nil
@@ -138,4 +157,14 @@ func (h *Hub) Broadcast(message []byte) error {
 	}
 
 	return nil
+}
+
+func (h *Hub) LenClients() int {
+	lenClients := 0
+	h.clients.Range(func(key interface{}, value interface{}) bool {
+		lenClients++
+		return true
+	})
+
+	return lenClients
 }
