@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/go-wonk/si"
 	"github.com/go-wonk/si/sicore"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -73,6 +75,14 @@ type Client struct {
 	started int32
 	// mutex to increment and get started value
 	startRWMutex sync.RWMutex
+
+	id string
+	// for server only
+	hub *Hub
+}
+
+func (c *Client) SetID(id string) {
+	c.id = id
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -108,6 +118,44 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 		readWg:   &sync.WaitGroup{},
 
 		started: 0,
+		id:      uuid.New().String(),
+	}
+
+	for _, o := range opts {
+		o.apply(c)
+	}
+
+	go c.waitStopSend()
+	go c.writePump()
+	c.readWg.Add(1)
+
+	return c
+}
+
+func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
+	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) *Client {
+
+	pingPeriod := (readWait * 9) / 10
+
+	c := &Client{
+		conn:    conn,
+		handler: &NopMessageHandler{},
+
+		writeWait:      writeWait,
+		readWait:       readWait,
+		pingPeriod:     pingPeriod,
+		maxMessageSize: maxMessageSize,
+		usePingPong:    usePingPong,
+
+		data:     make(chan []byte),
+		sendDone: make(chan struct{}),
+		stopSend: make(chan string, 1),
+		readWg:   &sync.WaitGroup{},
+
+		started: 0,
+		id:      uuid.New().String(),
+
+		hub: hub,
 	}
 
 	for _, o := range opts {
@@ -204,10 +252,13 @@ func (c *Client) ReadMessage() (messageType int, p []byte, err error) {
 
 func (c *Client) readPump() {
 	defer func() {
-		// log.Println("return readPump")
-		c.readWg.Done()
-		c.conn.Close()
 		c.Stop()
+		c.conn.Close()
+		c.readWg.Done()
+		if c.hub != nil {
+			c.hub.removeClient(c)
+		}
+		log.Println("return readPump")
 	}()
 
 	c.conn.SetReadLimit(int64(c.maxMessageSize))
@@ -239,7 +290,7 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(c.pingPeriod)
 	normalClose := false
 	defer func() {
-		// log.Println("return writePump")
+		log.Println("return writePump")
 		ticker.Stop()
 
 		if !normalClose {
