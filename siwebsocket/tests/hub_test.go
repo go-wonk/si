@@ -92,6 +92,6 @@ func TestHub2(t *testing.T) {
 	log.Println("stopping...")
 	hub.Stop()
 	hub.Wait()
+	time.Sleep(12 * time.Second)
 	log.Println("stopped", hub.LenClients())
-	// time.Sleep(12 * time.Second)
 }
