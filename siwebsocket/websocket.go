@@ -69,8 +69,10 @@ type Client struct {
 
 	readOpts []sicore.ReaderOption
 
+	// started is a value to make sure Client starts only once
+	started int32
+	// mutex to increment and get started value
 	startRWMutex sync.RWMutex
-	started      int32
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -142,6 +144,7 @@ func (c *Client) Start() error {
 }
 
 var ErrStopChannelFull = errors.New("stop channel is full")
+var ErrNotStarted = errors.New("client has not been started")
 
 func (c *Client) Stop() error {
 	select {
@@ -152,15 +155,16 @@ func (c *Client) Stop() error {
 	return nil
 }
 
-func (c *Client) Wait() {
+func (c *Client) Wait() error {
 	c.startRWMutex.RLock()
 	defer c.startRWMutex.RUnlock()
 
 	if c.started == 0 {
-		return
+		return ErrNotStarted
 	}
 
 	c.readWg.Wait()
+	return nil
 }
 
 func (c *Client) SetMessageHandler(h MessageHandler) {
