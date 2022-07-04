@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/go-wonk/si"
@@ -70,7 +69,8 @@ type Client struct {
 
 	readOpts []sicore.ReaderOption
 
-	started int32
+	startRWMutex sync.RWMutex
+	started      int32
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -130,22 +130,15 @@ func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 }
 
 func (c *Client) Start() error {
-	v := atomic.LoadInt32(&c.started)
-	if v != 0 {
+	c.startRWMutex.Lock()
+	defer c.startRWMutex.Unlock()
+	if c.started != 0 {
 		return errors.New("already started")
 	}
-	atomic.AddInt32(&c.started, 1)
+	c.started++
+
 	c.readPump()
 	return nil
-}
-
-func (c *Client) SetMessageHandler(h MessageHandler) {
-	c.handler = h
-}
-
-func (c *Client) waitStopSend() {
-	<-c.stopSend
-	close(c.sendDone)
 }
 
 var ErrStopChannelFull = errors.New("stop channel is full")
@@ -160,7 +153,23 @@ func (c *Client) Stop() error {
 }
 
 func (c *Client) Wait() {
+	c.startRWMutex.RLock()
+	defer c.startRWMutex.RUnlock()
+
+	if c.started == 0 {
+		return
+	}
+
 	c.readWg.Wait()
+}
+
+func (c *Client) SetMessageHandler(h MessageHandler) {
+	c.handler = h
+}
+
+func (c *Client) waitStopSend() {
+	<-c.stopSend
+	close(c.sendDone)
 }
 
 var ErrDataChannelClosed = errors.New("send data channel closed")
