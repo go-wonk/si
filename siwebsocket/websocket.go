@@ -114,6 +114,7 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 
 	go c.waitStopSend()
 	go c.writePump()
+	c.readWg.Add(1)
 
 	return c
 }
@@ -133,9 +134,7 @@ func (c *Client) Start() error {
 	if v != 0 {
 		return errors.New("already started")
 	}
-
 	atomic.AddInt32(&c.started, 1)
-	c.readWg.Add(1)
 	c.readPump()
 	return nil
 }
