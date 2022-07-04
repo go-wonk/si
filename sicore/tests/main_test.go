@@ -27,7 +27,7 @@ const (
 func startTcpServer(waitChannel chan bool) error {
 	//통신 방식과 포트값을 전달해 리스너 객체 생성
 	var err error
-	listener, err = net.Listen("tcp", ":10000")
+	listener, err = net.Listen("tcp", ":9999")
 
 	//예외처리
 	if err != nil {

@@ -19,7 +19,7 @@ func Test_Basic_Tcp(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
-	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
+	conn, err := net.DialTimeout("tcp", ":9999", 6*time.Second)
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -60,7 +60,7 @@ func TestReader_Writer_Tcp_WriteRead(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
-	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
+	conn, err := net.DialTimeout("tcp", ":9999", 6*time.Second)
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -114,7 +114,7 @@ func TestReadWriter_Tcp_Request(t *testing.T) {
 	if onlinetest != "1" {
 		t.Skip("skipping online tests")
 	}
-	conn, err := net.DialTimeout("tcp", ":10000", 6*time.Second)
+	conn, err := net.DialTimeout("tcp", ":9999", 6*time.Second)
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}

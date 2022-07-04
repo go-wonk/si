@@ -66,6 +66,34 @@ type Decoder interface {
 	Decode(v any) error
 }
 
+type DefaultDecoder struct {
+	r io.Reader
+}
+
+func NewDefaultDecoder(r io.Reader) *DefaultDecoder {
+	return &DefaultDecoder{r}
+}
+func (d *DefaultDecoder) Decode(v any) error {
+	switch t := v.(type) {
+	case *[]byte:
+		b, err := ReadAll(d.r)
+		if err != nil {
+			return err
+		}
+		*t = b
+		return nil
+	case *string:
+		b, err := ReadAll(d.r)
+		if err != nil {
+			return err
+		}
+		*t = string(b)
+		return nil
+	}
+
+	return errors.New("not supported")
+}
+
 // SetJsonDecoder sets json.Decoder to r.
 func SetJsonDecoder() ReaderOption {
 	return ReaderOptionFunc(func(r *Reader) {
