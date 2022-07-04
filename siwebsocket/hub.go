@@ -22,10 +22,10 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	done         chan struct{}
-	stop         chan string
-	registerDone chan struct{}
-	terminated   chan struct{}
+	done       chan struct{}
+	stop       chan string
+	clientDone chan struct{}
+	terminated chan struct{}
 }
 
 func NewHub() *Hub {
@@ -34,11 +34,11 @@ func NewHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		// clients:    make(map[*Client]bool),
-		clients:      sync.Map{},
-		done:         make(chan struct{}),
-		stop:         make(chan string, 1),
-		registerDone: make(chan struct{}),
-		terminated:   make(chan struct{}),
+		clients:    sync.Map{},
+		done:       make(chan struct{}),
+		stop:       make(chan string, 1),
+		clientDone: make(chan struct{}),
+		terminated: make(chan struct{}),
 	}
 	go h.waitStop()
 
@@ -84,10 +84,10 @@ func (h *Hub) Run() {
 }
 
 func (h *Hub) waitStop() {
-	<-h.stop              // wait until Stop method is called
-	close(h.registerDone) // prevent from sending into register/unregister/broadcast channel
-	h.removeAllClients()  // stops and closes all clients and remove from clients map
-	close(h.done)         // stops Run method
+	<-h.stop             // wait until Stop method is called
+	close(h.clientDone)  // prevent from sending into register/unregister/broadcast channel
+	h.removeAllClients() // stops and closes all clients and remove from clients map
+	close(h.done)        // stops Run method
 }
 
 func (h *Hub) Stop() error {
@@ -105,7 +105,7 @@ func (h *Hub) Wait() {
 
 func (h *Hub) AddClient(client *Client) error {
 	select {
-	case <-h.registerDone:
+	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.register <- client:
 	}
@@ -114,7 +114,7 @@ func (h *Hub) AddClient(client *Client) error {
 
 func (h *Hub) removeClient(client *Client) error {
 	select {
-	case <-h.registerDone:
+	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.unregister <- client:
 	}
@@ -122,11 +122,21 @@ func (h *Hub) removeClient(client *Client) error {
 	return nil
 }
 
+func (h *Hub) Broadcast(message []byte) error {
+	select {
+	case <-h.clientDone:
+		return errors.New("register buffer closed")
+	case h.broadcast <- message:
+	}
+
+	return nil
+}
+
 func (h *Hub) removeAllClients() error {
 	h.clients.Range(func(key interface{}, value interface{}) bool {
 		err := value.(*Client).Stop()
 		if err != nil {
-			log.Println("CloseAllClients err:", err)
+			log.Println("removeAllClients err:", err)
 		}
 		value.(*Client).Wait()
 		h.clients.Delete(value.(*Client).id)
@@ -140,21 +150,11 @@ func (h *Hub) RemoveRandomClient() error {
 	h.clients.Range(func(key interface{}, value interface{}) bool {
 		err := value.(*Client).Stop()
 		if err != nil {
-			log.Println("CloseAllClients err:", err)
+			log.Println("RemoveRandomClient err:", err)
 		}
 		// value.(*Client).Wait()
 		return false
 	})
-
-	return nil
-}
-
-func (h *Hub) Broadcast(message []byte) error {
-	select {
-	case <-h.registerDone:
-		return errors.New("register buffer closed")
-	case h.broadcast <- message:
-	}
 
 	return nil
 }
