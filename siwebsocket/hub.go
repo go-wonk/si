@@ -46,9 +46,9 @@ func NewHub() *Hub {
 }
 
 func (h *Hub) Run() {
-	defer func() {
-		close(h.terminated)
-	}()
+	// defer func() {
+	// 	close(h.terminated)
+	// }()
 	for {
 		select {
 		case <-h.done:
@@ -86,8 +86,9 @@ func (h *Hub) Run() {
 func (h *Hub) waitStop() {
 	<-h.stop             // wait until Stop method is called
 	close(h.clientDone)  // prevent from sending into register/unregister/broadcast channel
-	h.removeAllClients() // stops and closes all clients and remove from clients map
 	close(h.done)        // stops Run method
+	h.removeAllClients() // stops and closes all clients and remove from clients map
+	close(h.terminated)
 }
 
 func (h *Hub) Stop() error {
@@ -163,6 +164,7 @@ func (h *Hub) LenClients() int {
 	lenClients := 0
 	h.clients.Range(func(key interface{}, value interface{}) bool {
 		lenClients++
+		log.Println("clients left in hub", value.(*Client).id)
 		return true
 	})
 

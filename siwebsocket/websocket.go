@@ -255,9 +255,11 @@ func (c *Client) readPump() {
 		c.Stop()
 		c.conn.Close()
 		if c.hub != nil {
-			c.hub.removeClient(c)
+			if err := c.hub.removeClient(c); err != nil {
+				log.Println("failed to remove client from hub", c.id)
+			}
 		}
-		log.Println("return readPump")
+		log.Println("return readPump", c.id)
 		c.readWg.Done()
 	}()
 
@@ -290,7 +292,6 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(c.pingPeriod)
 	normalClose := false
 	defer func() {
-		log.Println("return writePump")
 		ticker.Stop()
 
 		if !normalClose {
@@ -300,6 +301,8 @@ func (c *Client) writePump() {
 		// c.conn.Close() // TODO: should be closed here?
 		// Closing here causes losing messages sent by a peer. It is best to close the connection
 		// on readPump so it read as much as possible.
+
+		log.Println("return writePump", c.id)
 	}()
 	for {
 		select {
