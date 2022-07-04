@@ -37,20 +37,6 @@ func DefaultDialer(u url.URL, header http.Header) *websocket.Dialer {
 	return dialer
 }
 
-const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 512
-)
-
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
@@ -60,6 +46,18 @@ type Client struct {
 	// dialer *websocket.Dialer
 	conn    *websocket.Conn
 	handler MessageHandler
+
+	// Time allowed to write a message to the peer.
+	writeWait time.Duration
+	// Time allowed to read the next pong message from the peer.
+	readWait time.Duration
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod time.Duration
+	// Maximum message size allowed from peer.
+	maxMessageSize int
+
+	// use ping/pong
+	usePingPong bool
 
 	data     chan []byte
 	sendDone chan struct{}
@@ -85,15 +83,25 @@ func (c *Client) WriteErr() error {
 	return c.writeErr
 }
 
-func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
+func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
+	maxMessageSize int, usePingPong bool, opts ...WebsocketOption) *Client {
+
+	pingPeriod := (readWait * 9) / 10
 
 	c := &Client{
-		conn:     conn,
+		conn:    conn,
+		handler: &NopMessageHandler{},
+
+		writeWait:      writeWait,
+		readWait:       readWait,
+		pingPeriod:     pingPeriod,
+		maxMessageSize: maxMessageSize,
+		usePingPong:    usePingPong,
+
 		data:     make(chan []byte),
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
-		handler:  &NopMessageHandler{},
 	}
 
 	for _, o := range opts {
@@ -106,6 +114,16 @@ func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	go c.writePump()
 
 	return c
+}
+
+func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
+	writeWait := 10 * time.Second
+	readWait := 60 * time.Second
+	// pingPeriod := (pongWait * 9) / 10
+	maxMessageSize := 512
+	usePingPong := false
+
+	return NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
 }
 
 func (c *Client) SetMessageHandler(h MessageHandler) {
@@ -144,7 +162,7 @@ func (c *Client) Send(b []byte) error {
 }
 
 func (c *Client) closeMessage(msg string) error {
-	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
 	return c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, msg))
 }
 
@@ -166,12 +184,14 @@ func (c *Client) ReadPump() {
 		c.Stop()
 	}()
 
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
+	c.conn.SetReadLimit(int64(c.maxMessageSize))
+	c.conn.SetReadDeadline(time.Now().Add(c.readWait))
+	if c.usePingPong {
+		c.conn.SetPongHandler(func(string) error {
+			c.conn.SetReadDeadline(time.Now().Add(c.readWait))
+			return nil
+		})
+	}
 
 	cnt := 0 // TODO: for testing
 	for {
@@ -187,7 +207,7 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) writePump() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(c.pingPeriod)
 	normalClose := false
 	defer func() {
 		log.Println("return writePump")
@@ -220,7 +240,7 @@ func (c *Client) writePump() {
 		// 		return
 		// 	}
 		case message := <-c.data:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Println(err)
@@ -243,10 +263,12 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				c.writeErr = err
-				return
+			if c.usePingPong {
+				c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
+				if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					c.writeErr = err
+					return
+				}
 			}
 		}
 	}
