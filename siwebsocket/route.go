@@ -6,20 +6,20 @@ package siwebsocket
 // hubAddr:       value "http://172.16.130.144:45501"
 // hubPath:       route "/ws/message/adpos/emg/_push"
 // status "0"
-type ClientStorage interface {
+type Router interface {
 	Store(ID string, clientID, clientGroupID string, hubAddr, hubPath string) error
 	Delete(ID string) error
 	DeleteByHubAddr(hubAddr string) error
 }
 
-type NopRouteStorage struct{}
+type NopRouter struct{}
 
-func (n *NopRouteStorage) Store(ID string, clientID, clientGroupID string, hubAddr, hubPath string) error {
+func (n *NopRouter) Store(ID string, clientID, clientGroupID string, hubAddr, hubPath string) error {
 	return nil
 }
-func (n *NopRouteStorage) Delete(ID string) error {
+func (n *NopRouter) Delete(ID string) error {
 	return nil
 }
-func (n *NopRouteStorage) DeleteByHubAddr(hubAddr string) error {
+func (n *NopRouter) DeleteByHubAddr(hubAddr string) error {
 	return nil
 }

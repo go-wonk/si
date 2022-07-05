@@ -14,7 +14,7 @@ import (
 type Hub struct {
 	// Registered clients.
 	clients         sync.Map
-	clientsExternal ClientStorage
+	clientsExternal Router
 
 	// channel to broadcast message to connected clients
 	broadcast chan []byte
@@ -42,7 +42,7 @@ func NewHub() *Hub {
 		stopClient:      make(chan string, 1),
 		clientDone:      make(chan struct{}),
 		terminated:      make(chan struct{}),
-		clientsExternal: &NopRouteStorage{},
+		clientsExternal: &NopRouter{},
 	}
 	go h.waitStop()
 
