@@ -72,11 +72,6 @@ type Client struct {
 
 	readOpts []sicore.ReaderOption
 
-	// started is a value to make sure Client starts only once
-	started int32
-	// mutex to increment and get started value
-	startRWMutex sync.RWMutex
-
 	id string
 	// for server only
 	hub *Hub
@@ -123,8 +118,7 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
 
-		started: 0,
-		id:      uuid.New().String(),
+		id: uuid.New().String(),
 	}
 
 	for _, o := range opts {
@@ -134,7 +128,7 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	go c.waitStopSend()
 	go c.writePump()
 	c.readWg.Add(1)
-
+	go c.readPump()
 	return c
 }
 
@@ -151,7 +145,7 @@ func NewMsg(data []byte) *msg {
 }
 
 func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
-	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) *Client {
+	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) (*Client, error) {
 
 	pingPeriod := (readWait * 9) / 10
 
@@ -171,8 +165,7 @@ func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, r
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
 
-		started: 0,
-		id:      uuid.New().String(),
+		id: uuid.New().String(),
 
 		hub: hub,
 	}
@@ -184,8 +177,14 @@ func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, r
 	go c.waitStopSend()
 	go c.writePump()
 	c.readWg.Add(1)
-
-	return c
+	go c.readPump()
+	err := hub.addClient(c)
+	if err != nil {
+		c.Stop()
+		c.Wait()
+		return nil, err
+	}
+	return c, nil
 }
 
 func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
@@ -196,18 +195,6 @@ func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	usePingPong := false
 
 	return NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
-}
-
-func (c *Client) Start() error {
-	c.startRWMutex.Lock()
-	defer c.startRWMutex.Unlock()
-	if c.started != 0 {
-		return errors.New("already started")
-	}
-	c.started++
-
-	c.readPump()
-	return nil
 }
 
 var ErrStopChannelFull = errors.New("stop channel is full")
@@ -223,13 +210,6 @@ func (c *Client) Stop() error {
 }
 
 func (c *Client) Wait() error {
-	c.startRWMutex.RLock()
-	defer c.startRWMutex.RUnlock()
-
-	if c.started == 0 {
-		return ErrNotStarted
-	}
-
 	c.readWg.Wait()
 	return nil
 }

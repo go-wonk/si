@@ -26,6 +26,8 @@ type Hub struct {
 	stop       chan string
 	clientDone chan struct{}
 	terminated chan struct{}
+
+	clientStorage ClientStorage
 }
 
 func NewHub() *Hub {
@@ -34,11 +36,12 @@ func NewHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		// clients:    make(map[*Client]bool),
-		clients:    sync.Map{},
-		done:       make(chan struct{}),
-		stop:       make(chan string, 1),
-		clientDone: make(chan struct{}),
-		terminated: make(chan struct{}),
+		clients:       sync.Map{},
+		done:          make(chan struct{}),
+		stop:          make(chan string, 1),
+		clientDone:    make(chan struct{}),
+		terminated:    make(chan struct{}),
+		clientStorage: &NopRouteStorage{},
 	}
 	go h.waitStop()
 
@@ -57,9 +60,8 @@ func (h *Hub) Run() {
 			// h.clients[client] = true
 			loadedClient, exist := h.clients.LoadOrStore(client.id, client)
 			if exist {
-				// h.RemoveClient(loadedClient.(*Client))
+				// Stop will lead to removeClient method called.
 				loadedClient.(*Client).Stop()
-				// loadedClient.(*Client).Wait()
 				h.clients.Store(client.id, client)
 			}
 		case client := <-h.unregister:
@@ -104,13 +106,13 @@ func (h *Hub) Wait() {
 	<-h.terminated
 }
 
-func (h *Hub) AddClient(client *Client) error {
+func (h *Hub) addClient(client *Client) error {
 	select {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.register <- client:
+		return h.clientStorage.Store(client.id, "", "", "", "")
 	}
-	return nil
 }
 
 func (h *Hub) removeClient(client *Client) error {
@@ -118,9 +120,8 @@ func (h *Hub) removeClient(client *Client) error {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.unregister <- client:
+		return h.clientStorage.Delete(client.id)
 	}
-	// h.unregister <- client
-	return nil
 }
 
 func (h *Hub) Broadcast(message []byte) error {
@@ -141,6 +142,7 @@ func (h *Hub) removeAllClients() error {
 		}
 		value.(*Client).Wait()
 		h.clients.Delete(value.(*Client).id)
+		h.clientStorage.Delete(value.(*Client).id)
 		return true
 	})
 

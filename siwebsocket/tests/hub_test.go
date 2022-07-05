@@ -29,15 +29,11 @@ func TestHub(t *testing.T) {
 		log.Println("connect")
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
-		c := siwebsocket.NewClientConfiguredWithHub(conn, 10*time.Second, 60*time.Second, 1024000, true, hub,
+		_, err = siwebsocket.NewClientConfiguredWithHub(conn, 10*time.Second, 60*time.Second, 1024000, true, hub,
 			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-		go c.Start()
-
 		// c.SetID("9099909")
-		err = hub.AddClient(c)
 		if err != nil {
 			log.Println(err)
-			c.Stop()
 			return
 		}
 	}
@@ -76,16 +72,12 @@ func TestHub2(t *testing.T) {
 				log.Println(err)
 				return
 			}
-			c := siwebsocket.NewClientConfiguredWithHub(conn,
+			_, err = siwebsocket.NewClientConfiguredWithHub(conn,
 				10*time.Second, 60*time.Second, 1024000, true, hub,
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-			go c.Start()
-
 			// c.SetID("9099909")
-			err = hub.AddClient(c)
 			if err != nil {
 				log.Println(err)
-				c.Stop()
 				return
 			}
 
@@ -132,16 +124,12 @@ func test() int {
 				log.Println(err)
 				return
 			}
-			c := siwebsocket.NewClientConfiguredWithHub(conn,
+			c, err := siwebsocket.NewClientConfiguredWithHub(conn,
 				10*time.Second, 60*time.Second, 1024000, true, hub,
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-			go c.Start()
-
 			// c.SetID("9099909")
-			err = hub.AddClient(c)
 			if err != nil {
 				log.Println(err)
-				c.Stop()
 				return
 			}
 
