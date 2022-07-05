@@ -180,5 +180,5 @@ func (h *Hub) SendMessage(id string, msg []byte) error {
 			return err
 		}
 	}
-
+	return nil
 }
