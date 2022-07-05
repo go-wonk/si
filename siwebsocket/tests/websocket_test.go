@@ -50,7 +50,7 @@ func TestWebsocket(t *testing.T) {
 	}
 
 	// go func() {
-	time.Sleep(6 * time.Second)
+	// time.Sleep(6 * time.Second)
 	siconn.Stop()
 	siconn.Wait()
 	log.Println("terminated")
@@ -141,7 +141,7 @@ func TestWebsocket4(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/idle"}
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/idle"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
@@ -161,7 +161,7 @@ func TestWebsocket_EchoIdle(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
@@ -180,7 +180,7 @@ func TestWebsocket_EchoStop(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
@@ -294,5 +294,45 @@ func TestWebsocket_PushStudent(t *testing.T) {
 			log.Println(err)
 		}
 	}
+	log.Println("terminated")
+}
+
+func TestWebsocket_PushResult(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo/randomclose"}
+
+	for i := 0; i < 5; i++ {
+		log.Println("connect")
+		conn, _, err := siwebsocket.DefaultConn(u, nil)
+		siutils.AssertNilFail(t, err)
+		c := siwebsocket.NewClient(conn,
+			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}))
+		go c.Start()
+
+		go func() {
+			for {
+				time.Sleep(80 * time.Millisecond)
+				rn := rand.Intn(1000)
+				m := siwebsocket.NewMsg([]byte(strconv.Itoa(rn)))
+
+				err := c.SendMsg(m)
+				if err != nil {
+					log.Println("SendMsg:", err)
+					return
+				}
+			}
+		}()
+
+		time.Sleep(4 * time.Second)
+		c.Stop()
+		c.Wait()
+	}
+
 	log.Println("terminated")
 }

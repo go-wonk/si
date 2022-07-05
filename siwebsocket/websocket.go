@@ -61,6 +61,7 @@ type Client struct {
 	usePingPong bool
 
 	data     chan []byte
+	msg      chan *msg
 	sendDone chan struct{}
 	stopSend chan string
 
@@ -83,6 +84,10 @@ type Client struct {
 
 func (c *Client) SetID(id string) {
 	c.id = id
+}
+
+func (c *Client) GetID() string {
+	return c.id
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -113,6 +118,7 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 		usePingPong:    usePingPong,
 
 		data:     make(chan []byte),
+		msg:      make(chan *msg),
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
@@ -132,6 +138,18 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	return c
 }
 
+type msg struct {
+	data []byte
+	err  chan error
+}
+
+func NewMsg(data []byte) *msg {
+	return &msg{
+		data: data,
+		err:  make(chan error, 1),
+	}
+}
+
 func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
 	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) *Client {
 
@@ -148,6 +166,7 @@ func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, r
 		usePingPong:    usePingPong,
 
 		data:     make(chan []byte),
+		msg:      make(chan *msg),
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
@@ -233,6 +252,15 @@ func (c *Client) Send(b []byte) error {
 	case c.data <- b:
 	}
 	return nil
+}
+
+func (c *Client) SendMsg(m *msg) error {
+	select {
+	case <-c.sendDone:
+		return ErrDataChannelClosed
+	case c.msg <- m:
+		return <-m.err
+	}
 }
 
 func (c *Client) closeMessage(msg string) error {
@@ -345,6 +373,23 @@ func (c *Client) writePump() {
 				c.writeErr = err
 				return
 			}
+		case message := <-c.msg:
+			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
+			w, err := c.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				// log.Println(err)
+				c.writeErr = err
+				message.err <- err
+				return
+			}
+			w.Write(message.data)
+			if err := w.Close(); err != nil {
+				// log.Println(err)
+				c.writeErr = err
+				message.err <- err
+				return
+			}
+			message.err <- nil
 		case <-ticker.C:
 			if c.usePingPong {
 				c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))

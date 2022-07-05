@@ -173,9 +173,22 @@ func (h *Hub) LenClients() int {
 
 func (h *Hub) SendMessage(id string, msg []byte) error {
 	if c, ok := h.clients.Load(id); !ok {
-		return errors.New("client not found")
+		return errors.New("client not found, " + id)
 	} else {
 		err := c.(*Client).Send(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *Hub) SendMessageWithResult(id string, msg []byte) error {
+	if c, ok := h.clients.Load(id); !ok {
+		return errors.New("client not found, " + id)
+	} else {
+		m := NewMsg(msg)
+		err := c.(*Client).SendMsg(m)
 		if err != nil {
 			return err
 		}

@@ -2,7 +2,9 @@ package siwebsocket_test
 
 import (
 	"log"
+	"math/rand"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -135,7 +137,7 @@ func test() int {
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
 			go c.Start()
 
-			c.SetID("9099909")
+			// c.SetID("9099909")
 			err = hub.AddClient(c)
 			if err != nil {
 				log.Println(err)
@@ -143,6 +145,20 @@ func test() int {
 				return
 			}
 
+			rn := rand.Intn(1000)
+			if rn == 0 {
+				hub.RemoveRandomClient()
+			}
+			go func() {
+				for {
+					time.Sleep(50 * time.Millisecond)
+					err := hub.SendMessageWithResult(c.GetID(), []byte(strconv.Itoa(rn)))
+					if err != nil {
+						log.Println("SendMessageWithResult:", err)
+						return
+					}
+				}
+			}()
 			num++
 			if num > 200 {
 				// hub.RemoveRandomClient()
@@ -156,11 +172,12 @@ func test() int {
 			time.Sleep(71 * time.Millisecond)
 			err := hub.Broadcast([]byte("hey"))
 			if err != nil {
-				log.Println(err)
+				log.Println("Broadcase:", err)
 				return
 			}
 		}
 	}()
+
 	time.Sleep(20 * time.Second)
 	log.Println("stopping...")
 	hub.Stop()
@@ -179,7 +196,7 @@ func TestReconnects(t *testing.T) {
 	if !longtest {
 		t.Skip("skipping long tests")
 	}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		assert.EqualValues(t, 0, test())
 	}
 }
