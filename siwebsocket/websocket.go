@@ -144,48 +144,48 @@ func NewMsg(data []byte) *msg {
 	}
 }
 
-func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
-	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) (*Client, error) {
+// func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
+// 	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) (*Client, error) {
 
-	pingPeriod := (readWait * 9) / 10
+// 	pingPeriod := (readWait * 9) / 10
 
-	c := &Client{
-		conn:    conn,
-		handler: &NopMessageHandler{},
+// 	c := &Client{
+// 		conn:    conn,
+// 		handler: &NopMessageHandler{},
 
-		writeWait:      writeWait,
-		readWait:       readWait,
-		pingPeriod:     pingPeriod,
-		maxMessageSize: maxMessageSize,
-		usePingPong:    usePingPong,
+// 		writeWait:      writeWait,
+// 		readWait:       readWait,
+// 		pingPeriod:     pingPeriod,
+// 		maxMessageSize: maxMessageSize,
+// 		usePingPong:    usePingPong,
 
-		data:     make(chan []byte),
-		msg:      make(chan *msg),
-		sendDone: make(chan struct{}),
-		stopSend: make(chan string, 1),
-		readWg:   &sync.WaitGroup{},
+// 		data:     make(chan []byte),
+// 		msg:      make(chan *msg),
+// 		sendDone: make(chan struct{}),
+// 		stopSend: make(chan string, 1),
+// 		readWg:   &sync.WaitGroup{},
 
-		id: uuid.New().String(),
+// 		id: uuid.New().String(),
 
-		hub: hub,
-	}
+// 		hub: hub,
+// 	}
 
-	for _, o := range opts {
-		o.apply(c)
-	}
+// 	for _, o := range opts {
+// 		o.apply(c)
+// 	}
 
-	go c.waitStopSend()
-	go c.writePump()
-	c.readWg.Add(1)
-	go c.readPump()
-	err := hub.addClient(c)
-	if err != nil {
-		c.Stop()
-		c.Wait()
-		return nil, err
-	}
-	return c, nil
-}
+// 	go c.waitStopSend()
+// 	go c.writePump()
+// 	c.readWg.Add(1)
+// 	go c.readPump()
+// 	err := hub.addClient(c)
+// 	if err != nil {
+// 		c.Stop()
+// 		c.Wait()
+// 		return nil, err
+// 	}
+// 	return c, nil
+// }
 
 func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	writeWait := 10 * time.Second

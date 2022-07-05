@@ -4,30 +4,31 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
 	// Registered clients.
-	// clients map[*Client]bool
-	clients sync.Map
+	clients         sync.Map
+	clientsExternal ClientStorage
 
-	// Inbound messages from the clients.
+	// channel to broadcast message to connected clients
 	broadcast chan []byte
 
-	// Register requests from the clients.
+	// channel to add clients to `clients` map
 	register chan *Client
 
-	// Unregister requests from clients.
+	// channel to remove clients from `clients` map
 	unregister chan *Client
 
-	done       chan struct{}
-	stop       chan string
+	runDone    chan struct{}
+	stopClient chan string
 	clientDone chan struct{}
 	terminated chan struct{}
-
-	clientStorage ClientStorage
 }
 
 func NewHub() *Hub {
@@ -36,45 +37,59 @@ func NewHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		// clients:    make(map[*Client]bool),
-		clients:       sync.Map{},
-		done:          make(chan struct{}),
-		stop:          make(chan string, 1),
-		clientDone:    make(chan struct{}),
-		terminated:    make(chan struct{}),
-		clientStorage: &NopRouteStorage{},
+		clients:         sync.Map{},
+		runDone:         make(chan struct{}),
+		stopClient:      make(chan string, 1),
+		clientDone:      make(chan struct{}),
+		terminated:      make(chan struct{}),
+		clientsExternal: &NopRouteStorage{},
 	}
 	go h.waitStop()
 
 	return h
 }
 
+func (h *Hub) CreateAndAddClient(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
+	maxMessageSize int, usePingPong bool, opts ...WebsocketOption) (*Client, error) {
+
+	c := NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
+	c.hub = h
+
+	err := h.addClient(c)
+	if err != nil {
+		c.Stop()
+		c.Wait()
+		return nil, err
+	}
+	return c, nil
+}
+
 func (h *Hub) Run() {
-	// defer func() {
-	// 	close(h.terminated)
-	// }()
 	for {
 		select {
-		case <-h.done:
+		case <-h.runDone:
 			return
 		case client := <-h.register:
-			// h.clients[client] = true
 			loadedClient, exist := h.clients.LoadOrStore(client.id, client)
 			if exist {
 				// Stop will lead to removeClient method called.
+				// Do not call removeClient method here.
 				loadedClient.(*Client).Stop()
 				h.clients.Store(client.id, client)
 			}
 		case client := <-h.unregister:
+			// stopped clients with connection closed are received here.
+			// remove them from `clients` map
 			deletedClient, exist := h.clients.LoadAndDelete(client.id)
 			if exist {
 				log.Println("deleted:", deletedClient.(*Client).id)
 			} else {
 				log.Println("not found client:", client.id)
 			}
-			// client.Stop()
-			// client.Wait()
 		case message := <-h.broadcast:
+			// iterating over the map here may cause other channels blocked.
 			h.clients.Range(func(key interface{}, value interface{}) bool {
+				// time.Sleep(1 * time.Second)
 				err := value.(*Client).Send(message)
 				if err != nil {
 					log.Println("broadcast:", err)
@@ -86,16 +101,16 @@ func (h *Hub) Run() {
 }
 
 func (h *Hub) waitStop() {
-	<-h.stop             // wait until Stop method is called
+	<-h.stopClient       // wait until Stop method is called
 	close(h.clientDone)  // prevent from sending into register/unregister/broadcast channel
-	close(h.done)        // stops Run method
+	close(h.runDone)     // stops Run method
 	h.removeAllClients() // stops and closes all clients and remove from clients map
 	close(h.terminated)
 }
 
 func (h *Hub) Stop() error {
 	select {
-	case h.stop <- "stop":
+	case h.stopClient <- "stop":
 	default:
 		return ErrStopChannelFull
 	}
@@ -111,7 +126,7 @@ func (h *Hub) addClient(client *Client) error {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.register <- client:
-		return h.clientStorage.Store(client.id, "", "", "", "")
+		return h.clientsExternal.Store(client.id, "", "", "", "")
 	}
 }
 
@@ -120,7 +135,7 @@ func (h *Hub) removeClient(client *Client) error {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.unregister <- client:
-		return h.clientStorage.Delete(client.id)
+		return h.clientsExternal.Delete(client.id)
 	}
 }
 
@@ -142,7 +157,7 @@ func (h *Hub) removeAllClients() error {
 		}
 		value.(*Client).Wait()
 		h.clients.Delete(value.(*Client).id)
-		h.clientStorage.Delete(value.(*Client).id)
+		h.clientsExternal.Delete(value.(*Client).id)
 		return true
 	})
 
