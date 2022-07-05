@@ -8,9 +8,16 @@ import (
 
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwebsocket"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHub(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 	hub := siwebsocket.NewHub()
 	go hub.Run()
 
@@ -46,6 +53,12 @@ func TestHub(t *testing.T) {
 }
 
 func TestHub2(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
 	hub := siwebsocket.NewHub()
 	go hub.Run()
 
@@ -101,7 +114,7 @@ func TestHub2(t *testing.T) {
 	log.Println("stopped", hub.LenClients())
 }
 
-func TestHub3(t *testing.T) {
+func test() int {
 	hub := siwebsocket.NewHub()
 	go hub.Run()
 
@@ -122,7 +135,7 @@ func TestHub3(t *testing.T) {
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
 			go c.Start()
 
-			// c.SetID("9099909")
+			c.SetID("9099909")
 			err = hub.AddClient(c)
 			if err != nil {
 				log.Println(err)
@@ -153,5 +166,20 @@ func TestHub3(t *testing.T) {
 	hub.Stop()
 	hub.Wait()
 	// time.Sleep(12 * time.Second)
-	log.Println("stopped", hub.LenClients())
+	leftOver := hub.LenClients()
+	log.Println("stopped", leftOver)
+
+	return leftOver
+}
+
+func TestReconnects(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+	for i := 0; i < 10; i++ {
+		assert.EqualValues(t, 0, test())
+	}
 }
