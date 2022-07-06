@@ -57,3 +57,15 @@ func WithRouter(r Router) HubOptionFunc {
 		h.SetRouter(r)
 	})
 }
+
+func WithAfterDeleteClient(f func(*Client, bool)) HubOptionFunc {
+	return HubOptionFunc(func(h *Hub) {
+		h.afterDeleteClient = f
+	})
+}
+
+func WithAfterStoreClient(f func(*Client, bool)) HubOptionFunc {
+	return HubOptionFunc(func(h *Hub) {
+		h.afterStoreClient = f
+	})
+}

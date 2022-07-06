@@ -179,7 +179,22 @@ func test() int {
 }
 
 func testWithoutBroadcast() int {
-	hub := siwebsocket.NewHub("http://127.0.0.1:8080", "/path/_push", 10*time.Second, 60*time.Second, 1024000, true)
+	hub := siwebsocket.NewHub("http://127.0.0.1:8080",
+		"/path/_push", 10*time.Second, 60*time.Second, 1024000, true,
+		siwebsocket.WithAfterStoreClient(func(c *siwebsocket.Client, ok bool) {
+			if ok {
+				log.Println("stored", c.GetID())
+			} else {
+				log.Println("failed to store")
+			}
+		}),
+		siwebsocket.WithAfterDeleteClient(func(c *siwebsocket.Client, ok bool) {
+			if ok {
+				log.Println("deleted", c.GetID())
+			} else {
+				log.Println("failed to delete")
+			}
+		}))
 	go hub.Run()
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/randomclose"}
@@ -197,7 +212,8 @@ func testWithoutBroadcast() int {
 			c, err := hub.CreateAndAddClient(conn,
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}),
 				siwebsocket.WithUserID("9099909"),
-				siwebsocket.WithUserGroupID("90999"))
+				siwebsocket.WithUserGroupID("90999"),
+			)
 			// c, err := siwebsocket.NewClientConfiguredWithHub(conn,
 			// 	10*time.Second, 60*time.Second, 1024000, true, hub,
 			// 	siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))

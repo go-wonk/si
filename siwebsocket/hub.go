@@ -3,7 +3,6 @@ package siwebsocket
 import (
 	"context"
 	"errors"
-	"log"
 	"sync"
 	"time"
 
@@ -44,6 +43,10 @@ type Hub struct {
 
 	hubAddr string
 	hubPath string
+
+	// handlers
+	afterDeleteClient func(c *Client, ok bool)
+	afterStoreClient  func(c *Client, ok bool)
 }
 
 func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Duration,
@@ -74,6 +77,18 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 
 	for _, o := range opts {
 		o.apply(h)
+	}
+
+	if h.afterDeleteClient == nil {
+		h.afterDeleteClient = func(c *Client, ok bool) {
+			// nothing
+		}
+	}
+
+	if h.afterStoreClient == nil {
+		h.afterStoreClient = func(c *Client, ok bool) {
+			// nothing
+		}
 	}
 
 	go h.waitStop()
@@ -108,23 +123,17 @@ func (h *Hub) Run() {
 				loadedClient.(*Client).Stop()
 				h.clients.Store(client.id, client)
 			}
+			h.afterStoreClient(client, exist)
 		case client := <-h.unregister:
 			// stopped clients with connection closed are received here.
 			// remove them from `clients` map
-			deletedClient, exist := h.clients.LoadAndDelete(client.id)
-			if exist {
-				log.Println("deleted:", deletedClient.(*Client).id)
-			} else {
-				log.Println("not found client:", client.id)
-			}
+			_, exist := h.clients.LoadAndDelete(client.id)
+			h.afterDeleteClient(client, exist)
 		case message := <-h.broadcast:
 			// iterating over the map here may cause other channels blocked.
 			h.clients.Range(func(key interface{}, value interface{}) bool {
 				// time.Sleep(1 * time.Second)
-				err := value.(*Client).Send(message)
-				if err != nil {
-					log.Println("broadcast:", err)
-				}
+				value.(*Client).Send(message)
 				return true
 			})
 		}
@@ -182,10 +191,7 @@ func (h *Hub) Broadcast(message []byte) error {
 
 func (h *Hub) removeAllClients() error {
 	h.clients.Range(func(key interface{}, value interface{}) bool {
-		err := value.(*Client).Stop()
-		if err != nil {
-			log.Println("removeAllClients err:", err)
-		}
+		value.(*Client).Stop()
 		value.(*Client).Wait()
 		h.clients.Delete(value.(*Client).id)
 		h.router.Delete(context.Background(), value.(*Client).id)
@@ -197,11 +203,7 @@ func (h *Hub) removeAllClients() error {
 
 func (h *Hub) RemoveRandomClient() error {
 	h.clients.Range(func(key interface{}, value interface{}) bool {
-		err := value.(*Client).Stop()
-		if err != nil {
-			log.Println("RemoveRandomClient err:", err)
-		}
-		// value.(*Client).Wait()
+		value.(*Client).Stop()
 		return false
 	})
 
@@ -212,7 +214,6 @@ func (h *Hub) LenClients() int {
 	lenClients := 0
 	h.clients.Range(func(key interface{}, value interface{}) bool {
 		lenClients++
-		log.Println("clients left in hub", value.(*Client).id)
 		return true
 	})
 

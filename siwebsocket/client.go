@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -233,11 +232,12 @@ func (c *Client) readPump() {
 		c.Stop()
 		c.conn.Close()
 		if c.hub != nil {
-			if err := c.hub.removeClient(c); err != nil {
-				log.Println("failed to remove client from hub", c.id)
-			}
+			c.hub.removeClient(c)
+			// if err := c.hub.removeClient(c); err != nil {
+			// log.Println("failed to remove client from hub", c.id)
+			// }
 		}
-		log.Println("return readPump", c.id)
+		// log.Println("return readPump", c.id)
 		c.readWg.Done()
 	}()
 
@@ -280,7 +280,7 @@ func (c *Client) writePump() {
 		// Closing here causes losing messages sent by a peer. It is best to close the connection
 		// on readPump so it read as much as possible.
 
-		log.Println("return writePump", c.id)
+		// log.Println("return writePump", c.id)
 	}()
 	for {
 		select {
