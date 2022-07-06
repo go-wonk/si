@@ -164,6 +164,7 @@ func (h *Hub) Wait() {
 func (h *Hub) addClient(client *Client) error {
 	select {
 	case <-h.clientDone:
+		h.afterStoreClient(client, false)
 		return errors.New("register buffer closed")
 	case h.register <- client:
 		return h.router.Store(context.Background(), client.id, client.userID, client.userGroupID, h.hubAddr, h.hubPath)
@@ -173,6 +174,7 @@ func (h *Hub) addClient(client *Client) error {
 func (h *Hub) removeClient(client *Client) error {
 	select {
 	case <-h.clientDone:
+		h.afterDeleteClient(client, false)
 		return errors.New("register buffer closed")
 	case h.unregister <- client:
 		return h.router.Delete(context.Background(), client.id)
