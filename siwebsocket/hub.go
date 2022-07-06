@@ -1,6 +1,7 @@
 package siwebsocket
 
 import (
+	"context"
 	"errors"
 	"log"
 	"sync"
@@ -13,8 +14,8 @@ import (
 // clients.
 type Hub struct {
 	// Registered clients.
-	clients         sync.Map
-	clientsExternal Router
+	clients sync.Map
+	router  Router
 
 	// channel to broadcast message to connected clients
 	broadcast chan []byte
@@ -46,7 +47,7 @@ type Hub struct {
 }
 
 func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Duration,
-	maxMessageSize int, usePingPong bool) *Hub {
+	maxMessageSize int, usePingPong bool, opts ...HubOption) *Hub {
 
 	pingPeriod := (readWait * 9) / 10
 
@@ -55,12 +56,12 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		// clients:    make(map[*Client]bool),
-		clients:         sync.Map{},
-		runDone:         make(chan struct{}),
-		stopClient:      make(chan string, 1),
-		clientDone:      make(chan struct{}),
-		terminated:      make(chan struct{}),
-		clientsExternal: &NopRouter{},
+		clients:    sync.Map{},
+		runDone:    make(chan struct{}),
+		stopClient: make(chan string, 1),
+		clientDone: make(chan struct{}),
+		terminated: make(chan struct{}),
+		router:     &NopRouter{},
 
 		hubAddr:        hubAddr,
 		hubPath:        hubPath,
@@ -70,6 +71,11 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 		maxMessageSize: maxMessageSize,
 		usePingPong:    usePingPong,
 	}
+
+	for _, o := range opts {
+		o.apply(h)
+	}
+
 	go h.waitStop()
 
 	return h
@@ -151,7 +157,7 @@ func (h *Hub) addClient(client *Client) error {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.register <- client:
-		return h.clientsExternal.Store(client.id, client.userID, client.userGroupID, h.hubAddr, h.hubPath)
+		return h.router.Store(context.Background(), client.id, client.userID, client.userGroupID, h.hubAddr, h.hubPath)
 	}
 }
 
@@ -160,7 +166,7 @@ func (h *Hub) removeClient(client *Client) error {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.unregister <- client:
-		return h.clientsExternal.Delete(client.id)
+		return h.router.Delete(context.Background(), client.id)
 	}
 }
 
@@ -182,7 +188,7 @@ func (h *Hub) removeAllClients() error {
 		}
 		value.(*Client).Wait()
 		h.clients.Delete(value.(*Client).id)
-		h.clientsExternal.Delete(value.(*Client).id)
+		h.router.Delete(context.Background(), value.(*Client).id)
 		return true
 	})
 
@@ -236,4 +242,8 @@ func (h *Hub) SendMessageWithResult(id string, msg []byte) error {
 		}
 	}
 	return nil
+}
+
+func (h *Hub) SetRouter(r Router) {
+	h.router = r
 }

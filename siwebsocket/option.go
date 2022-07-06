@@ -41,3 +41,19 @@ func WithUserGroupID(id string) ClientOptionFunc {
 		c.SetUserGroupID(id)
 	})
 }
+
+type HubOption interface {
+	apply(h *Hub)
+}
+
+type HubOptionFunc func(h *Hub)
+
+func (o HubOptionFunc) apply(h *Hub) {
+	o(h)
+}
+
+func WithRouter(r Router) HubOptionFunc {
+	return HubOptionFunc(func(h *Hub) {
+		h.SetRouter(r)
+	})
+}
