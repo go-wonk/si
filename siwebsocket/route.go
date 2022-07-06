@@ -7,14 +7,14 @@ package siwebsocket
 // hubPath:       route "/ws/message/adpos/emg/_push"
 // status "0"
 type Router interface {
-	Store(ID string, clientID, clientGroupID string, hubAddr, hubPath string) error
+	Store(ID string, userID, userGroupID string, hubAddr, hubPath string) error
 	Delete(ID string) error
 	DeleteByHubAddr(hubAddr string) error
 }
 
 type NopRouter struct{}
 
-func (n *NopRouter) Store(ID string, clientID, clientGroupID string, hubAddr, hubPath string) error {
+func (n *NopRouter) Store(ID string, userID, userGroupID string, hubAddr, hubPath string) error {
 	return nil
 }
 func (n *NopRouter) Delete(ID string) error {

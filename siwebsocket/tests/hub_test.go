@@ -20,7 +20,7 @@ func TestHub(t *testing.T) {
 	if !longtest {
 		t.Skip("skipping long tests")
 	}
-	hub := siwebsocket.NewHub()
+	hub := siwebsocket.NewHub("http://127.0.0.1:8080", "/path/_push", 10*time.Second, 60*time.Second, 1024000, true)
 	go hub.Run()
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
@@ -29,7 +29,7 @@ func TestHub(t *testing.T) {
 		log.Println("connect")
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
-		_, err = hub.CreateAndAddClient(conn, 10*time.Second, 60*time.Second, 1024000, true,
+		_, err = hub.CreateAndAddClient(conn,
 			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
 		// c.SetID("9099909")
 		if err != nil {
@@ -57,7 +57,7 @@ func TestHub2(t *testing.T) {
 	if !longtest {
 		t.Skip("skipping long tests")
 	}
-	hub := siwebsocket.NewHub()
+	hub := siwebsocket.NewHub("http://127.0.0.1:8080", "/path/_push", 10*time.Second, 60*time.Second, 1024000, true)
 	go hub.Run()
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push"}
@@ -73,7 +73,6 @@ func TestHub2(t *testing.T) {
 				return
 			}
 			_, err = hub.CreateAndAddClient(conn,
-				10*time.Second, 60*time.Second, 1024000, true,
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
 			// c.SetID("9099909")
 			if err != nil {
@@ -109,7 +108,7 @@ func TestHub2(t *testing.T) {
 }
 
 func test() int {
-	hub := siwebsocket.NewHub()
+	hub := siwebsocket.NewHub("http://127.0.0.1:8080", "/path/_push", 10*time.Second, 60*time.Second, 1024000, true)
 	go hub.Run()
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/randomclose"}
@@ -125,7 +124,6 @@ func test() int {
 				return
 			}
 			c, err := hub.CreateAndAddClient(conn,
-				10*time.Second, 60*time.Second, 1024000, true,
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
 			// c, err := siwebsocket.NewClientConfiguredWithHub(conn,
 			// 	10*time.Second, 60*time.Second, 1024000, true, hub,
@@ -181,7 +179,7 @@ func test() int {
 }
 
 func testWithoutBroadcast() int {
-	hub := siwebsocket.NewHub()
+	hub := siwebsocket.NewHub("http://127.0.0.1:8080", "/path/_push", 10*time.Second, 60*time.Second, 1024000, true)
 	go hub.Run()
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/randomclose"}
@@ -197,8 +195,9 @@ func testWithoutBroadcast() int {
 				return
 			}
 			c, err := hub.CreateAndAddClient(conn,
-				10*time.Second, 60*time.Second, 1024000, true,
-				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}),
+				siwebsocket.WithUserID("9099909"),
+				siwebsocket.WithUserGroupID("90999"))
 			// c, err := siwebsocket.NewClientConfiguredWithHub(conn,
 			// 	10*time.Second, 60*time.Second, 1024000, true, hub,
 			// 	siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
