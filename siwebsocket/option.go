@@ -58,13 +58,24 @@ func WithRouter(r Router) HubOptionFunc {
 	})
 }
 
-func WithAfterDeleteClient(f func(*Client, bool)) HubOptionFunc {
+func WithHubAddr(addr string) HubOptionFunc {
+	return HubOptionFunc(func(h *Hub) {
+		h.SetHubAddr(addr)
+	})
+}
+func WithHubPath(path string) HubOptionFunc {
+	return HubOptionFunc(func(h *Hub) {
+		h.SetHubPath(path)
+	})
+}
+
+func WithAfterDeleteClient(f func(*Client, error)) HubOptionFunc {
 	return HubOptionFunc(func(h *Hub) {
 		h.afterDeleteClient = f
 	})
 }
 
-func WithAfterStoreClient(f func(*Client, bool)) HubOptionFunc {
+func WithAfterStoreClient(f func(*Client, error)) HubOptionFunc {
 	return HubOptionFunc(func(h *Hub) {
 		h.afterStoreClient = f
 	})
