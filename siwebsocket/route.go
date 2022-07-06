@@ -1,5 +1,7 @@
 package siwebsocket
 
+import "context"
+
 // id:            key "9099901_165695708447103008123"
 // clientID:      key_sub "9099901"
 // clientGroupID: channel "90999"
@@ -7,19 +9,19 @@ package siwebsocket
 // hubPath:       route "/ws/message/adpos/emg/_push"
 // status "0"
 type Router interface {
-	Store(ID string, userID, userGroupID string, hubAddr, hubPath string) error
-	Delete(ID string) error
-	DeleteByHubAddr(hubAddr string) error
+	Store(ctx context.Context, ID string, userID, userGroupID string, hubAddr, hubPath string) error
+	Delete(ctx context.Context, ID string) error
+	DeleteByHubAddr(ctx context.Context, hubAddr string) error
 }
 
 type NopRouter struct{}
 
-func (n *NopRouter) Store(ID string, userID, userGroupID string, hubAddr, hubPath string) error {
+func (n *NopRouter) Store(ctx context.Context, ID string, userID, userGroupID string, hubAddr, hubPath string) error {
 	return nil
 }
-func (n *NopRouter) Delete(ID string) error {
+func (n *NopRouter) Delete(ctx context.Context, ID string) error {
 	return nil
 }
-func (n *NopRouter) DeleteByHubAddr(hubAddr string) error {
+func (n *NopRouter) DeleteByHubAddr(ctx context.Context, hubAddr string) error {
 	return nil
 }
