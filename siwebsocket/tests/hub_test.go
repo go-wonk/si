@@ -195,7 +195,9 @@ func testWithoutBroadcast() int {
 				return
 			}
 			c, err := hub.CreateAndAddClient(conn,
-				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}),
+				siwebsocket.WithUserID("9099909"),
+				siwebsocket.WithUserGroupID("90999"))
 			// c, err := siwebsocket.NewClientConfiguredWithHub(conn,
 			// 	10*time.Second, 60*time.Second, 1024000, true, hub,
 			// 	siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))

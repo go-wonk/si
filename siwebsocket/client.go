@@ -81,7 +81,7 @@ type Client struct {
 }
 
 func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
-	maxMessageSize int, usePingPong bool, opts ...WebsocketOption) *Client {
+	maxMessageSize int, usePingPong bool, opts ...ClientOption) *Client {
 
 	pingPeriod := (readWait * 9) / 10
 
@@ -100,12 +100,14 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
-
-		id: uuid.New().String(),
 	}
 
 	for _, o := range opts {
 		o.apply(c)
+	}
+
+	if c.id == "" {
+		c.id = uuid.New().String()
 	}
 
 	go c.waitStopSend()
@@ -115,7 +117,7 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	return c
 }
 
-func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
+func NewClient(conn *websocket.Conn, opts ...ClientOption) *Client {
 	writeWait := 10 * time.Second
 	readWait := 60 * time.Second
 	// pingPeriod := (pongWait * 9) / 10
@@ -165,6 +167,14 @@ func (c *Client) SetID(id string) {
 
 func (c *Client) GetID() string {
 	return c.id
+}
+
+func (c *Client) SetUserID(id string) {
+	c.userID = id
+}
+
+func (c *Client) SetUserGroupID(id string) {
+	c.userGroupID = id
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {

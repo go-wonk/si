@@ -75,7 +75,7 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	return h
 }
 
-func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...WebsocketOption) (*Client, error) {
+func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*Client, error) {
 
 	c := NewClientConfigured(conn, h.writeWait, h.readWait, h.maxMessageSize, h.usePingPong, opts...)
 	c.hub = h
