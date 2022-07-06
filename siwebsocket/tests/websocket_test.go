@@ -28,7 +28,6 @@ func TestWebsocket(t *testing.T) {
 	defer conn.Close()
 
 	siconn := siwebsocket.NewClient(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-	go siconn.Start()
 	for i := 0; i < 20; i++ {
 		go func(i int) {
 			defer func() {
@@ -50,7 +49,7 @@ func TestWebsocket(t *testing.T) {
 	}
 
 	// go func() {
-	time.Sleep(6 * time.Second)
+	// time.Sleep(6 * time.Second)
 	siconn.Stop()
 	siconn.Wait()
 	log.Println("terminated")
@@ -73,7 +72,6 @@ func TestWebsocket2(t *testing.T) {
 	defer conn.Close()
 
 	siconn := siwebsocket.NewClient(conn)
-	go siconn.Start()
 	for i := 0; i < 20; i++ {
 		go func(i int) {
 			defer func() {
@@ -112,7 +110,6 @@ func TestWebsocket3(t *testing.T) {
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
-	go c.Start()
 	time.Sleep(12 * time.Second)
 	c.Stop()
 	c.Wait()
@@ -124,7 +121,6 @@ func TestWebsocket3(t *testing.T) {
 		conn2, _, err := siwebsocket.DefaultConn(u2, nil)
 		siutils.AssertNilFail(t, err)
 		c2 := siwebsocket.NewClient(conn2)
-		go c2.Start()
 		time.Sleep(12 * time.Second)
 		c2.Stop()
 		c2.Wait()
@@ -141,11 +137,10 @@ func TestWebsocket4(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/idle"}
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/idle"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
-	go c.Start()
 	time.Sleep(12000 * time.Second)
 	c.Stop()
 	c.Wait()
@@ -161,11 +156,10 @@ func TestWebsocket_EchoIdle(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
-	go c.Start()
 
 	c.Wait()
 	log.Println("terminated 1")
@@ -180,11 +174,10 @@ func TestWebsocket_EchoStop(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	u := url.URL{Scheme: "ws", Host: "192.168.0.92:48080", Path: "/echo"}
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo"}
 	conn, _, err := siwebsocket.DefaultConn(u, nil)
 	siutils.AssertNilFail(t, err)
 	c := siwebsocket.NewClient(conn)
-	go c.Start()
 
 	time.Sleep(10 * time.Second)
 	c.Stop()
@@ -213,7 +206,6 @@ func TestWebsocket_Push(t *testing.T) {
 		siutils.AssertNilFail(t, err)
 		c := siwebsocket.NewClient(conn,
 			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-		go c.Start()
 
 		time.Sleep(1 * time.Second)
 		c.Stop()
@@ -225,7 +217,6 @@ func TestWebsocket_Push(t *testing.T) {
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
 		c := siwebsocket.NewClient(conn, siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-		go c.Start()
 
 		c.Wait()
 		if err := c.ReadErr(); err != nil {
@@ -272,7 +263,6 @@ func TestWebsocket_PushStudent(t *testing.T) {
 		siutils.AssertNilFail(t, err)
 		c := siwebsocket.NewClient(conn,
 			siwebsocket.WithMessageHandler(&StudentMessageHandler{}))
-		go c.Start()
 
 		time.Sleep(1 * time.Second)
 		c.Stop()
@@ -284,7 +274,6 @@ func TestWebsocket_PushStudent(t *testing.T) {
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
 		c := siwebsocket.NewClient(conn, siwebsocket.WithMessageHandler(&StudentMessageHandler{}))
-		go c.Start()
 
 		c.Wait()
 		if err := c.ReadErr(); err != nil {
@@ -294,5 +283,44 @@ func TestWebsocket_PushStudent(t *testing.T) {
 			log.Println(err)
 		}
 	}
+	log.Println("terminated")
+}
+
+func TestWebsocket_PushResult(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/echo/randomclose"}
+
+	for i := 0; i < 5; i++ {
+		log.Println("connect")
+		conn, _, err := siwebsocket.DefaultConn(u, nil)
+		siutils.AssertNilFail(t, err)
+		c := siwebsocket.NewClient(conn,
+			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}))
+
+		go func() {
+			for {
+				time.Sleep(80 * time.Millisecond)
+				rn := rand.Intn(1000)
+				m := siwebsocket.NewMsg([]byte(strconv.Itoa(rn)))
+
+				err := c.SendMsg(m)
+				if err != nil {
+					log.Println("SendMsg:", err)
+					return
+				}
+			}
+		}()
+
+		time.Sleep(4 * time.Second)
+		c.Stop()
+		c.Wait()
+	}
+
 	log.Println("terminated")
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/go-wonk/si"
 	"github.com/go-wonk/si/sicore"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -59,6 +61,7 @@ type Client struct {
 	usePingPong bool
 
 	data     chan []byte
+	msg      chan *msg
 	sendDone chan struct{}
 	stopSend chan string
 
@@ -69,8 +72,17 @@ type Client struct {
 
 	readOpts []sicore.ReaderOption
 
-	startRWMutex sync.RWMutex
-	started      int32
+	id string
+	// for server only
+	hub *Hub
+}
+
+func (c *Client) SetID(id string) {
+	c.id = id
+}
+
+func (c *Client) GetID() string {
+	return c.id
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -101,11 +113,12 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 		usePingPong:    usePingPong,
 
 		data:     make(chan []byte),
+		msg:      make(chan *msg),
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
 
-		started: 0,
+		id: uuid.New().String(),
 	}
 
 	for _, o := range opts {
@@ -115,9 +128,64 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	go c.waitStopSend()
 	go c.writePump()
 	c.readWg.Add(1)
-
+	go c.readPump()
 	return c
 }
+
+type msg struct {
+	data []byte
+	err  chan error
+}
+
+func NewMsg(data []byte) *msg {
+	return &msg{
+		data: data,
+		err:  make(chan error, 1),
+	}
+}
+
+// func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
+// 	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) (*Client, error) {
+
+// 	pingPeriod := (readWait * 9) / 10
+
+// 	c := &Client{
+// 		conn:    conn,
+// 		handler: &NopMessageHandler{},
+
+// 		writeWait:      writeWait,
+// 		readWait:       readWait,
+// 		pingPeriod:     pingPeriod,
+// 		maxMessageSize: maxMessageSize,
+// 		usePingPong:    usePingPong,
+
+// 		data:     make(chan []byte),
+// 		msg:      make(chan *msg),
+// 		sendDone: make(chan struct{}),
+// 		stopSend: make(chan string, 1),
+// 		readWg:   &sync.WaitGroup{},
+
+// 		id: uuid.New().String(),
+
+// 		hub: hub,
+// 	}
+
+// 	for _, o := range opts {
+// 		o.apply(c)
+// 	}
+
+// 	go c.waitStopSend()
+// 	go c.writePump()
+// 	c.readWg.Add(1)
+// 	go c.readPump()
+// 	err := hub.addClient(c)
+// 	if err != nil {
+// 		c.Stop()
+// 		c.Wait()
+// 		return nil, err
+// 	}
+// 	return c, nil
+// }
 
 func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	writeWait := 10 * time.Second
@@ -129,19 +197,8 @@ func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	return NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
 }
 
-func (c *Client) Start() error {
-	c.startRWMutex.Lock()
-	defer c.startRWMutex.Unlock()
-	if c.started != 0 {
-		return errors.New("already started")
-	}
-	c.started++
-
-	c.readPump()
-	return nil
-}
-
 var ErrStopChannelFull = errors.New("stop channel is full")
+var ErrNotStarted = errors.New("client has not been started")
 
 func (c *Client) Stop() error {
 	select {
@@ -152,15 +209,9 @@ func (c *Client) Stop() error {
 	return nil
 }
 
-func (c *Client) Wait() {
-	c.startRWMutex.RLock()
-	defer c.startRWMutex.RUnlock()
-
-	if c.started == 0 {
-		return
-	}
-
+func (c *Client) Wait() error {
 	c.readWg.Wait()
+	return nil
 }
 
 func (c *Client) SetMessageHandler(h MessageHandler) {
@@ -183,6 +234,15 @@ func (c *Client) Send(b []byte) error {
 	return nil
 }
 
+func (c *Client) SendMsg(m *msg) error {
+	select {
+	case <-c.sendDone:
+		return ErrDataChannelClosed
+	case c.msg <- m:
+		return <-m.err
+	}
+}
+
 func (c *Client) closeMessage(msg string) error {
 	c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
 	return c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, msg))
@@ -200,10 +260,15 @@ func (c *Client) ReadMessage() (messageType int, p []byte, err error) {
 
 func (c *Client) readPump() {
 	defer func() {
-		// log.Println("return readPump")
-		c.readWg.Done()
-		c.conn.Close()
 		c.Stop()
+		c.conn.Close()
+		if c.hub != nil {
+			if err := c.hub.removeClient(c); err != nil {
+				log.Println("failed to remove client from hub", c.id)
+			}
+		}
+		log.Println("return readPump", c.id)
+		c.readWg.Done()
 	}()
 
 	c.conn.SetReadLimit(int64(c.maxMessageSize))
@@ -235,7 +300,6 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(c.pingPeriod)
 	normalClose := false
 	defer func() {
-		// log.Println("return writePump")
 		ticker.Stop()
 
 		if !normalClose {
@@ -245,6 +309,8 @@ func (c *Client) writePump() {
 		// c.conn.Close() // TODO: should be closed here?
 		// Closing here causes losing messages sent by a peer. It is best to close the connection
 		// on readPump so it read as much as possible.
+
+		log.Println("return writePump", c.id)
 	}()
 	for {
 		select {
@@ -287,6 +353,23 @@ func (c *Client) writePump() {
 				c.writeErr = err
 				return
 			}
+		case message := <-c.msg:
+			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
+			w, err := c.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				// log.Println(err)
+				c.writeErr = err
+				message.err <- err
+				return
+			}
+			w.Write(message.data)
+			if err := w.Close(); err != nil {
+				// log.Println(err)
+				c.writeErr = err
+				message.err <- err
+				return
+			}
+			message.err <- nil
 		case <-ticker.C:
 			if c.usePingPong {
 				c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
