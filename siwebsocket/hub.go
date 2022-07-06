@@ -45,8 +45,8 @@ type Hub struct {
 	hubPath string
 
 	// handlers
-	afterDeleteClient func(c *Client, ok bool)
-	afterStoreClient  func(c *Client, ok bool)
+	afterDeleteClient func(c *Client, err error)
+	afterStoreClient  func(c *Client, err error)
 }
 
 func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Duration,
@@ -80,13 +80,13 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	}
 
 	if h.afterDeleteClient == nil {
-		h.afterDeleteClient = func(c *Client, ok bool) {
+		h.afterDeleteClient = func(c *Client, err error) {
 			// nothing
 		}
 	}
 
 	if h.afterStoreClient == nil {
-		h.afterStoreClient = func(c *Client, ok bool) {
+		h.afterStoreClient = func(c *Client, err error) {
 			// nothing
 		}
 	}
@@ -110,6 +110,8 @@ func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*C
 	return c, nil
 }
 
+var ErrClientNotExist = errors.New("client does not exist")
+
 func (h *Hub) Run() {
 	for {
 		select {
@@ -123,12 +125,16 @@ func (h *Hub) Run() {
 				loadedClient.(*Client).Stop()
 				h.clients.Store(client.id, client)
 			}
-			h.afterStoreClient(client, exist)
+			h.afterStoreClient(client, nil)
 		case client := <-h.unregister:
 			// stopped clients with connection closed are received here.
 			// remove them from `clients` map
 			_, exist := h.clients.LoadAndDelete(client.id)
-			h.afterDeleteClient(client, exist)
+			if !exist {
+				h.afterDeleteClient(client, ErrClientNotExist)
+			} else {
+				h.afterDeleteClient(client, nil)
+			}
 		case message := <-h.broadcast:
 			// iterating over the map here may cause other channels blocked.
 			h.clients.Range(func(key interface{}, value interface{}) bool {
@@ -161,11 +167,13 @@ func (h *Hub) Wait() {
 	<-h.terminated
 }
 
+var ErrHubClosed = errors.New("hub is closed")
+
 func (h *Hub) addClient(client *Client) error {
 	select {
 	case <-h.clientDone:
-		h.afterStoreClient(client, false)
-		return errors.New("register buffer closed")
+		h.afterStoreClient(client, ErrHubClosed)
+		return ErrHubClosed
 	case h.register <- client:
 		return h.router.Store(context.Background(), client.id, client.userID, client.userGroupID, h.hubAddr, h.hubPath)
 	}
@@ -174,8 +182,8 @@ func (h *Hub) addClient(client *Client) error {
 func (h *Hub) removeClient(client *Client) error {
 	select {
 	case <-h.clientDone:
-		h.afterDeleteClient(client, false)
-		return errors.New("register buffer closed")
+		h.afterDeleteClient(client, ErrHubClosed)
+		return ErrHubClosed
 	case h.unregister <- client:
 		return h.router.Delete(context.Background(), client.id)
 	}
@@ -184,7 +192,7 @@ func (h *Hub) removeClient(client *Client) error {
 func (h *Hub) Broadcast(message []byte) error {
 	select {
 	case <-h.clientDone:
-		return errors.New("register buffer closed")
+		return ErrHubClosed
 	case h.broadcast <- message:
 	}
 
@@ -249,4 +257,10 @@ func (h *Hub) SendMessageWithResult(id string, msg []byte) error {
 
 func (h *Hub) SetRouter(r Router) {
 	h.router = r
+}
+func (h *Hub) SetHubAddr(hubAddr string) {
+	h.hubAddr = hubAddr
+}
+func (h *Hub) SetHubPath(hubPath string) {
+	h.hubPath = hubPath
 }

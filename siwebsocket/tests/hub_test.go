@@ -181,18 +181,18 @@ func test() int {
 func testWithoutBroadcast() int {
 	hub := siwebsocket.NewHub("http://127.0.0.1:8080",
 		"/path/_push", 10*time.Second, 60*time.Second, 1024000, true,
-		siwebsocket.WithAfterStoreClient(func(c *siwebsocket.Client, ok bool) {
-			if ok {
-				log.Println("stored", c.GetID())
+		siwebsocket.WithAfterStoreClient(func(c *siwebsocket.Client, err error) {
+			if err != nil {
+				log.Println("store: "+err.Error(), c.GetID())
 			} else {
-				log.Println("failed to store")
+				log.Println("store: ", c.GetID())
 			}
 		}),
-		siwebsocket.WithAfterDeleteClient(func(c *siwebsocket.Client, ok bool) {
-			if ok {
-				log.Println("deleted", c.GetID())
+		siwebsocket.WithAfterDeleteClient(func(c *siwebsocket.Client, err error) {
+			if err != nil {
+				log.Println("delete: "+err.Error(), c.GetID())
 			} else {
-				log.Println("failed to delete")
+				log.Println("delete: ", c.GetID())
 			}
 		}))
 	go hub.Run()
