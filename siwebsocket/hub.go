@@ -242,6 +242,21 @@ func (h *Hub) SendMessage(id string, msg []byte) error {
 	return nil
 }
 
+func (h *Hub) SendMessageWithIDAndUserGroupID(id, userGroupID string, msg []byte) error {
+	if c, ok := h.clients.Load(id); !ok {
+		return errors.New("client not found, " + id)
+	} else {
+		if c.(*Client).userGroupID != userGroupID {
+			return errors.New("client with, " + userGroupID + ", not found")
+		}
+		err := c.(*Client).Send(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (h *Hub) SendMessageWithResult(id string, msg []byte) error {
 	if c, ok := h.clients.Load(id); !ok {
 		return errors.New("client not found, " + id)
