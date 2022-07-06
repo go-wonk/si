@@ -16,6 +16,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var (
+	newline = []byte{'\n'}
+	space   = []byte{' '}
+)
+
 func DefaultConn(u url.URL, header http.Header) (*websocket.Conn, *http.Response, error) {
 
 	dialer := &websocket.Dialer{
@@ -37,11 +42,6 @@ func DefaultDialer(u url.URL, header http.Header) *websocket.Dialer {
 
 	return dialer
 }
-
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
-)
 
 type Client struct {
 	// dialer *websocket.Dialer
@@ -73,28 +73,11 @@ type Client struct {
 	readOpts []sicore.ReaderOption
 
 	id string
+
 	// for server only
-	hub *Hub
-}
-
-func (c *Client) SetID(id string) {
-	c.id = id
-}
-
-func (c *Client) GetID() string {
-	return c.id
-}
-
-func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
-	c.readOpts = append(c.readOpts, ro)
-}
-
-func (c *Client) ReadErr() error {
-	return c.readErr
-}
-
-func (c *Client) WriteErr() error {
-	return c.writeErr
+	hub         *Hub
+	userID      string
+	userGroupID string
 }
 
 func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
@@ -132,61 +115,6 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	return c
 }
 
-type msg struct {
-	data []byte
-	err  chan error
-}
-
-func NewMsg(data []byte) *msg {
-	return &msg{
-		data: data,
-		err:  make(chan error, 1),
-	}
-}
-
-// func NewClientConfiguredWithHub(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
-// 	maxMessageSize int, usePingPong bool, hub *Hub, opts ...WebsocketOption) (*Client, error) {
-
-// 	pingPeriod := (readWait * 9) / 10
-
-// 	c := &Client{
-// 		conn:    conn,
-// 		handler: &NopMessageHandler{},
-
-// 		writeWait:      writeWait,
-// 		readWait:       readWait,
-// 		pingPeriod:     pingPeriod,
-// 		maxMessageSize: maxMessageSize,
-// 		usePingPong:    usePingPong,
-
-// 		data:     make(chan []byte),
-// 		msg:      make(chan *msg),
-// 		sendDone: make(chan struct{}),
-// 		stopSend: make(chan string, 1),
-// 		readWg:   &sync.WaitGroup{},
-
-// 		id: uuid.New().String(),
-
-// 		hub: hub,
-// 	}
-
-// 	for _, o := range opts {
-// 		o.apply(c)
-// 	}
-
-// 	go c.waitStopSend()
-// 	go c.writePump()
-// 	c.readWg.Add(1)
-// 	go c.readPump()
-// 	err := hub.addClient(c)
-// 	if err != nil {
-// 		c.Stop()
-// 		c.Wait()
-// 		return nil, err
-// 	}
-// 	return c, nil
-// }
-
 func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	writeWait := 10 * time.Second
 	readWait := 60 * time.Second
@@ -197,8 +125,21 @@ func NewClient(conn *websocket.Conn, opts ...WebsocketOption) *Client {
 	return NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
 }
 
+func (c *Client) ReadErr() error {
+	return c.readErr
+}
+
+func (c *Client) WriteErr() error {
+	return c.writeErr
+}
+
 var ErrStopChannelFull = errors.New("stop channel is full")
 var ErrNotStarted = errors.New("client has not been started")
+
+func (c *Client) waitStopSend() {
+	<-c.stopSend
+	close(c.sendDone)
+}
 
 func (c *Client) Stop() error {
 	select {
@@ -218,12 +159,31 @@ func (c *Client) SetMessageHandler(h MessageHandler) {
 	c.handler = h
 }
 
-func (c *Client) waitStopSend() {
-	<-c.stopSend
-	close(c.sendDone)
+func (c *Client) SetID(id string) {
+	c.id = id
+}
+
+func (c *Client) GetID() string {
+	return c.id
+}
+
+func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
+	c.readOpts = append(c.readOpts, ro)
 }
 
 var ErrDataChannelClosed = errors.New("send data channel closed")
+
+type msg struct {
+	data []byte
+	err  chan error
+}
+
+func NewMsg(data []byte) *msg {
+	return &msg{
+		data: data,
+		err:  make(chan error, 1),
+	}
+}
 
 func (c *Client) Send(b []byte) error {
 	select {

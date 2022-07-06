@@ -29,9 +29,27 @@ type Hub struct {
 	stopClient chan string
 	clientDone chan struct{}
 	terminated chan struct{}
+
+	// Time allowed to write a message to the peer.
+	writeWait time.Duration
+	// Time allowed to read the next pong message from the peer.
+	readWait time.Duration
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod time.Duration
+	// Maximum message size allowed from peer.
+	maxMessageSize int
+	// use ping/pong
+	usePingPong bool
+
+	hubAddr string
+	hubPath string
 }
 
-func NewHub() *Hub {
+func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Duration,
+	maxMessageSize int, usePingPong bool) *Hub {
+
+	pingPeriod := (readWait * 9) / 10
+
 	h := &Hub{
 		broadcast:  make(chan []byte),
 		register:   make(chan *Client),
@@ -43,16 +61,23 @@ func NewHub() *Hub {
 		clientDone:      make(chan struct{}),
 		terminated:      make(chan struct{}),
 		clientsExternal: &NopRouter{},
+
+		hubAddr:        hubAddr,
+		hubPath:        hubPath,
+		writeWait:      writeWait,
+		readWait:       readWait,
+		pingPeriod:     pingPeriod,
+		maxMessageSize: maxMessageSize,
+		usePingPong:    usePingPong,
 	}
 	go h.waitStop()
 
 	return h
 }
 
-func (h *Hub) CreateAndAddClient(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
-	maxMessageSize int, usePingPong bool, opts ...WebsocketOption) (*Client, error) {
+func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...WebsocketOption) (*Client, error) {
 
-	c := NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
+	c := NewClientConfigured(conn, h.writeWait, h.readWait, h.maxMessageSize, h.usePingPong, opts...)
 	c.hub = h
 
 	err := h.addClient(c)
@@ -126,7 +151,7 @@ func (h *Hub) addClient(client *Client) error {
 	case <-h.clientDone:
 		return errors.New("register buffer closed")
 	case h.register <- client:
-		return h.clientsExternal.Store(client.id, "", "", "", "")
+		return h.clientsExternal.Store(client.id, client.userID, client.userGroupID, h.hubAddr, h.hubPath)
 	}
 }
 
