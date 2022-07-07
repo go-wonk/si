@@ -6,7 +6,6 @@ require (
 	github.com/Shopify/sarama v1.34.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/lib/pq v1.10.6
