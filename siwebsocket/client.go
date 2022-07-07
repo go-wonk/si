@@ -198,12 +198,24 @@ func (c *Client) Send(b []byte) error {
 	select {
 	case <-c.sendDone:
 		return ErrDataChannelClosed
+	default:
+	}
+
+	select {
+	case <-c.sendDone:
+		return ErrDataChannelClosed
 	case c.data <- b:
 	}
 	return nil
 }
 
 func (c *Client) SendMsg(m *msg) error {
+	select {
+	case <-c.sendDone:
+		return ErrDataChannelClosed
+	default:
+	}
+
 	select {
 	case <-c.sendDone:
 		return ErrDataChannelClosed

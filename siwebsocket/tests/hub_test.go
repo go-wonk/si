@@ -113,11 +113,11 @@ func test() int {
 
 	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/randomclose"}
 
+	log.Println("start")
 	go func() {
 		num := 0
 		for {
-			time.Sleep(80 * time.Millisecond)
-			log.Println("connect")
+			time.Sleep(24 * time.Millisecond)
 			conn, _, err := siwebsocket.DefaultConn(u, nil)
 			if err != nil {
 				log.Println(err)
@@ -140,7 +140,7 @@ func test() int {
 			}
 			go func() {
 				for {
-					time.Sleep(50 * time.Millisecond)
+					time.Sleep(54 * time.Millisecond)
 					err := hub.SendMessageWithResult(c.GetID(), []byte(strconv.Itoa(rn)))
 					if err != nil {
 						log.Println("SendMessageWithResult:", err)
@@ -158,24 +158,40 @@ func test() int {
 
 	go func() {
 		for {
-			time.Sleep(71 * time.Millisecond)
+			time.Sleep(33 * time.Millisecond)
 			err := hub.Broadcast([]byte("hey"))
 			if err != nil {
-				log.Println("Broadcase:", err)
+				log.Println("Broadcast:", err)
 				return
 			}
 		}
 	}()
 
-	time.Sleep(20 * time.Second)
+	time.Sleep(3 * time.Second)
 	log.Println("stopping...")
 	hub.Stop()
 	hub.Wait()
 	// time.Sleep(12 * time.Second)
 	leftOver := hub.LenClients()
-	log.Println("stopped", leftOver)
+	log.Println("stopped")
+	if leftOver != 0 {
+		log.Println("left over:", leftOver)
+		newLeftOver := hub.LenClients()
+		log.Println("new left over:", newLeftOver)
+	}
 
 	return leftOver
+}
+func TestReconnects(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+	for i := 0; i < 100; i++ {
+		assert.EqualValues(t, 0, test())
+	}
 }
 
 func testWithoutBroadcast() int {
@@ -255,17 +271,6 @@ func testWithoutBroadcast() int {
 
 	return leftOver
 }
-func TestReconnects(t *testing.T) {
-	if !onlinetest {
-		t.Skip("skipping online tests")
-	}
-	if !longtest {
-		t.Skip("skipping long tests")
-	}
-	for i := 0; i < 5; i++ {
-		assert.EqualValues(t, 0, test())
-	}
-}
 
 func TestReconnectsWithoutBroadcast(t *testing.T) {
 	if !onlinetest {
@@ -279,4 +284,73 @@ func TestReconnectsWithoutBroadcast(t *testing.T) {
 	}
 	log.Println("waiting...")
 	time.Sleep(12 * time.Second)
+}
+
+func testBroadcast() int {
+	hub := siwebsocket.NewHub("http://127.0.0.1:8080", "/path/_push", 10*time.Second, 60*time.Second, 1024000, true)
+	go hub.Run()
+
+	u := url.URL{Scheme: "ws", Host: ":48080", Path: "/push/randomclose"}
+
+	log.Println("start")
+	go func() {
+		for {
+			time.Sleep(44 * time.Millisecond)
+			conn, _, err := siwebsocket.DefaultConn(u, nil)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			_, err = hub.CreateAndAddClient(conn,
+				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			rn := rand.Intn(100)
+			if rn == 0 {
+				hub.RemoveRandomClient()
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			time.Sleep(33 * time.Millisecond)
+			err := hub.Broadcast([]byte("hey"))
+			if err != nil {
+				log.Println("Broadcast:", err)
+				return
+			}
+		}
+	}()
+
+	time.Sleep(4 * time.Second)
+	log.Println("stopping...")
+	hub.Stop()
+	hub.Wait()
+	// time.Sleep(12 * time.Second)
+	leftOver := hub.LenClients()
+	log.Println("stopped")
+	if leftOver != 0 {
+		log.Println("clients left over:", leftOver)
+		log.Println("new len:", hub.LenClients())
+	}
+	return leftOver
+}
+
+func TestBroadcast(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	if !longtest {
+		t.Skip("skipping long tests")
+	}
+	for i := 0; i < 50; i++ {
+		assert.EqualValues(t, 0, testBroadcast())
+	}
+	// log.Println("waiting...")
+	// time.Sleep(12 * time.Second)
 }

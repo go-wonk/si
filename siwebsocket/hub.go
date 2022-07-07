@@ -17,7 +17,8 @@ type Hub struct {
 	router  Router
 
 	// channel to broadcast message to connected clients
-	broadcast chan []byte
+	broadcast     chan []byte
+	broadcastWait chan struct{}
 
 	// channel to add clients to `clients` map
 	register chan *Client
@@ -26,6 +27,7 @@ type Hub struct {
 	unregister chan *Client
 
 	runDone    chan struct{}
+	runWait    chan struct{}
 	stopClient chan string
 	clientDone chan struct{}
 	terminated chan struct{}
@@ -55,12 +57,14 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	pingPeriod := (readWait * 9) / 10
 
 	h := &Hub{
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		broadcast:     make(chan []byte, 1024),
+		broadcastWait: make(chan struct{}, 1),
+		register:      make(chan *Client),
+		unregister:    make(chan *Client),
 		// clients:    make(map[*Client]bool),
 		clients:    sync.Map{},
 		runDone:    make(chan struct{}),
+		runWait:    make(chan struct{}, 1),
 		stopClient: make(chan string, 1),
 		clientDone: make(chan struct{}),
 		terminated: make(chan struct{}),
@@ -91,8 +95,6 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 		}
 	}
 
-	go h.waitStop()
-
 	return h
 }
 
@@ -112,7 +114,24 @@ func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*C
 
 var ErrClientNotExist = errors.New("client does not exist")
 
-func (h *Hub) Run() {
+func (h *Hub) runBroadcast() {
+	defer close(h.broadcastWait)
+	for message := range h.broadcast {
+		h.clients.Range(func(key interface{}, value interface{}) bool {
+			// time.Sleep(1 * time.Second)
+			value.(*Client).Send(message)
+			return true
+		})
+	}
+}
+
+func (h *Hub) stopAndWaitBroadcast() {
+	close(h.broadcast)
+	<-h.broadcastWait
+}
+
+func (h *Hub) runClient() {
+	defer close(h.runWait)
 	for {
 		select {
 		case <-h.runDone:
@@ -135,21 +154,28 @@ func (h *Hub) Run() {
 			} else {
 				h.afterDeleteClient(client, nil)
 			}
-		case message := <-h.broadcast:
-			// iterating over the map here may cause other channels blocked.
-			h.clients.Range(func(key interface{}, value interface{}) bool {
-				// time.Sleep(1 * time.Second)
-				value.(*Client).Send(message)
-				return true
-			})
 		}
 	}
 }
 
+func (h *Hub) Run() {
+	go h.waitStop()
+	go h.runBroadcast()
+
+	h.runClient()
+}
+
+// stopAndWaitClient stops runClient method and wait for it to return
+func (h *Hub) stopAndWaitClient() {
+	close(h.runDone) // stops Run method, closing this channel doesn't mean the select loop returns
+	<-h.runWait      // wait Run method to return
+}
+
 func (h *Hub) waitStop() {
-	<-h.stopClient       // wait until Stop method is called
-	close(h.clientDone)  // prevent from sending into register/unregister/broadcast channel
-	close(h.runDone)     // stops Run method
+	<-h.stopClient      // wait until Stop method is called
+	close(h.clientDone) // prevent from sending into register/unregister/broadcast channel
+	h.stopAndWaitClient()
+	h.stopAndWaitBroadcast()
 	h.removeAllClients() // stops and closes all clients and remove from clients map
 	close(h.terminated)
 }
@@ -172,6 +198,12 @@ var ErrHubClosed = errors.New("hub is closed")
 func (h *Hub) addClient(client *Client) error {
 	select {
 	case <-h.clientDone:
+		return ErrHubClosed
+	default:
+	}
+
+	select {
+	case <-h.clientDone:
 		h.afterStoreClient(client, ErrHubClosed)
 		return ErrHubClosed
 	case h.register <- client:
@@ -180,6 +212,12 @@ func (h *Hub) addClient(client *Client) error {
 }
 
 func (h *Hub) removeClient(client *Client) error {
+	select {
+	case <-h.clientDone:
+		return ErrHubClosed
+	default:
+	}
+
 	select {
 	case <-h.clientDone:
 		h.afterDeleteClient(client, ErrHubClosed)
@@ -193,6 +231,12 @@ func (h *Hub) Broadcast(message []byte) error {
 	select {
 	case <-h.clientDone:
 		return ErrHubClosed
+	default:
+	}
+
+	select {
+	case <-h.clientDone:
+		return ErrHubClosed
 	case h.broadcast <- message:
 	}
 
@@ -200,6 +244,8 @@ func (h *Hub) Broadcast(message []byte) error {
 }
 
 func (h *Hub) removeAllClients() error {
+
+	// stops gracefully
 	h.clients.Range(func(key interface{}, value interface{}) bool {
 		value.(*Client).Stop()
 		value.(*Client).Wait()
