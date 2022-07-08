@@ -182,8 +182,9 @@ func (consumer *CgConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 		select {
 		case message := <-claim.Messages():
 			// log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
-			consumer.msgHandler.Handle(message)
-			session.MarkMessage(message, "")
+			if err := consumer.msgHandler.Handle(message); err == nil {
+				session.MarkMessage(message, "")
+			}
 
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
@@ -207,5 +208,5 @@ func (c *CgConsumer) CloseReady() {
 }
 
 type MessageHandler interface {
-	Handle(msg *sarama.ConsumerMessage)
+	Handle(msg *sarama.ConsumerMessage) error
 }

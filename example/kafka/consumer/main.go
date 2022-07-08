@@ -9,8 +9,9 @@ import (
 
 type testMessageHandler struct{}
 
-func (h *testMessageHandler) Handle(message *sarama.ConsumerMessage) {
+func (h *testMessageHandler) Handle(message *sarama.ConsumerMessage) error {
 	fmt.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+	return nil
 }
 func main() {
 
