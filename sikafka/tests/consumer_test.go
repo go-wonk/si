@@ -18,9 +18,10 @@ var (
 
 type messageHandler struct{}
 
-func (h *messageHandler) Handle(message *sarama.ConsumerMessage) {
+func (h *messageHandler) Handle(message *sarama.ConsumerMessage) error {
 	log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 	consumedMessage = string(message.Value)
+	return nil
 }
 
 func produce(key, value string) error {
