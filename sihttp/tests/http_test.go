@@ -220,8 +220,7 @@ func TestHttpClientRequestGet(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
-	client.SetWriterOptions(sicore.SetJsonEncoder())
+	client := sihttp.NewHttpClient(client, sihttp.WithWriterOpt(sicore.SetJsonEncoder()))
 
 	url := "http://127.0.0.1:8080/test/hello"
 
@@ -281,9 +280,9 @@ func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
-	client.SetWriterOptions(sicore.SetJsonEncoder())
-	client.SetReaderOptions(sicore.SetJsonDecoder())
+	client := sihttp.NewHttpClient(client,
+		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
+		sihttp.WithReaderOpt(sicore.SetJsonDecoder()))
 
 	url := "http://127.0.0.1:8080/test/echo"
 
@@ -370,8 +369,9 @@ func TestHttpClientRequestPostFile(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
-	client.SetRequestOptions(sihttp.WithHeaderHmac256("hmacKey", []byte("1234")))
+	client := sihttp.NewHttpClient(client,
+		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmacKey", []byte("1234"))),
+	)
 
 	url := "http://127.0.0.1:8080/test/file/upload"
 
@@ -387,7 +387,9 @@ func TestHttpClientRequestGetWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client, sihttp.WithHeaderHmac256("hmac-hash", []byte("1234")))
+	client := sihttp.NewHttpClient(client,
+		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmac-hash", []byte("1234"))),
+	)
 
 	url := "http://127.0.0.1:8080/test/hello"
 
@@ -402,7 +404,9 @@ func TestHttpClientRequestPostWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client, sihttp.WithHeaderHmac256("hmac-hash", []byte("1234")))
+	client := sihttp.NewHttpClient(client,
+		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmac-hash", []byte("1234"))),
+	)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"
@@ -422,10 +426,43 @@ func TestHttpClientRequestPostJsonDecodedWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
-	client.SetRequestOptions(sihttp.WithHeaderHmac256("hmacKey", []byte("1234")))
-	client.SetWriterOptions(sicore.SetJsonEncoder())
-	client.SetReaderOptions(sicore.SetJsonDecoder())
+	client := sihttp.NewHttpClient(client,
+		sihttp.WithRequestHeaderHmac256("hmacKey", []byte("1234")),
+		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
+		sihttp.WithReaderOpt(sicore.SetJsonDecoder()),
+	)
+	// client.SetRequestOptions(sihttp.WithHeaderHmac256("hmacKey", []byte("1234")))
+	// client.SetWriterOptions(sicore.SetJsonEncoder())
+	// client.SetReaderOptions(sicore.SetJsonDecoder())
+
+	url := "http://127.0.0.1:8080/test/echo"
+
+	student := testmodels.Student{
+		ID:           1,
+		Name:         "wonk",
+		EmailAddress: "wonk@wonk.org",
+	}
+	res := testmodels.Student{}
+	err := client.RequestPostDecode(url, nil, &student, &res)
+	siutils.AssertNilFail(t, err)
+
+	err = client.RequestPostDecode(url, nil, &student, &res)
+	siutils.AssertNilFail(t, err)
+	// assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(res.String())
+
+}
+
+func TestHttpClientRequestPostJsonDecodedWithBearerToken(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewHttpClient(client,
+		sihttp.WithRequestOpt(sihttp.WithBearerToken("asdf")),
+		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
+		sihttp.WithReaderOpt(sicore.SetJsonDecoder()),
+	)
 
 	url := "http://127.0.0.1:8080/test/echo"
 

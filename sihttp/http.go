@@ -26,16 +26,22 @@ type HttpClient struct {
 }
 
 // NewHttpClient returns default HttpClient
-func NewHttpClient(client *http.Client, opts ...RequestOption) *HttpClient {
+func NewHttpClient(client *http.Client, opts ...ClientOption) *HttpClient {
 	return NewHttpClientWithHeader(client, nil, opts...)
 }
 
 // NewHttpClientWithHeader returns HttpClient with specified defaultHeaders that will be set on every request
-func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]string, opts ...RequestOption) *HttpClient {
+func NewHttpClientWithHeader(client *http.Client, defaultHeaders map[string]string, opts ...ClientOption) *HttpClient {
 	c := &HttpClient{
 		client:         client,
 		defaultHeaders: defaultHeaders,
-		requestOpts:    opts,
+		// requestOpts:    opts,
+	}
+	for _, o := range opts {
+		if o == nil {
+			continue
+		}
+		o.apply(c)
 	}
 
 	return c
@@ -62,14 +68,24 @@ func (hc *HttpClient) setDefaultHeader(request *http.Request) {
 	}
 }
 
-func (hc *HttpClient) SetRequestOptions(opts ...RequestOption) {
-	hc.requestOpts = opts
+// func (hc *HttpClient) SetRequestOptions(opts ...RequestOption) {
+// 	hc.requestOpts = opts
+// }
+// func (hc *HttpClient) SetWriterOptions(opts ...sicore.WriterOption) {
+// 	hc.writerOpts = opts
+// }
+// func (hc *HttpClient) SetReaderOptions(opts ...sicore.ReaderOption) {
+// 	hc.readerOpts = opts
+// }
+
+func (hc *HttpClient) appendRequestOption(opt RequestOption) {
+	hc.requestOpts = append(hc.requestOpts, opt)
 }
-func (hc *HttpClient) SetWriterOptions(opts ...sicore.WriterOption) {
-	hc.writerOpts = opts
+func (hc *HttpClient) appendWriterOption(opt sicore.WriterOption) {
+	hc.writerOpts = append(hc.writerOpts, opt)
 }
-func (hc *HttpClient) SetReaderOptions(opts ...sicore.ReaderOption) {
-	hc.readerOpts = opts
+func (hc *HttpClient) appendReaderOption(opt sicore.ReaderOption) {
+	hc.readerOpts = append(hc.readerOpts, opt)
 }
 
 // DoRead sends Do request and read all data from response.Body
