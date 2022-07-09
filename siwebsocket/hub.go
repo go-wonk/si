@@ -12,12 +12,15 @@ import (
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
-	// Registered clients.
+	// Connected clients.
 	clients sync.Map
-	router  Router
+
+	// clients information and their location storage
+	router Router
 
 	// channel to broadcast message to connected clients
-	broadcast     chan []byte
+	broadcast chan []byte
+	// used to wait until broadcasting completely finished.
 	broadcastWait chan struct{}
 
 	// channel to add clients to `clients` map
@@ -26,10 +29,15 @@ type Hub struct {
 	// channel to remove clients from `clients` map
 	unregister chan *Client
 
-	runDone    chan struct{}
-	runWait    chan struct{}
+	// once runDone is closed, a client cannot be received from register or unregister channel.
+	runDone chan struct{}
+	// used to wait until receiving clients from register or unregister channel is completely finished.
+	runWait chan struct{}
+	// once stopClient was received, hub starts closing.
 	stopClient chan string
+	// once clientDone is closed, it prevents from sending into register, unregister and broadcast channel.
 	clientDone chan struct{}
+	// used to wait until the hub is completely closed.
 	terminated chan struct{}
 
 	// Time allowed to write a message to the peer.
@@ -43,14 +51,19 @@ type Hub struct {
 	// use ping/pong
 	usePingPong bool
 
+	// hub's address. eg. http://127.0.0.1:8080
 	hubAddr string
+	// hub's path. eg. /send/message/to/client_id
 	hubPath string
 
 	// handlers
+	// called after deleting c from clients map.
 	afterDeleteClient func(c *Client, err error)
-	afterStoreClient  func(c *Client, err error)
+	// called after storing c into clients map.
+	afterStoreClient func(c *Client, err error)
 }
 
+// NewHub creates a hub
 func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Duration,
 	maxMessageSize int, usePingPong bool, opts ...HubOption) *Hub {
 
@@ -98,6 +111,7 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	return h
 }
 
+// CreateAndAddClient creates Client with conn and add it to underlying hub.
 func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*Client, error) {
 
 	c := NewClientConfigured(conn, h.writeWait, h.readWait, h.maxMessageSize, h.usePingPong, opts...)
@@ -114,6 +128,7 @@ func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*C
 
 var ErrClientNotExist = errors.New("client does not exist")
 
+// runBroadcast starts receiving messages to broadcast to clients.
 func (h *Hub) runBroadcast() {
 	defer close(h.broadcastWait)
 	for message := range h.broadcast {
@@ -125,11 +140,13 @@ func (h *Hub) runBroadcast() {
 	}
 }
 
+// stopAdnWaitBroadcast stops runBroadcast and wait for it to return.
 func (h *Hub) stopAndWaitBroadcast() {
 	close(h.broadcast)
 	<-h.broadcastWait
 }
 
+// runClient starts receiving new and disconnected clients.
 func (h *Hub) runClient() {
 	defer close(h.runWait)
 	for {
@@ -158,6 +175,7 @@ func (h *Hub) runClient() {
 	}
 }
 
+// Run starts the hub.
 func (h *Hub) Run() {
 	go h.waitStop()
 	go h.runBroadcast()
@@ -180,6 +198,7 @@ func (h *Hub) waitStop() {
 	close(h.terminated)
 }
 
+// Stop initiates the hub to stop.
 func (h *Hub) Stop() error {
 	select {
 	case h.stopClient <- "stop":
