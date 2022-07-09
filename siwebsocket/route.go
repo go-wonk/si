@@ -8,12 +8,16 @@ import "context"
 // hubAddr:       value "http://172.16.130.144:45501"
 // hubPath:       route "/ws/message/adpos/emg/_push"
 // status "0"
+
+// Router is an interface with methods that stores and deletes clients and their locations
+// to external storages.
 type Router interface {
 	Store(ctx context.Context, ID string, userID, userGroupID string, hubAddr, hubPath string) error
 	Delete(ctx context.Context, ID string) error
 	DeleteByHubAddr(ctx context.Context, hubAddr string) error
 }
 
+// NopRouter
 type NopRouter struct{}
 
 func (n *NopRouter) Store(ctx context.Context, ID string, userID, userGroupID string, hubAddr, hubPath string) error {

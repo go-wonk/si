@@ -7,6 +7,15 @@ import (
 	"github.com/go-wonk/si/sicore"
 )
 
+func Open(driverName string, dataSourceName string) (*SqlDB, error) {
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewSqlDB(db), nil
+}
+
 // SqlDB is a wrapper of sql.DB
 type SqlDB struct {
 	db   *sql.DB
@@ -14,11 +23,19 @@ type SqlDB struct {
 }
 
 // NewSqlDB returns SqlDB
-func NewSqlDB(db *sql.DB, opts ...sicore.RowScannerOption) *SqlDB {
-	return &SqlDB{
-		db:   db,
-		opts: opts,
+func NewSqlDB(db *sql.DB, opts ...SqlOption) *SqlDB {
+	sqldb := &SqlDB{
+		db: db,
+		// opts: opts,
 	}
+	for _, o := range opts {
+		if o == nil {
+			continue
+		}
+		o.apply(sqldb)
+	}
+
+	return sqldb
 }
 
 // Begin begins a transaction
@@ -160,17 +177,6 @@ func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output an
 	return n, nil
 }
 
-func (o *SqlDB) WithTagKey(key string) *SqlDB {
-	o.opts = append(o.opts, sicore.WithTagKey(key))
-	return o
-}
-
-func (o *SqlDB) WithType(name string, typ sicore.SqlColType) *SqlDB {
-	o.opts = append(o.opts, sicore.WithSqlColumnType(name, typ))
-	return o
-}
-
-func (o *SqlDB) WithTypedBool(name string) *SqlDB {
-	o.opts = append(o.opts, sicore.WithSqlColumnType(name, sicore.SqlColTypeBool))
-	return o
+func (o *SqlDB) appendRowScannerOpt(opt sicore.RowScannerOption) {
+	o.opts = append(o.opts, opt)
 }

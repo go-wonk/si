@@ -240,7 +240,7 @@ func BenchmarkSqlDB_QueryStructsStudent(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 

@@ -17,6 +17,18 @@ func (o RequestOptionFunc) apply(c *http.Request) error {
 	return o(c)
 }
 
+func WithBearerToken(token string) RequestOptionFunc {
+	return RequestOptionFunc(func(req *http.Request) error {
+		header := req.Header
+		if _, ok := header["Authorization"]; ok {
+			// skip
+			return nil
+		}
+		header["Authorization"] = []string{"Bearer " + token}
+		return nil
+	})
+}
+
 func WithHeaderHmac256(key string, secret []byte) RequestOptionFunc {
 	return RequestOptionFunc(func(req *http.Request) error {
 		header := req.Header
@@ -51,25 +63,40 @@ func WithHeaderHmac256(key string, secret []byte) RequestOptionFunc {
 	})
 }
 
-// type RequestOption interface {
-// 	apply(c *HttpClient)
-// }
-// type RequestOptionFunc func(c *HttpClient)
+type ClientOption interface {
+	apply(c *HttpClient) error
+}
 
-// func (o RequestOptionFunc) apply(c *HttpClient) {
-// 	o(c)
-// }
+type ClientOptionFunc func(c *HttpClient) error
 
-// // WithEncoder sets Client's encoder
-// func WithEncoder(enc sicore.Encoder) RequestOptionFunc {
-// 	return RequestOptionFunc(func(c *HttpClient) {
-// 		// c.SetEncoder(enc)
-// 	})
-// }
+func (o ClientOptionFunc) apply(c *HttpClient) error {
+	return o(c)
+}
 
-// func WithJsonEncoder(w io.Writer) RequestOptionFunc {
-// 	return RequestOptionFunc(func(c *HttpClient) {
-// 		// enc := json.NewEncoder(w)
-// 		// c.SetEncoder(enc)
-// 	})
-// }
+func WithReaderOpt(opt sicore.ReaderOption) ClientOptionFunc {
+	return ClientOptionFunc(func(c *HttpClient) error {
+		c.appendReaderOption(opt)
+		return nil
+	})
+}
+
+func WithWriterOpt(opt sicore.WriterOption) ClientOptionFunc {
+	return ClientOptionFunc(func(c *HttpClient) error {
+		c.appendWriterOption(opt)
+		return nil
+	})
+}
+
+func WithRequestOpt(opt RequestOption) ClientOptionFunc {
+	return ClientOptionFunc(func(c *HttpClient) error {
+		c.appendRequestOption(opt)
+		return nil
+	})
+}
+
+func WithRequestHeaderHmac256(key string, secret []byte) ClientOptionFunc {
+	return ClientOptionFunc(func(c *HttpClient) error {
+		c.appendRequestOption(WithHeaderHmac256(key, secret))
+		return nil
+	})
+}

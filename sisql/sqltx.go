@@ -12,16 +12,23 @@ type SqlTx struct {
 	opts []sicore.RowScannerOption
 }
 
-func newSqlTx(tx *sql.Tx, opts ...sicore.RowScannerOption) *SqlTx {
-	return &SqlTx{
-		tx:   tx,
-		opts: opts,
-	}
+func newSqlTx(tx *sql.Tx, opts ...SqlTxOption) *SqlTx {
+	sqltx := &SqlTx{}
+	sqltx.Reset(tx, opts...)
+
+	return sqltx
 }
 
-func (o *SqlTx) Reset(tx *sql.Tx) {
+func (o *SqlTx) Reset(tx *sql.Tx, opts ...SqlTxOption) {
 	o.tx = tx
 	o.opts = o.opts[:0]
+
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		opt.apply(o)
+	}
 }
 
 func (o *SqlTx) Commit() error {
@@ -154,7 +161,11 @@ func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output an
 	return n, nil
 }
 
-func (o *SqlTx) WithTagKey(key string) *SqlTx {
-	o.opts = append(o.opts, sicore.WithTagKey(key))
-	return o
+// func (o *SqlTx) WithTagKey(key string) *SqlTx {
+// 	o.opts = append(o.opts, sicore.WithTagKey(key))
+// 	return o
+// }
+
+func (o *SqlTx) appendRowScannerOpt(opt sicore.RowScannerOption) {
+	o.opts = append(o.opts, opt)
 }
