@@ -23,6 +23,10 @@ type WriterResetter interface {
 	Reset(w io.Writer)
 }
 
+type ReaderResetter interface {
+	Reset(r io.Reader)
+}
+
 // Reader is a wrapper of buifio.Reader.
 type Reader struct {
 	r   io.Reader
@@ -77,10 +81,13 @@ func (rd *Reader) Reset(r io.Reader, opt ...ReaderOption) {
 	rd.r = r
 	rd.br.Reset(r)
 
-	if len(opt) == 0 {
+	if rs, ok := rd.dec.(ReaderResetter); ok {
+		rs.Reset(rd)
+	} else {
 		rd.dec = nil
-		rd.chk = nil
 	}
+
+	rd.chk = nil
 
 	rd.ApplyOptions(opt...)
 }
@@ -248,7 +255,7 @@ func (wr *Writer) Reset(w io.Writer, opt ...WriterOption) {
 	wr.bw.Reset(w)
 
 	if rs, ok := wr.enc.(WriterResetter); ok {
-		rs.Reset(w)
+		rs.Reset(wr)
 	} else {
 		wr.enc = nil
 	}

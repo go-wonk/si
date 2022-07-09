@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-wonk/si/siutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,4 +39,40 @@ func TestWriter_GetWriter_Reset(t *testing.T) {
 	if _, ok := wr.enc.(*DefaultEncoder); !ok {
 		t.FailNow()
 	}
+	err := wr.EncodeFlush([]byte("test message"))
+	siutils.AssertNilFail(t, err)
+	assert.EqualValues(t, "test message", buf.String())
+
+	PutWriter(wr)
+
+	var buf2 bytes.Buffer
+	wr2 := GetWriter(&buf2)
+	err = wr2.EncodeFlush("test message 2")
+	siutils.AssertNilFail(t, err)
+	assert.EqualValues(t, "test message 2", buf2.String())
+	PutWriter(wr2)
+}
+
+func TestReader_Reset(t *testing.T) {
+
+	buf := bytes.NewBuffer([]byte("test message"))
+	rd := GetReader(buf)
+
+	var res []byte
+	err := rd.Decode(&res)
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(string(res))
+	PutReader(rd)
+
+	buf2 := bytes.NewBuffer([]byte("test message2"))
+	rd2 := GetReader(buf2)
+
+	var res2 []byte
+	err = rd2.Decode(&res2)
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(string(res2))
+	PutReader(rd2)
+
 }
