@@ -177,16 +177,6 @@ func (o *SqlDB) QueryContextStructs(ctx context.Context, query string, output an
 	return n, nil
 }
 
-func (o *SqlDB) WithType(name string, typ sicore.SqlColType) *SqlDB {
-	o.opts = append(o.opts, sicore.WithSqlColumnType(name, typ))
-	return o
-}
-
-func (o *SqlDB) WithTypedBool(name string) *SqlDB {
-	o.opts = append(o.opts, sicore.WithSqlColumnType(name, sicore.SqlColTypeBool))
-	return o
-}
-
 func (o *SqlDB) appendRowScannerOpt(opt sicore.RowScannerOption) {
 	o.opts = append(o.opts, opt)
 }

@@ -72,8 +72,8 @@ func TestSqlDB_Concurrency_QueryIntoMapSlice(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithType("id", sicore.SqlColTypeInt).
-		WithType("id2", sicore.SqlColTypeInt)
+	sqldb := sisql.NewSqlDB(db, sisql.WithType("id", sicore.SqlColTypeInt), sisql.WithType("id2", sicore.SqlColTypeInt))
+
 	// sicore.SqlColumn{Name: "id", Type: sicore.SqlColTypeInt},
 	// sicore.SqlColumn{Name: "id2", Type: sicore.SqlColTypeInt},
 	// sicore.SqlColumn{Name: "decimal_", Type: sicore.SqlColTypeFloat64},

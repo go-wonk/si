@@ -161,10 +161,10 @@ func (o *SqlTx) QueryContextStructs(ctx context.Context, query string, output an
 	return n, nil
 }
 
-func (o *SqlTx) WithTagKey(key string) *SqlTx {
-	o.opts = append(o.opts, sicore.WithTagKey(key))
-	return o
-}
+// func (o *SqlTx) WithTagKey(key string) *SqlTx {
+// 	o.opts = append(o.opts, sicore.WithTagKey(key))
+// 	return o
+// }
 
 func (o *SqlTx) appendRowScannerOpt(opt sicore.RowScannerOption) {
 	o.opts = append(o.opts, opt)

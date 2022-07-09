@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/sisql"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/tests/testmodels"
@@ -371,7 +372,11 @@ func TestSqlDBQueryMapsBoolWithSqlColumn(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("si")).WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("si"),
+		sisql.WithType("true_1", sicore.SqlColTypeBool),
+		sisql.WithType("true_2", sicore.SqlColTypeBool),
+		sisql.WithType("false_1", sicore.SqlColTypeBool),
+		sisql.WithType("false_2", sicore.SqlColTypeBool))
 	// sicore.SqlColumn{Name: "true_1", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "true_2", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "false_1", Type: sicore.SqlColTypeBool},
@@ -465,7 +470,11 @@ func TestSqlDBQueryMapsBoolWithIgnore(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("si")).WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("si"),
+		sisql.WithType("true_1", sicore.SqlColTypeBool),
+		sisql.WithType("true_2", sicore.SqlColTypeBool),
+		sisql.WithType("false_1", sicore.SqlColTypeBool),
+		sisql.WithType("false_2", sicore.SqlColTypeBool))
 
 	type BoolTest struct {
 		Nil      string `json:"nil" si:"nil"`
