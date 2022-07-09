@@ -46,7 +46,7 @@ func TestConn_Request(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	defaultConn, err := sitcp.DefaultTcpConn("127.0.0.1:10000", 3, 3, 3, 4096, 4096)
+	defaultConn, err := sitcp.DefaultTcpConn("127.0.0.1:9999", 3, 3, 3, 4096, 4096)
 	siutils.AssertNilFail(t, err)
 	defer defaultConn.Close()
 

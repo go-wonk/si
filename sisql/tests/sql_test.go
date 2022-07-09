@@ -40,7 +40,7 @@ func TestSqlDB_QueryRowStruct(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select 1 as id, 'wonk' as name, 'wonk@wonk.org' as email_address, 0 as borrowed, 23 as book_id
@@ -61,7 +61,7 @@ func TestSqlDB_QueryRowPrimary(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select 12 as id
@@ -80,7 +80,7 @@ func TestSqlDBQueryStructsBasicDataType(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select 0 as bool_value, '' as string_value, 
@@ -117,7 +117,7 @@ func TestSqlDBQueryStructsBasicDataTypeLimit(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	// float values can only express 17 digits from the left, the rest is zero'ed
 	f64 := 1.797693134862315708145274237317043567981e+308
@@ -152,7 +152,7 @@ func TestSqlDBQueryStructsBasicDataTypeBig(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select '12345678901234567890.1234'::bytea as bytes_value,
@@ -179,7 +179,7 @@ func TestSqlDBQueryStructsSimple(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select id, name, email_address, borrowed, 23 as book_id from student order by id limit 10
@@ -208,7 +208,7 @@ func TestSqlDBQueryStructsNil(t *testing.T) {
 	// }
 	// fmt.Println(ts.String())
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select null as nil, '2' as embedded_nil, 123::integer as int2_, 234::integer as int3_
@@ -236,7 +236,7 @@ func TestSqlDBQueryStructs(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select null as nil, 
@@ -272,7 +272,7 @@ func TestSqlDBQueryStructs2Rows(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select null as nil, 
@@ -342,7 +342,7 @@ func TestSqlDBQueryMapsBool(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select null as nil,
@@ -371,7 +371,7 @@ func TestSqlDBQueryMapsBoolWithSqlColumn(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("si").WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("si")).WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
 	// sicore.SqlColumn{Name: "true_1", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "true_2", Type: sicore.SqlColTypeBool},
 	// sicore.SqlColumn{Name: "false_1", Type: sicore.SqlColTypeBool},
@@ -415,8 +415,7 @@ func TestSqlDBQueryStructsNoTag(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
-
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 	query := `
 		select null as nil_value, 
 			123::integer as int_value,
@@ -438,7 +437,7 @@ func TestSqlDBQueryStructsPtrElem(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("json")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("json"))
 
 	query := `
 		select null as nil_value, 
@@ -466,7 +465,7 @@ func TestSqlDBQueryMapsBoolWithIgnore(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, db)
 
-	sqldb := sisql.NewSqlDB(db).WithTagKey("si").WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
+	sqldb := sisql.NewSqlDB(db, sisql.WithTagKey("si")).WithTypedBool("true_1").WithTypedBool("true_2").WithTypedBool("false_1").WithTypedBool("false_2")
 
 	type BoolTest struct {
 		Nil      string `json:"nil" si:"nil"`
@@ -499,4 +498,59 @@ func TestSqlDBQueryMapsBoolWithIgnore(t *testing.T) {
 	err = siutils.DecodeAny(m, &bt)
 	siutils.AssertNilFail(t, err)
 
+}
+
+func TestSqlTxQueryStructs(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	tx, err := db.Begin()
+	siutils.AssertNilFail(t, err)
+	defer tx.Rollback()
+
+	sqltx := sisql.GetSqlTx(tx, sisql.WithTxTagKey("json"))
+	defer sisql.PutSqlTx(sqltx)
+
+	query := `
+		select 'wonk' as name, 
+			'123' as id,
+			to_timestamp('20220101121212', 'YYYYMMDDHH24MISS') as timestamp
+	`
+
+	tl := testmodels.Documents{}
+	_, err = sqltx.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	expected := `[{"name":"wonk","id":123,"timestamp":"2022-01-01T12:12:12Z"}]`
+	assert.Equal(t, expected, tl.String())
+}
+
+func TestSqlTxQueryStructsNoTag(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	siutils.AssertNotNilFail(t, db)
+
+	tx, err := db.Begin()
+	siutils.AssertNilFail(t, err)
+	defer tx.Rollback()
+
+	sqltx := sisql.GetSqlTx(tx, sisql.WithTxTagKey("json"))
+	defer sisql.PutSqlTx(sqltx)
+
+	query := `
+		select null as nil_value, 
+			123::integer as int_value,
+			123::decimal(24,4) as decimal_value,
+			'some string' as some_string_value
+	`
+
+	tl := testmodels.TableWithNoTagList{}
+	_, err = sqltx.QueryStructs(query, &tl)
+	siutils.AssertNilFail(t, err)
+
+	expected := `[{"nil_value":"","IntValue":123,"DecimalValue":123,"SomeStringValue":"some string"}]`
+	assert.Equal(t, expected, tl.String())
 }

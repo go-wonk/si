@@ -15,3 +15,10 @@ func (o *Document) String() string {
 	b, _ := json.Marshal(o)
 	return string(b)
 }
+
+type Documents []Document
+
+func (o *Documents) String() string {
+	b, _ := json.Marshal(o)
+	return string(b)
+}
