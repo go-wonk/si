@@ -112,7 +112,7 @@ import (
 // }
 
 func Benchmark_Tcp_Basic(b *testing.B) {
-	if onlinetest != "1" {
+	if onlinetest {
 		b.Skip("skipping online tests")
 	}
 	conn, err := net.DialTimeout("tcp", "127.0.0.1:10000", 6*time.Second)
@@ -137,7 +137,7 @@ func Benchmark_Tcp_Basic(b *testing.B) {
 }
 
 func Benchmark_Tcp_Request(b *testing.B) {
-	if onlinetest != "1" {
+	if onlinetest {
 		b.Skip("skipping online tests")
 	}
 	conn, err := net.DialTimeout("tcp", "127.0.0.1:10000", 6*time.Second)

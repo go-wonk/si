@@ -123,6 +123,8 @@ type ScanValuer interface {
 	Value() (driver.Value, error)
 }
 
+// traverseFields traverses all fields of a struct, `parent`.
+// Valid fields are appended to result, and initialized field's indices are appended to resultInitialize.
 func traverseFields(parent traversedField, tagKey string, result *[]traversedField, resultInitialize *[][]int) {
 	n := parent.field.NumField()
 	for i := 0; i < n; i++ {

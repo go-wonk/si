@@ -26,9 +26,16 @@ func (o ReaderOptionFunc) apply(r *Reader) {
 	o(r)
 }
 
+// SetEofChecker sets chk to r.
 func SetEofChecker(chk EofChecker) ReaderOption {
 	return ReaderOptionFunc(func(r *Reader) {
 		r.SetEofChecker(chk)
+	})
+}
+
+func SetDefaultEOFChecker() ReaderOption {
+	return ReaderOptionFunc(func(r *Reader) {
+		r.SetEofChecker(&defaultEofChecker{})
 	})
 }
 
