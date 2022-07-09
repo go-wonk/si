@@ -73,6 +73,12 @@ func (o ClientOptionFunc) apply(c *HttpClient) error {
 	return o(c)
 }
 
+func WithBaseUrl(baseUrl string) ClientOptionFunc {
+	return ClientOptionFunc(func(c *HttpClient) error {
+		c.baseUrl = baseUrl
+		return nil
+	})
+}
 func WithReaderOpt(opt sicore.ReaderOption) ClientOptionFunc {
 	return ClientOptionFunc(func(c *HttpClient) error {
 		c.appendReaderOption(opt)
