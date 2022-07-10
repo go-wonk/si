@@ -98,9 +98,16 @@ func (rd *Reader) Read(p []byte) (n int, err error) {
 	return
 }
 
+func (rd *Reader) ReadBytes(delim byte) ([]byte, error) {
+	return rd.br.ReadBytes(delim)
+}
+
+func (rd *Reader) ReadString(delim byte) (string, error) {
+	return rd.br.ReadString(delim)
+}
+
 // ReadAll reads all data from underlying Reader(rd.br) and returns it.
 func (rd *Reader) ReadAll() ([]byte, error) {
-	// return readAll(rd.br, rd.chk)
 	return rd.readAll()
 }
 

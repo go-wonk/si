@@ -13,31 +13,52 @@ import (
 type File struct {
 	*os.File
 
-	rw *sicore.ReadWriter
+	readerOpts []sicore.ReaderOption
+	writerOpts []sicore.WriterOption
+	rw         *sicore.ReadWriter
 }
 
 // OpenFile opens file with name then returns File.
-func OpenFile(name string, flag int, perm os.FileMode) (*File, error) {
+func OpenFile(name string, flag int, perm os.FileMode, opts ...FileOption) (*File, error) {
 	f, err := os.OpenFile(name, flag, perm)
 	if err != nil {
 		return nil, err
 	}
-	return newFile(f), nil
+	return newFile(f, opts...), nil
 }
 
 // Create wraps io.Create function.
-func Create(name string) (*File, error) {
+func Create(name string, opts ...FileOption) (*File, error) {
 	f, err := os.Create(name)
 	if err != nil {
 		return nil, err
 	}
-	return newFile(f), nil
+	return newFile(f, opts...), nil
 }
 
-func newFile(f *os.File) *File {
+func newFile(f *os.File, opts ...FileOption) *File {
+	sf := &File{
+		File: f,
+	}
+
+	for _, o := range opts {
+		o.apply(sf)
+	}
+
 	rw := sicore.GetReadWriterWithReadWriter(f)
-	// w := sicore.GetWriter(f)
-	return &File{File: f, rw: rw}
+	rw.Reader.ApplyOptions(sf.readerOpts...)
+	rw.Writer.ApplyOptions(sf.writerOpts...)
+
+	sf.rw = rw
+	return sf
+}
+
+func (f *File) appendReaderOpt(opt sicore.ReaderOption) {
+	f.readerOpts = append(f.readerOpts, opt)
+}
+
+func (f *File) appendWriterOpt(opt sicore.WriterOption) {
+	f.writerOpts = append(f.writerOpts, opt)
 }
 
 func (f *File) Chdir() error {
@@ -131,6 +152,22 @@ func (f *File) WriteFlush(p []byte) (n int, err error) {
 	}
 
 	return n, err
+}
+
+func (f *File) Encode(v any) error {
+	return f.rw.Encode(v)
+}
+
+func (f *File) EncodeFlush(v any) error {
+	return f.rw.EncodeFlush(v)
+}
+
+func (f *File) Decode(dst any) error {
+	return f.rw.Decode(dst)
+}
+
+func (f *File) ReadLine() (string, error) {
+	return f.rw.ReadString('\n')
 }
 
 // DirEntryWithPath is a wrapper of fs.DirEntry with path(relative path)
