@@ -21,10 +21,13 @@ type TcpEOFChecker struct{}
 
 func (c TcpEOFChecker) Check(b []byte, errIn error) (bool, error) {
 	if errIn == nil || errIn == io.EOF {
+		if len(b) == 0 {
+			return false, errors.New("conn may have been closed")
+		}
 		lenStr := string(b[:7])
 		lenProt, err := strconv.ParseInt(lenStr, 10, 64)
 		if err != nil {
-			return false, errors.New("cannot find data length")
+			return false, errors.New("cannot find data length " + string(b))
 		}
 
 		receivedAll := int(lenProt) == len(b)
@@ -98,4 +101,52 @@ func TestConn_Request_Concurrent(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func TestConnPool_Request(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	for i := 0; i < 3; i++ {
+		c, _ := sitcp.DialTimeout("127.0.0.1:10000", 3*time.Second,
+			sitcp.WithEofChecker(&TcpEOFChecker{}))
+		log.Println(c.LocalAddr())
+		sitcp.PutConn("127.0.0.1:10000", c)
+	}
+
+	var val time.Duration = 500
+	sitcp.DeleteTcpConnectionPool("127.0.0.1:10000")
+	for i := 0; i < 500; i++ {
+		conn, err := sitcp.GetConn("127.0.0.1:10000", 3*time.Second,
+			sitcp.WithEofChecker(&TcpEOFChecker{}),
+			sitcp.WithWriteTimeout(3*time.Second),
+			sitcp.WithReadTimeout(3*time.Second))
+		// siutils.AssertNilFail(t, err)
+		if err != nil {
+			log.Println("conn:", err)
+			time.Sleep(val * time.Millisecond)
+			continue
+		}
+
+		sendData := createSmallDataToSend(1, 2)
+		res, err := conn.Request(sendData)
+		// siutils.AssertNilFail(t, err)
+		if err != nil {
+			sitcp.DeleteTcpConnectionPool("127.0.0.1:10000")
+			log.Println("request:", err)
+			time.Sleep(val * time.Millisecond)
+			continue
+		}
+
+		fmt.Println(conn.LocalAddr(), string(res))
+		assert.EqualValues(t, sendData, string(res))
+		sitcp.PutConn("127.0.0.1:10000", conn)
+
+		time.Sleep(val * time.Millisecond)
+
+		// if i > 50 {
+		// 	val = 3000
+		// }
+	}
 }
