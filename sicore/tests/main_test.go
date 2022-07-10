@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	onlinetest = os.Getenv("ONLINE_TEST")
-	// onlinetest = "1"
+	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
 
 	listener       net.Listener
 	listenerClosed bool
@@ -96,7 +95,7 @@ func startTcpServer(waitChannel chan bool) error {
 func setup() error {
 	os.Mkdir("./data", 0777)
 
-	if onlinetest == "1" {
+	if onlinetest {
 		waitChannel := make(chan bool)
 		go startTcpServer(waitChannel)
 		for range waitChannel {

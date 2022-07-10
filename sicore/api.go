@@ -12,6 +12,7 @@ func ReadAll(r io.Reader) ([]byte, error) {
 	return sr.ReadAll()
 }
 
+// Deprecated
 // WriteAll writes src to dst.
 func WriteAll(dst io.Writer, src []byte) (n int, err error) {
 	sw := GetWriter(dst)

@@ -7,13 +7,13 @@ import (
 	"github.com/go-wonk/si/sicore"
 )
 
-func Open(driverName string, dataSourceName string) (*SqlDB, error) {
+func Open(driverName string, dataSourceName string, opts ...SqlOption) (*SqlDB, error) {
 	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewSqlDB(db), nil
+	return NewSqlDB(db, opts...), nil
 }
 
 // SqlDB is a wrapper of sql.DB
@@ -46,6 +46,10 @@ func (o *SqlDB) Begin() (*sql.Tx, error) {
 	}
 
 	return tx, nil
+}
+
+func (o *SqlDB) Close() error {
+	return o.db.Close()
 }
 
 func (o *SqlDB) Prepare(query string) (*sql.Stmt, error) {

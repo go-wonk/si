@@ -7,63 +7,106 @@ import (
 	"github.com/go-wonk/si/sicore"
 )
 
-func DefaultTcpConn(addr string, dialTimeout, writeTimeout, readTimeout time.Duration, writeBuffer, readBuffer int) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", addr, dialTimeout*time.Second)
+func DialTimeout(addr string, timeout time.Duration, opts ...TcpOption) (*Conn, error) {
+	c, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
 		return nil, err
 	}
-
-	err = conn.SetWriteDeadline(time.Now().Add(writeTimeout * time.Second))
+	conn, err := newConn(c, opts...)
 	if err != nil {
+		c.Close()
 		return nil, err
 	}
-	err = conn.SetReadDeadline(time.Now().Add(readTimeout * time.Second))
-	if err != nil {
-		return nil, err
-	}
-
-	err = conn.(*net.TCPConn).SetWriteBuffer(writeBuffer)
-	if err != nil {
-		return nil, err
-	}
-	err = conn.(*net.TCPConn).SetReadBuffer(readBuffer)
-	if err != nil {
-		return nil, err
-	}
-
 	return conn, nil
 }
 
 type Conn struct {
 	net.Conn
-	writerOptions []sicore.WriterOption
-	readerOptions []sicore.ReaderOption
-	// addr                string
-	// dialTimeoutSeconds  time.Duration
-	// writeTimeoutSeconds time.Duration
-	// readTimeoutSeconds  time.Duration
-	// writeBufferSize     int
-	// readBufferSize      int
+
+	rw *sicore.ReadWriter
+
+	writeTimeout    time.Duration
+	readTimeout     time.Duration
+	writeBufferSize int
+	readBufferSize  int
+	writerOptions   []sicore.WriterOption
+	readerOptions   []sicore.ReaderOption
 }
 
-func NewConn(conn net.Conn) *Conn {
-	tcpConn := &Conn{Conn: conn}
-	return tcpConn
+func newConn(c net.Conn, opts ...TcpOption) (*Conn, error) {
+	conn := &Conn{
+		writeTimeout:    30 * time.Second,
+		readTimeout:     30 * time.Second,
+		writeBufferSize: 4096,
+		readBufferSize:  4096,
+	}
+
+	for _, o := range opts {
+		if o == nil {
+			continue
+		}
+		o.apply(conn)
+	}
+
+	err := c.(*net.TCPConn).SetWriteBuffer(conn.writeBufferSize)
+	if err != nil {
+		return nil, err
+	}
+	err = c.(*net.TCPConn).SetReadBuffer(conn.readBufferSize)
+	if err != nil {
+		return nil, err
+	}
+
+	rw := sicore.GetReadWriterWithReadWriter(c)
+	rw.Reader.ApplyOptions(conn.readerOptions...)
+	rw.Writer.ApplyOptions(conn.writerOptions...)
+
+	conn.Conn = c
+	conn.rw = rw
+
+	return conn, nil
+}
+
+func (c *Conn) Close() error {
+	sicore.PutReadWriter(c.rw)
+	return c.Conn.Close()
+}
+
+func (c *Conn) Write(b []byte) (n int, err error) {
+	err = c.SetWriteDeadline(time.Now().Add(c.writeTimeout))
+	if err != nil {
+		return
+	}
+	n, err = c.rw.Write(b)
+	return
+}
+
+func (c *Conn) Read(b []byte) (n int, err error) {
+	err = c.SetReadDeadline(time.Now().Add(c.readTimeout))
+	if err != nil {
+		return 0, err
+	}
+	n, err = c.rw.Read(b)
+	return
+}
+
+func (c *Conn) appendReaderOption(opt sicore.ReaderOption) {
+	c.readerOptions = append(c.readerOptions, opt)
+}
+
+func (c *Conn) appendWriterOption(opt sicore.WriterOption) {
+	c.writerOptions = append(c.writerOptions, opt)
 }
 
 func (c *Conn) Request(b []byte) ([]byte, error) {
-	rw := sicore.GetReadWriterWithReadWriter(c)
-	defer sicore.PutReadWriter(rw)
-	rw.Reader.ApplyOptions(c.readerOptions...)
-	rw.Writer.ApplyOptions(c.writerOptions...)
+	err := c.SetWriteDeadline(time.Now().Add(c.writeTimeout))
+	if err != nil {
+		return nil, err
+	}
+	err = c.SetReadDeadline(time.Now().Add(c.readTimeout))
+	if err != nil {
+		return nil, err
+	}
 
-	return rw.Request(b)
-}
-
-func (c *Conn) SetWriterOption(opts ...sicore.WriterOption) {
-	c.writerOptions = opts
-}
-
-func (c *Conn) SetReaderOption(opts ...sicore.ReaderOption) {
-	c.readerOptions = opts
+	return c.rw.Request(b)
 }

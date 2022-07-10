@@ -99,7 +99,7 @@ func TestHub2(t *testing.T) {
 			}
 		}
 	}()
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 	log.Println("stopping...")
 	hub.Stop()
 	hub.Wait()
@@ -189,7 +189,7 @@ func TestReconnects(t *testing.T) {
 	if !longtest {
 		t.Skip("skipping long tests")
 	}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		assert.EqualValues(t, 0, test())
 	}
 }
@@ -261,7 +261,7 @@ func testWithoutBroadcast() int {
 		}
 	}()
 
-	time.Sleep(20 * time.Second)
+	time.Sleep(4 * time.Second)
 	log.Println("stopping...")
 	hub.Stop()
 	hub.Wait()
@@ -282,8 +282,6 @@ func TestReconnectsWithoutBroadcast(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		assert.EqualValues(t, 0, testWithoutBroadcast())
 	}
-	log.Println("waiting...")
-	time.Sleep(12 * time.Second)
 }
 
 func testBroadcast() int {
@@ -348,7 +346,7 @@ func TestBroadcast(t *testing.T) {
 	if !longtest {
 		t.Skip("skipping long tests")
 	}
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		assert.EqualValues(t, 0, testBroadcast())
 	}
 	// log.Println("waiting...")

@@ -12,6 +12,7 @@ func ReadAll(r io.Reader) ([]byte, error) {
 	return sicore.ReadAll(r)
 }
 
+// Deprecated
 // WriteAll writes input to w.
 func WriteAll(w io.Writer, input []byte) (n int, err error) {
 	return sicore.WriteAll(w, input)
