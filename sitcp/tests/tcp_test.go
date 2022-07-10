@@ -4,13 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/sitcp"
 	"github.com/go-wonk/si/siutils"
+	"github.com/stretchr/testify/assert"
 )
 
 type TcpEOFChecker struct{}
@@ -36,8 +40,10 @@ func (c TcpEOFChecker) Check(b []byte, errIn error) (bool, error) {
 
 	return false, errIn
 }
-func createSmallDataToSend() []byte {
-	dataToSend := strings.Repeat("a", 10)
+func createSmallDataToSend(i, j int) []byte {
+	istr := strconv.Itoa(i)
+	jstr := strconv.Itoa(j)
+	dataToSend := strings.Repeat(istr+jstr, 10)
 	dataLength := len(dataToSend) + 7
 	dataLengthStr := fmt.Sprintf("%07d", dataLength)
 	return []byte(dataLengthStr + dataToSend)
@@ -46,15 +52,50 @@ func TestConn_Request(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	defaultConn, err := sitcp.DefaultTcpConn("127.0.0.1:9999", 3, 3, 3, 4096, 4096)
+	conn, err := sitcp.DialTimeout("127.0.0.1:9999", 3*time.Second,
+		sitcp.WithReaderOpt(sicore.SetEofChecker(&TcpEOFChecker{})))
 	siutils.AssertNilFail(t, err)
-	defer defaultConn.Close()
+	defer conn.Close()
 
-	conn := sitcp.NewConn(defaultConn)
-	conn.SetReaderOption(sicore.SetEofChecker(&TcpEOFChecker{}))
-
-	res, err := conn.Request(createSmallDataToSend())
+	siutils.AssertNilFail(t, err)
+	res, err := conn.Request(createSmallDataToSend(1, 2))
 	siutils.AssertNilFail(t, err)
 
-	fmt.Println(res)
+	fmt.Println(string(res))
+}
+
+func TestConn_Request_Concurrent(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	wg := &sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			conn, err := sitcp.DialTimeout("127.0.0.1:9999", 3*time.Second,
+				sitcp.WithEofChecker(&TcpEOFChecker{}),
+				sitcp.WithWriteTimeout(3*time.Second),
+				sitcp.WithReadTimeout(3*time.Second),
+				sitcp.WithWriteBufferSize(4096),
+				sitcp.WithReadBufferSize(4096),
+			)
+			if !assert.Nil(t, err) {
+				return
+			}
+
+			for j := 0; j < 100; j++ {
+
+				sendData := createSmallDataToSend(i, j)
+				res, err := conn.Request(sendData)
+				siutils.AssertNilFail(t, err)
+				assert.EqualValues(t, sendData, string(res))
+				log.Println(string(res))
+			}
+
+			conn.Close()
+		}(i)
+	}
+	wg.Wait()
 }
