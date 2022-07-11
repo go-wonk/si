@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	lock              sync.RWMutex
+	errLimit          int64 = 10
+	errCount          int64
 	_tcpConnectionMap sync.Map
 )
 
@@ -16,7 +19,7 @@ type TcpConnectionPool interface {
 	Put(v interface{})
 }
 
-func DeleteTcpConnectionPool(addr string) {
+func deleteTcpConnectionPool(addr string) {
 	p, loaded := _tcpConnectionMap.LoadAndDelete(addr)
 	if loaded {
 		prevSyncPool := p.(*sync.Pool)
@@ -24,16 +27,11 @@ func DeleteTcpConnectionPool(addr string) {
 			return nil
 		}
 
-		tolerance := 0
 		cnt := 0
 		for {
 			conn := prevSyncPool.Get()
 			if conn == nil {
-				tolerance++
-				if tolerance > 100 {
-					break
-				}
-				continue
+				break
 			}
 			cnt++
 			log.Println("delete: closed", conn.(*Conn).LocalAddr())
@@ -71,6 +69,19 @@ func GetConn(addr string, timeout time.Duration, opts ...TcpOption) (*Conn, erro
 	return conn, nil
 }
 
+// PutConn puts connection back to the pool with key, addr.
 func PutConn(addr string, c *Conn) {
-	getTcpConnectionPool(addr, 1*time.Second).Put(c)
+	if c.Err() != nil {
+		c.Close()
+
+		lock.Lock()
+		errCount++
+		if errCount > errLimit {
+			deleteTcpConnectionPool(addr)
+			errCount = 0
+		}
+		lock.Unlock()
+		return
+	}
+	getTcpConnectionPool(addr, time.Second).Put(c)
 }

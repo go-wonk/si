@@ -1,6 +1,7 @@
 package sitcp
 
 import (
+	"io"
 	"net"
 	"time"
 
@@ -30,6 +31,8 @@ type Conn struct {
 	readBufferSize  int
 	writerOptions   []sicore.WriterOption
 	readerOptions   []sicore.ReaderOption
+
+	err error
 }
 
 func newConn(c net.Conn, opts ...TcpOption) (*Conn, error) {
@@ -45,11 +48,6 @@ func newConn(c net.Conn, opts ...TcpOption) (*Conn, error) {
 	if err := conn.Reset(opts...); err != nil {
 		return nil, err
 	}
-
-	// rw := sicore.GetReadWriterWithReadWriter(c)
-	// rw.Reader.ApplyOptions(conn.readerOptions...)
-	// rw.Writer.ApplyOptions(conn.writerOptions...)
-	// conn.rw = rw
 
 	return conn, nil
 }
@@ -89,10 +87,12 @@ func (c *Conn) Close() error {
 func (c *Conn) Write(b []byte) (int, error) {
 	err := c.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 	if err != nil {
+		c.err = err
 		return 0, err
 	}
 	n, err := c.rw.Write(b)
 	if err != nil {
+		c.err = err
 		return 0, err
 	}
 	return n, nil
@@ -101,11 +101,15 @@ func (c *Conn) Write(b []byte) (int, error) {
 func (c *Conn) Read(b []byte) (int, error) {
 	err := c.SetReadDeadline(time.Now().Add(c.readTimeout))
 	if err != nil {
+		c.err = err
 		return 0, err
 	}
 	n, err := c.rw.Read(b)
 	if err != nil {
-		return 0, err
+		if err != io.EOF {
+			c.err = err
+		}
+		return n, err
 	}
 	return n, nil
 }
@@ -121,12 +125,23 @@ func (c *Conn) appendWriterOption(opt sicore.WriterOption) {
 func (c *Conn) Request(b []byte) ([]byte, error) {
 	err := c.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 	if err != nil {
+		c.err = err
 		return nil, err
 	}
 	err = c.SetReadDeadline(time.Now().Add(c.readTimeout))
 	if err != nil {
+		c.err = err
 		return nil, err
 	}
 
-	return c.rw.Request(b)
+	res, err := c.rw.Request(b)
+	if err != nil {
+		c.err = err
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *Conn) Err() error {
+	return c.err
 }
