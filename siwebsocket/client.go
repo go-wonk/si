@@ -42,6 +42,12 @@ func DefaultDialer(u url.URL, header http.Header) *websocket.Dialer {
 	return dialer
 }
 
+// Client starts two go-routines to write and read messages upon creation with
+// NewClientCongfigured or NewClient function. SendMessage method is used to
+// write messages to the server, and read messages are handled by underlying
+// handler(MessageHandler). Currently, it is not designed to work with request
+// (send and receive) pattern. Sending and reading messages are handled separately,
+// you cannot verify if a request is correctly handled by the other end point's response.
 type Client struct {
 	// dialer *websocket.Dialer
 	conn    *websocket.Conn
