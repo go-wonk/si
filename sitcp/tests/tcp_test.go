@@ -154,6 +154,7 @@ func TestConnPool_Request_Concurrent(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
+
 	addr := "127.0.0.1:10000"
 	for i := 0; i < 50; i++ {
 		c, _ := sitcp.DialTimeout(addr, 3*time.Second,

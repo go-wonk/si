@@ -8,6 +8,9 @@ import (
 	"github.com/go-wonk/si/sicore"
 )
 
+// DialTimeout is a wrapper of net.DialTimeout.
+// It dials to connect to a tcp server and wraps connection with sitcp.Conn.
+// It closes the connection if error occurs while wrapping.
 func DialTimeout(addr string, timeout time.Duration, opts ...TcpOption) (*Conn, error) {
 	c, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
@@ -20,6 +23,7 @@ func DialTimeout(addr string, timeout time.Duration, opts ...TcpOption) (*Conn, 
 	return conn, nil
 }
 
+// Conn is a wrapper of net.Conn.
 type Conn struct {
 	net.Conn
 
@@ -35,6 +39,7 @@ type Conn struct {
 	err error
 }
 
+// newConn create a Conn wrapping c with opts.
 func newConn(c net.Conn, opts ...TcpOption) (*Conn, error) {
 	conn := &Conn{
 		Conn:            c,
@@ -45,14 +50,14 @@ func newConn(c net.Conn, opts ...TcpOption) (*Conn, error) {
 		rw:              sicore.GetReadWriterWithReadWriter(c),
 	}
 
-	if err := conn.Reset(opts...); err != nil {
+	if err := conn.reset(opts...); err != nil {
 		return nil, err
 	}
 
 	return conn, nil
 }
 
-func (c *Conn) Reset(opts ...TcpOption) error {
+func (c *Conn) reset(opts ...TcpOption) error {
 
 	for _, o := range opts {
 		if o == nil {
@@ -71,7 +76,6 @@ func (c *Conn) Reset(opts ...TcpOption) error {
 		c.Conn.Close()
 		return err
 	}
-	// c.Conn.(*net.TCPConn).SetKeepAlive(false)
 
 	c.rw.Reader.Reset(c.Conn, c.readerOptions...)
 	c.rw.Writer.Reset(c.Conn, c.writerOptions...)
@@ -79,6 +83,7 @@ func (c *Conn) Reset(opts ...TcpOption) error {
 	return nil
 }
 
+// Close put underlying rw back to the pool and closes the connection.
 func (c *Conn) Close() error {
 	sicore.PutReadWriter(c.rw)
 	return c.Conn.Close()

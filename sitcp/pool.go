@@ -62,7 +62,7 @@ func GetConn(addr string, timeout time.Duration, opts ...TcpOption) (*Conn, erro
 		return nil, errors.New("cannot create tcp connection")
 	}
 	conn := c.(*Conn)
-	err := conn.Reset(opts...)
+	err := conn.reset(opts...)
 	if err != nil {
 		return nil, err
 	}
