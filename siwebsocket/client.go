@@ -298,11 +298,6 @@ func (c *Client) readPump() {
 		c.Stop()
 		c.conn.Close()
 		c.hub.Remove(c)
-		// if err := c.hub.removeClient(c); err != nil {
-		// log.Println("failed to remove client from hub", c.id)
-		// }
-
-		// log.Println("return readPump", c.id)
 		c.readWg.Done()
 	}()
 

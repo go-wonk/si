@@ -111,21 +111,6 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	return h
 }
 
-// CreateAndAddClient creates Client with conn and add it to underlying hub.
-// func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*Client, error) {
-
-// 	c := NewClientConfigured(conn, h.writeWait, h.readWait, h.maxMessageSize, h.usePingPong, opts...)
-// 	c.hub = h
-
-// 	err := h.Add(c)
-// 	if err != nil {
-// 		c.Stop()
-// 		c.Wait()
-// 		return nil, err
-// 	}
-// 	return c, nil
-// }
-
 var ErrClientNotExist = errors.New("client does not exist")
 
 // runBroadcast starts receiving messages to broadcast to clients.
@@ -133,8 +118,7 @@ func (h *Hub) runBroadcast() {
 	defer close(h.broadcastWait)
 	for message := range h.broadcast {
 		h.clients.Range(func(key interface{}, value interface{}) bool {
-			// time.Sleep(1 * time.Second)
-			value.(*Client).Send(message)
+			value.(sicore.Client).Send(message)
 			return true
 		})
 	}
@@ -158,7 +142,7 @@ func (h *Hub) runClient() {
 			if exist {
 				// Stop will lead to removeClient method called.
 				// Do not call removeClient method here.
-				loadedClient.(*Client).Stop()
+				loadedClient.(sicore.Client).Stop()
 				h.clients.Store(client.GetID(), client)
 			}
 			h.afterStoreClient(client, nil)
@@ -208,6 +192,7 @@ func (h *Hub) Stop() error {
 	return nil
 }
 
+// Wait waits until h is completely finished.
 func (h *Hub) Wait() {
 	<-h.terminated
 }
@@ -267,10 +252,10 @@ func (h *Hub) removeAllClients() error {
 
 	// stops gracefully
 	h.clients.Range(func(key interface{}, value interface{}) bool {
-		value.(*Client).Stop()
-		value.(*Client).Wait()
-		h.clients.Delete(value.(*Client).id)
-		h.router.Delete(context.Background(), value.(*Client).id)
+		value.(sicore.Client).Stop()
+		value.(sicore.Client).Wait()
+		h.clients.Delete(value.(sicore.Client).GetID())
+		h.router.Delete(context.Background(), value.(sicore.Client).GetID())
 		return true
 	})
 
@@ -279,7 +264,7 @@ func (h *Hub) removeAllClients() error {
 
 func (h *Hub) RemoveRandomClient() error {
 	h.clients.Range(func(key interface{}, value interface{}) bool {
-		value.(*Client).Stop()
+		value.(sicore.Client).Stop()
 		return false
 	})
 
@@ -300,7 +285,7 @@ func (h *Hub) SendMessage(id string, msg []byte) error {
 	if c, ok := h.clients.Load(id); !ok {
 		return errors.New("client not found, " + id)
 	} else {
-		err := c.(*Client).Send(msg)
+		err := c.(sicore.Client).Send(msg)
 		if err != nil {
 			return err
 		}
@@ -308,14 +293,15 @@ func (h *Hub) SendMessage(id string, msg []byte) error {
 	return nil
 }
 
+// SendMessageWithIDAndUserGroupID sends msg to a client with id and userGroupID.
 func (h *Hub) SendMessageWithIDAndUserGroupID(id, userGroupID string, msg []byte) error {
 	if c, ok := h.clients.Load(id); !ok {
 		return errors.New("client not found, " + id)
 	} else {
-		if c.(*Client).userGroupID != userGroupID {
+		if c.(sicore.Client).GetUserGroupID() != userGroupID {
 			return errors.New("client with, " + userGroupID + ", not found")
 		}
-		err := c.(*Client).Send(msg)
+		err := c.(sicore.Client).Send(msg)
 		if err != nil {
 			return err
 		}
@@ -323,11 +309,13 @@ func (h *Hub) SendMessageWithIDAndUserGroupID(id, userGroupID string, msg []byte
 	return nil
 }
 
-func (h *Hub) SendMessageWithResult(id string, msg []byte) error {
+// SendMessageAndWait send msg to a client with id and wait until the msg was
+// successfully written to the client.
+func (h *Hub) SendMessageAndWait(id string, msg []byte) error {
 	if c, ok := h.clients.Load(id); !ok {
 		return errors.New("client not found, " + id)
 	} else {
-		err := c.(*Client).SendAndWait(msg)
+		err := c.(sicore.Client).SendAndWait(msg)
 		if err != nil {
 			return err
 		}

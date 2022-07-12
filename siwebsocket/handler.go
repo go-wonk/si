@@ -7,6 +7,9 @@ import (
 	"github.com/go-wonk/si/sicore"
 )
 
+// MessageHandler handles data read from r with ReaderOption opts.
+// Returning error from Handle method stops client's reading and writing. For siwebsocket.Client,
+// Handle method should return error if reading returns an error other than EOF.
 type MessageHandler interface {
 	Handle(r io.Reader, opts ...sicore.ReaderOption) error
 }

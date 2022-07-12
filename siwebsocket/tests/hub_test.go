@@ -158,7 +158,7 @@ func test() int {
 			go func() {
 				for {
 					time.Sleep(54 * time.Millisecond)
-					err := hub.SendMessageWithResult(c.GetID(), []byte(strconv.Itoa(rn)))
+					err := hub.SendMessageAndWait(c.GetID(), []byte(strconv.Itoa(rn)))
 					if err != nil {
 						log.Println("SendMessageWithResult:", err)
 						return
@@ -265,7 +265,7 @@ func testWithoutBroadcast() int {
 			go func() {
 				for {
 					time.Sleep(50 * time.Millisecond)
-					err := hub.SendMessageWithResult(c.GetID(), []byte(strconv.Itoa(rn)))
+					err := hub.SendMessageAndWait(c.GetID(), []byte(strconv.Itoa(rn)))
 					if err != nil {
 						log.Println("SendMessageWithResult:", err)
 						return
