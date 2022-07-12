@@ -1,6 +1,11 @@
 package siwebsocket
 
-import "github.com/go-wonk/si/sicore"
+import (
+	"net/http"
+	"time"
+
+	"github.com/go-wonk/si/sicore"
+)
 
 // ClientOption is an interface with apply method.
 type ClientOption interface {
@@ -19,6 +24,12 @@ func (o ClientOptionFunc) apply(c *Client) {
 func WithMessageHandler(h MessageHandler) ClientOptionFunc {
 	return ClientOptionFunc(func(c *Client) {
 		c.SetMessageHandler(h)
+	})
+}
+
+func WithHub(h sicore.Hub) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) {
+		c.SetHub(h)
 	})
 }
 
@@ -47,6 +58,28 @@ func WithUserID(id string) ClientOptionFunc {
 func WithUserGroupID(id string) ClientOptionFunc {
 	return ClientOptionFunc(func(c *Client) {
 		c.SetUserGroupID(id)
+	})
+}
+
+func WithWriteWait(writeWait time.Duration) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) {
+		c.writeWait = writeWait
+	})
+}
+func WithReadWait(readWait time.Duration) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) {
+		c.readWait = readWait
+		c.pingPeriod = (readWait * 9) / 10
+	})
+}
+func WithMaxMessageSize(maxMessageSize int) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) {
+		c.maxMessageSize = maxMessageSize
+	})
+}
+func WithUsePingPong(usePingPong bool) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) {
+		c.usePingPong = usePingPong
 	})
 }
 
@@ -85,15 +118,70 @@ func WithHubPath(path string) HubOptionFunc {
 }
 
 // WithAfterDeleteClient sets f to h's afterDeleteClient.
-func WithAfterDeleteClient(f func(*Client, error)) HubOptionFunc {
+func WithAfterDeleteClient(f func(sicore.Client, error)) HubOptionFunc {
 	return HubOptionFunc(func(h *Hub) {
 		h.afterDeleteClient = f
 	})
 }
 
 // WithAfterStoreClient sets f to h's afterStoreClient.
-func WithAfterStoreClient(f func(*Client, error)) HubOptionFunc {
+func WithAfterStoreClient(f func(sicore.Client, error)) HubOptionFunc {
 	return HubOptionFunc(func(h *Hub) {
 		h.afterStoreClient = f
+	})
+}
+
+// UpgraderOption is an interface with apply method.
+type UpgraderOption interface {
+	apply(u *upgraderConfig)
+}
+
+// UpgraderOptionFunc wraps a function to conforms to ClientOption interface
+type UpgraderOptionFunc func(u *upgraderConfig)
+
+// apply implements UpgraderOption's apply method.
+func (o UpgraderOptionFunc) apply(u *upgraderConfig) {
+	o(u)
+}
+
+func WithUpgradeHandshakeTimeout(timeout time.Duration) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.handshakeTimeout = timeout
+	})
+}
+
+func WithUpgradeReadBufferSize(bufferSize int) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.readBufferSize = bufferSize
+	})
+}
+func WithUpgradeWriteBufferSize(bufferSize int) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.writeBufferSize = bufferSize
+	})
+}
+
+func WithUpgradeSubprotocols(protocols []string) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.subprotocols = protocols
+	})
+}
+
+func WithUpgradeError(f func(w http.ResponseWriter, r *http.Request, status int, reason error)) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.errorFunc = f
+	})
+}
+
+// WithUpgradeCheckOrigin sets f to u's CheckOrigin.
+func WithUpgradeCheckOrigin(f func(r *http.Request) bool) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.checkOrigin = f
+	})
+}
+
+func WithUpgradeEnableCompression(enableCompression bool) UpgraderOptionFunc {
+	return UpgraderOptionFunc(func(u *upgraderConfig) {
+		u.enableCompression = enableCompression
 	})
 }

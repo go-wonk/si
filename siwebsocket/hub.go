@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/go-wonk/si/sicore"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -24,10 +24,10 @@ type Hub struct {
 	broadcastWait chan struct{}
 
 	// channel to add clients to `clients` map
-	register chan *Client
+	register chan sicore.Client
 
 	// channel to remove clients from `clients` map
-	unregister chan *Client
+	unregister chan sicore.Client
 
 	// once runDone is closed, a client cannot be received from register or unregister channel.
 	runDone chan struct{}
@@ -58,9 +58,9 @@ type Hub struct {
 
 	// handlers
 	// called after deleting c from clients map.
-	afterDeleteClient func(c *Client, err error)
+	afterDeleteClient func(c sicore.Client, err error)
 	// called after storing c into clients map.
-	afterStoreClient func(c *Client, err error)
+	afterStoreClient func(c sicore.Client, err error)
 }
 
 // NewHub creates a hub
@@ -72,9 +72,9 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	h := &Hub{
 		broadcast:     make(chan []byte, 1024),
 		broadcastWait: make(chan struct{}, 1),
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		// clients:    make(map[*Client]bool),
+		register:      make(chan sicore.Client),
+		unregister:    make(chan sicore.Client),
+
 		clients:    sync.Map{},
 		runDone:    make(chan struct{}),
 		runWait:    make(chan struct{}, 1),
@@ -97,13 +97,13 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 	}
 
 	if h.afterDeleteClient == nil {
-		h.afterDeleteClient = func(c *Client, err error) {
+		h.afterDeleteClient = func(c sicore.Client, err error) {
 			// nothing
 		}
 	}
 
 	if h.afterStoreClient == nil {
-		h.afterStoreClient = func(c *Client, err error) {
+		h.afterStoreClient = func(c sicore.Client, err error) {
 			// nothing
 		}
 	}
@@ -112,19 +112,19 @@ func NewHub(hubAddr, hubPath string, writeWait time.Duration, readWait time.Dura
 }
 
 // CreateAndAddClient creates Client with conn and add it to underlying hub.
-func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*Client, error) {
+// func (h *Hub) CreateAndAddClient(conn *websocket.Conn, opts ...ClientOption) (*Client, error) {
 
-	c := NewClientConfigured(conn, h.writeWait, h.readWait, h.maxMessageSize, h.usePingPong, opts...)
-	c.hub = h
+// 	c := NewClientConfigured(conn, h.writeWait, h.readWait, h.maxMessageSize, h.usePingPong, opts...)
+// 	c.hub = h
 
-	err := h.addClient(c)
-	if err != nil {
-		c.Stop()
-		c.Wait()
-		return nil, err
-	}
-	return c, nil
-}
+// 	err := h.Add(c)
+// 	if err != nil {
+// 		c.Stop()
+// 		c.Wait()
+// 		return nil, err
+// 	}
+// 	return c, nil
+// }
 
 var ErrClientNotExist = errors.New("client does not exist")
 
@@ -154,18 +154,18 @@ func (h *Hub) runClient() {
 		case <-h.runDone:
 			return
 		case client := <-h.register:
-			loadedClient, exist := h.clients.LoadOrStore(client.id, client)
+			loadedClient, exist := h.clients.LoadOrStore(client.GetID(), client)
 			if exist {
 				// Stop will lead to removeClient method called.
 				// Do not call removeClient method here.
 				loadedClient.(*Client).Stop()
-				h.clients.Store(client.id, client)
+				h.clients.Store(client.GetID(), client)
 			}
 			h.afterStoreClient(client, nil)
 		case client := <-h.unregister:
 			// stopped clients with connection closed are received here.
 			// remove them from `clients` map
-			_, exist := h.clients.LoadAndDelete(client.id)
+			_, exist := h.clients.LoadAndDelete(client.GetID())
 			if !exist {
 				h.afterDeleteClient(client, ErrClientNotExist)
 			} else {
@@ -214,7 +214,7 @@ func (h *Hub) Wait() {
 
 var ErrHubClosed = errors.New("hub is closed")
 
-func (h *Hub) addClient(client *Client) error {
+func (h *Hub) Add(client sicore.Client) error {
 	select {
 	case <-h.clientDone:
 		return ErrHubClosed
@@ -226,11 +226,12 @@ func (h *Hub) addClient(client *Client) error {
 		h.afterStoreClient(client, ErrHubClosed)
 		return ErrHubClosed
 	case h.register <- client:
-		return h.router.Store(context.Background(), client.id, client.userID, client.userGroupID, h.hubAddr, h.hubPath)
+		return h.router.Store(context.Background(), client.GetID(), client.GetUserID(),
+			client.GetUserGroupID(), h.hubAddr, h.hubPath)
 	}
 }
 
-func (h *Hub) removeClient(client *Client) error {
+func (h *Hub) Remove(client sicore.Client) error {
 	select {
 	case <-h.clientDone:
 		return ErrHubClosed
@@ -242,7 +243,7 @@ func (h *Hub) removeClient(client *Client) error {
 		h.afterDeleteClient(client, ErrHubClosed)
 		return ErrHubClosed
 	case h.unregister <- client:
-		return h.router.Delete(context.Background(), client.id)
+		return h.router.Delete(context.Background(), client.GetID())
 	}
 }
 
@@ -326,8 +327,7 @@ func (h *Hub) SendMessageWithResult(id string, msg []byte) error {
 	if c, ok := h.clients.Load(id); !ok {
 		return errors.New("client not found, " + id)
 	} else {
-		m := NewMsg(msg)
-		err := c.(*Client).SendMsg(m)
+		err := c.(*Client).SendAndWait(msg)
 		if err != nil {
 			return err
 		}
@@ -343,4 +343,20 @@ func (h *Hub) SetHubAddr(hubAddr string) {
 }
 func (h *Hub) SetHubPath(hubPath string) {
 	h.hubPath = hubPath
+}
+
+func (h *Hub) GetWriteWait() time.Duration {
+	return h.writeWait
+}
+
+func (h *Hub) GetReadWait() time.Duration {
+	return h.readWait
+}
+
+func (h *Hub) GetUsePingPong() bool {
+	return h.usePingPong
+}
+
+func (h *Hub) GetMaxMessageSize() int {
+	return h.maxMessageSize
 }

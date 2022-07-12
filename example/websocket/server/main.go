@@ -43,17 +43,26 @@ func echoHub(hub *siwebsocket.Hub) http.HandlerFunc {
 		userID := r.URL.Query().Get("user_id")
 		userGroupID := r.URL.Query().Get("user_group_id")
 
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Print("upgrade:", err)
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-		c, err := hub.CreateAndAddClient(conn,
+		c, err := siwebsocket.GetUpgradeConfig(
+			siwebsocket.WithUpgradeCheckOrigin(func(r *http.Request) bool { return true }),
+		).Upgrade(w, r, nil,
+			siwebsocket.WithWriteWait(hub.GetWriteWait()),
+			siwebsocket.WithReadWait(hub.GetReadWait()),
+			siwebsocket.WithMaxMessageSize(hub.GetMaxMessageSize()),
+			siwebsocket.WithUsePingPong(hub.GetUsePingPong()),
 			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}),
+			siwebsocket.WithHub(hub),
 		)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			log.Println("upgrade:", err)
+			return
+		}
+
+		err = hub.Add(c)
+		if err != nil {
+			c.Stop()
+			c.Wait()
+			// http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		log.Println(c.GetID(), userID, userGroupID)

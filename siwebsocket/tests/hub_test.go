@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-wonk/si/sicore"
 	"github.com/go-wonk/si/siutils"
 	"github.com/go-wonk/si/siwebsocket"
 	"github.com/stretchr/testify/assert"
@@ -29,9 +30,15 @@ func TestHub(t *testing.T) {
 		log.Println("connect")
 		conn, _, err := siwebsocket.DefaultConn(u, nil)
 		siutils.AssertNilFail(t, err)
-		_, err = hub.CreateAndAddClient(conn,
-			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-		// c.SetID("9099909")
+
+		_, err = siwebsocket.NewClient(conn,
+			siwebsocket.WithWriteWait(10*time.Second),
+			siwebsocket.WithReadWait(60*time.Second),
+			siwebsocket.WithMaxMessageSize(1024000),
+			siwebsocket.WithUsePingPong(true),
+			siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}),
+			siwebsocket.WithHub(hub),
+		)
 		if err != nil {
 			log.Println(err)
 			return
@@ -42,7 +49,7 @@ func TestHub(t *testing.T) {
 	if err != nil {
 		log.Println(err)
 	}
-	time.Sleep(6 * time.Second)
+	time.Sleep(4 * time.Second)
 	log.Println("stopping...")
 	hub.Stop()
 	log.Println("stopped")
@@ -72,13 +79,20 @@ func TestHub2(t *testing.T) {
 				log.Println(err)
 				return
 			}
-			_, err = hub.CreateAndAddClient(conn,
-				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-			// c.SetID("9099909")
+
+			c, err := siwebsocket.NewClient(conn,
+				siwebsocket.WithWriteWait(10*time.Second),
+				siwebsocket.WithReadWait(60*time.Second),
+				siwebsocket.WithMaxMessageSize(1024000),
+				siwebsocket.WithUsePingPong(true),
+				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}),
+				siwebsocket.WithHub(hub),
+			)
 			if err != nil {
 				log.Println(err)
 				return
 			}
+			log.Println(c.GetID())
 
 			num++
 			if num > 300 {
@@ -99,7 +113,7 @@ func TestHub2(t *testing.T) {
 			}
 		}
 	}()
-	time.Sleep(10 * time.Second)
+	time.Sleep(4 * time.Second)
 	log.Println("stopping...")
 	hub.Stop()
 	hub.Wait()
@@ -123,12 +137,15 @@ func test() int {
 				log.Println(err)
 				return
 			}
-			c, err := hub.CreateAndAddClient(conn,
-				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-			// c, err := siwebsocket.NewClientConfiguredWithHub(conn,
-			// 	10*time.Second, 60*time.Second, 1024000, true, hub,
-			// 	siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-			// c.SetID("9099909")
+
+			c, err := siwebsocket.NewClient(conn,
+				siwebsocket.WithWriteWait(10*time.Second),
+				siwebsocket.WithReadWait(60*time.Second),
+				siwebsocket.WithMaxMessageSize(1024000),
+				siwebsocket.WithUsePingPong(true),
+				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}),
+				siwebsocket.WithHub(hub),
+			)
 			if err != nil {
 				log.Println(err)
 				return
@@ -197,14 +214,14 @@ func TestReconnects(t *testing.T) {
 func testWithoutBroadcast() int {
 	hub := siwebsocket.NewHub("http://127.0.0.1:8080",
 		"/path/_push", 10*time.Second, 60*time.Second, 1024000, true,
-		siwebsocket.WithAfterStoreClient(func(c *siwebsocket.Client, err error) {
+		siwebsocket.WithAfterStoreClient(func(c sicore.Client, err error) {
 			if err != nil {
 				log.Println("store: "+err.Error(), c.GetID())
 			} else {
 				log.Println("store: ", c.GetID())
 			}
 		}),
-		siwebsocket.WithAfterDeleteClient(func(c *siwebsocket.Client, err error) {
+		siwebsocket.WithAfterDeleteClient(func(c sicore.Client, err error) {
 			if err != nil {
 				log.Println("delete: "+err.Error(), c.GetID())
 			} else {
@@ -225,15 +242,17 @@ func testWithoutBroadcast() int {
 				log.Println(err)
 				return
 			}
-			c, err := hub.CreateAndAddClient(conn,
+
+			c, err := siwebsocket.NewClient(conn,
+				siwebsocket.WithWriteWait(10*time.Second),
+				siwebsocket.WithReadWait(60*time.Second),
+				siwebsocket.WithMaxMessageSize(1024000),
+				siwebsocket.WithUsePingPong(true),
 				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}),
+				siwebsocket.WithHub(hub),
 				siwebsocket.WithUserID("9099909"),
 				siwebsocket.WithUserGroupID("90999"),
 			)
-			// c, err := siwebsocket.NewClientConfiguredWithHub(conn,
-			// 	10*time.Second, 60*time.Second, 1024000, true, hub,
-			// 	siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
-			// c.SetID("9099909")
 			if err != nil {
 				log.Println(err)
 				return
@@ -300,8 +319,14 @@ func testBroadcast() int {
 				return
 			}
 
-			_, err = hub.CreateAndAddClient(conn,
-				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageHandler{}))
+			_, err = siwebsocket.NewClient(conn,
+				siwebsocket.WithWriteWait(10*time.Second),
+				siwebsocket.WithReadWait(60*time.Second),
+				siwebsocket.WithMaxMessageSize(1024000),
+				siwebsocket.WithUsePingPong(true),
+				siwebsocket.WithMessageHandler(&siwebsocket.DefaultMessageLogHandler{}),
+				siwebsocket.WithHub(hub),
+			)
 			if err != nil {
 				log.Println(err)
 				return

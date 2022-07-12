@@ -80,31 +80,31 @@ type Client struct {
 	id string
 
 	// for server only
-	hub         *Hub
+	hub         sicore.Hub
 	userID      string
 	userGroupID string
 }
 
-func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait time.Duration,
-	maxMessageSize int, usePingPong bool, opts ...ClientOption) *Client {
+func NewClient(conn *websocket.Conn, opts ...ClientOption) (*Client, error) {
 
-	pingPeriod := (readWait * 9) / 10
-
+	defaultReadWait := 60 * time.Second
 	c := &Client{
 		conn:    conn,
 		handler: &NopMessageHandler{},
 
-		writeWait:      writeWait,
-		readWait:       readWait,
-		pingPeriod:     pingPeriod,
-		maxMessageSize: maxMessageSize,
-		usePingPong:    usePingPong,
+		writeWait:      10 * time.Second,
+		readWait:       defaultReadWait,
+		pingPeriod:     (defaultReadWait * 9) / 10,
+		maxMessageSize: 4096,
+		usePingPong:    false,
 
 		data:     make(chan []byte),
 		msg:      make(chan *msg),
 		sendDone: make(chan struct{}),
 		stopSend: make(chan string, 1),
 		readWg:   &sync.WaitGroup{},
+
+		hub: &sicore.NopHub{},
 	}
 
 	for _, o := range opts {
@@ -119,17 +119,54 @@ func NewClientConfigured(conn *websocket.Conn, writeWait time.Duration, readWait
 	go c.writePump()
 	c.readWg.Add(1)
 	go c.readPump()
-	return c
+
+	err := c.hub.Add(c)
+	if err != nil {
+		c.Stop()
+		c.Wait()
+		return nil, err
+	}
+
+	return c, nil
 }
 
-func NewClient(conn *websocket.Conn, opts ...ClientOption) *Client {
-	writeWait := 10 * time.Second
-	readWait := 60 * time.Second
-	// pingPeriod := (pongWait * 9) / 10
-	maxMessageSize := 4096
-	usePingPong := false
+type upgraderConfig struct {
+	handshakeTimeout                time.Duration
+	readBufferSize, writeBufferSize int
+	writeBufferPool                 websocket.BufferPool
+	subprotocols                    []string
+	errorFunc                       func(w http.ResponseWriter, r *http.Request, status int, reason error)
+	checkOrigin                     func(r *http.Request) bool
+	enableCompression               bool
+}
 
-	return NewClientConfigured(conn, writeWait, readWait, maxMessageSize, usePingPong, opts...)
+func GetUpgradeConfig(opts ...UpgraderOption) *upgraderConfig {
+	u := &upgraderConfig{}
+	for _, o := range opts {
+		o.apply(u)
+	}
+	return u
+}
+func (u *upgraderConfig) Upgrade(w http.ResponseWriter,
+	r *http.Request, responseHeader http.Header, opts ...ClientOption) (*Client, error) {
+
+	upgrader := websocket.Upgrader{
+		HandshakeTimeout:  u.handshakeTimeout,
+		ReadBufferSize:    u.readBufferSize,
+		WriteBufferSize:   u.writeBufferSize,
+		WriteBufferPool:   u.writeBufferPool,
+		Subprotocols:      u.subprotocols,
+		Error:             u.errorFunc,
+		CheckOrigin:       u.checkOrigin,
+		EnableCompression: u.enableCompression,
+	}
+
+	conn, err := upgrader.Upgrade(w, r, responseHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewClient(conn, opts...)
 }
 
 func (c *Client) ReadErr() error {
@@ -177,9 +214,19 @@ func (c *Client) GetID() string {
 func (c *Client) SetUserID(id string) {
 	c.userID = id
 }
+func (c *Client) GetUserID() string {
+	return c.userID
+}
 
 func (c *Client) SetUserGroupID(id string) {
 	c.userGroupID = id
+}
+func (c *Client) GetUserGroupID() string {
+	return c.userGroupID
+}
+
+func (c *Client) SetHub(h sicore.Hub) {
+	c.hub = h
 }
 
 func (c *Client) appendReaderOpt(ro sicore.ReaderOption) {
@@ -193,7 +240,7 @@ type msg struct {
 	err  chan error
 }
 
-func NewMsg(data []byte) *msg {
+func newMsg(data []byte) *msg {
 	return &msg{
 		data: data,
 		err:  make(chan error, 1),
@@ -215,13 +262,14 @@ func (c *Client) Send(b []byte) error {
 	return nil
 }
 
-func (c *Client) SendMsg(m *msg) error {
+func (c *Client) SendAndWait(b []byte) error {
 	select {
 	case <-c.sendDone:
 		return ErrDataChannelClosed
 	default:
 	}
 
+	m := newMsg(b)
 	select {
 	case <-c.sendDone:
 		return ErrDataChannelClosed
@@ -249,12 +297,11 @@ func (c *Client) readPump() {
 	defer func() {
 		c.Stop()
 		c.conn.Close()
-		if c.hub != nil {
-			c.hub.removeClient(c)
-			// if err := c.hub.removeClient(c); err != nil {
-			// log.Println("failed to remove client from hub", c.id)
-			// }
-		}
+		c.hub.Remove(c)
+		// if err := c.hub.removeClient(c); err != nil {
+		// log.Println("failed to remove client from hub", c.id)
+		// }
+
 		// log.Println("return readPump", c.id)
 		c.readWg.Done()
 	}()
