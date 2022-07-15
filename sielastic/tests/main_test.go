@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/go-wonk/si/sielastic"
 )
 
@@ -21,7 +21,7 @@ var (
 func setup() error {
 	var err error
 	if onlinetest {
-		client, err = sielastic.DefaultElasticsearchClient("http://testelastichost:9200")
+		client, err = sielastic.DefaultElasticsearchClient("http://testelastichost:9200", "daiso", "daisoasung")
 		if err != nil {
 			return err
 		}

@@ -9,18 +9,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/go-wonk/si/sicore"
 )
 
-func DefaultElasticsearchClient(elasticAddresses string) (*elasticsearch.Client, error) {
+func DefaultElasticsearchClient(elasticAddresses, userName, password string) (*elasticsearch.Client, error) {
 	cfg := elasticsearch.Config{
 		Addresses: strings.Split(elasticAddresses, ","),
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost:   10,
 			ResponseHeaderTimeout: time.Duration(6) * time.Second,
 		},
+		Username: userName,
+		Password: password,
 	}
 	return elasticsearch.NewClient(cfg)
 }
