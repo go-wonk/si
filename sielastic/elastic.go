@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -61,13 +60,49 @@ func (c *Client) IndexDocument(ctx context.Context, indexName string, body []byt
 	return r, nil
 }
 
-func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map[string]interface{}) (map[string]interface{}, error) {
+// func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map[string]interface{}) (map[string]interface{}, error) {
+
+// 	buf := sicore.GetBytesBuffer(nil)
+// 	defer sicore.PutBytesBuffer(buf)
+
+// 	if err := sicore.EncodeJson(buf, body); err != nil {
+// 		return nil, err
+// 	}
+
+// 	res, err := c.Search(
+// 		c.Search.WithContext(ctx),
+// 		c.Search.WithIndex(indexName),
+// 		c.Search.WithBody(buf),
+// 		c.Search.WithTrackTotalHits(true),
+// 		c.Search.WithTrackScores(true),
+// 		// c.Search.WithPretty(),
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer res.Body.Close()
+
+// 	var r map[string]interface{}
+// 	if err := sicore.DecodeJson(&r, res.Body); err != nil {
+// 		return nil, err
+// 	}
+
+// 	if res.IsError() {
+// 		return r, fmt.Errorf("[%s] %s: %s", res.Status(), r["error"].(map[string]interface{})["type"], r["error"].(map[string]interface{})["reason"])
+// 	}
+
+// 	return r, nil
+// }
+
+var ErrElasticResponseHasError = errors.New("response has error")
+
+func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map[string]interface{}, dest any) error {
 
 	buf := sicore.GetBytesBuffer(nil)
 	defer sicore.PutBytesBuffer(buf)
 
 	if err := sicore.EncodeJson(buf, body); err != nil {
-		return nil, err
+		return err
 	}
 
 	res, err := c.Search(
@@ -79,18 +114,69 @@ func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map
 		// c.Search.WithPretty(),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 
-	var r map[string]interface{}
-	if err := sicore.DecodeJson(&r, res.Body); err != nil {
-		return nil, err
+	if err := sicore.DecodeJson(dest, res.Body); err != nil {
+		return err
 	}
 
 	if res.IsError() {
-		return r, fmt.Errorf("[%s] %s: %s", res.Status(), r["error"].(map[string]interface{})["type"], r["error"].(map[string]interface{})["reason"])
+		// return r, fmt.Errorf("[%s] %s: %s", res.Status(), r["error"].(map[string]interface{})["type"], r["error"].(map[string]interface{})["reason"])
+		return ErrElasticResponseHasError
 	}
 
-	return r, nil
+	return nil
 }
+
+/*
+{
+  "took": 3,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 36,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "idCount": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "http-adpos-nginx",
+          "doc_count": 36
+        }
+      ]
+    }
+  }
+}
+
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "parsing_exception",
+        "reason": "Found two aggregation type definitions in [idCount]: [terms] and [having]",
+        "line": 26,
+        "col": 19
+      }
+    ],
+    "type": "parsing_exception",
+    "reason": "Found two aggregation type definitions in [idCount]: [terms] and [having]",
+    "line": 26,
+    "col": 19
+  },
+  "status": 400
+}
+*/
