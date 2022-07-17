@@ -96,6 +96,22 @@ func (c *Client) IndexDocument(ctx context.Context, indexName string, body []byt
 
 var ErrElasticResponseHasError = errors.New("response has error")
 
+type RespRootCause struct {
+	Type   string `json:"type"`
+	Reason string `json:"reason"`
+	Line   int    `json:"line"`
+	Col    int    `json:"col"`
+}
+type RespError struct {
+	RootCause []RespRootCause `json:"root_cause"`
+	Reason    string          `json:"reason"`
+}
+
+type Resp struct {
+	Error  RespError `json:"error"`
+	Status int       `json:"status"`
+}
+
 func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map[string]interface{}, dest any) error {
 
 	buf := sicore.GetBytesBuffer(nil)
@@ -118,13 +134,21 @@ func (c *Client) SearchDocuments(ctx context.Context, indexName string, body map
 	}
 	defer res.Body.Close()
 
-	if err := sicore.DecodeJson(dest, res.Body); err != nil {
-		return err
+	if res.IsError() {
+		resErr := Resp{}
+		copied, err := sicore.DecodeJsonCopied(&resErr, res.Body)
+		if err != nil {
+			return err
+		}
+
+		if err := sicore.DecodeJson(&dest, copied); err != nil {
+			return err
+		}
+		return errors.New(resErr.Error.Reason)
 	}
 
-	if res.IsError() {
-		// return r, fmt.Errorf("[%s] %s: %s", res.Status(), r["error"].(map[string]interface{})["type"], r["error"].(map[string]interface{})["reason"])
-		return ErrElasticResponseHasError
+	if err := sicore.DecodeJson(dest, res.Body); err != nil {
+		return err
 	}
 
 	return nil
