@@ -46,7 +46,9 @@ func TestElasticClient_SearchDocuments(t *testing.T) {
 			},
 		},
 	}
-	res, err := ec.SearchDocuments(context.Background(), "idx-test", query)
+
+	res := make(map[string]interface{})
+	err := ec.SearchDocuments(context.Background(), "idx-test", query, &res)
 	siutils.AssertNilFail(t, err)
 	fmt.Println(res)
 }

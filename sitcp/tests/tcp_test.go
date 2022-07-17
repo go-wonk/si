@@ -55,7 +55,7 @@ func TestConn_Request(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	conn, err := sitcp.DialTimeout("127.0.0.1:9999", 3*time.Second,
+	conn, err := sitcp.DialTimeout("127.0.0.1:10000", 3*time.Second,
 		sitcp.WithReaderOpt(sicore.SetEofChecker(&TcpEOFChecker{})))
 	siutils.AssertNilFail(t, err)
 	defer conn.Close()
@@ -77,7 +77,7 @@ func TestConn_Request_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			conn, err := sitcp.DialTimeout("127.0.0.1:9999", 3*time.Second,
+			conn, err := sitcp.DialTimeout("127.0.0.1:10000", 3*time.Second,
 				sitcp.WithEofChecker(&TcpEOFChecker{}),
 				sitcp.WithWriteTimeout(3*time.Second),
 				sitcp.WithReadTimeout(3*time.Second),
