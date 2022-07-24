@@ -1,6 +1,7 @@
 package sihttp
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strings"
 
@@ -15,6 +16,30 @@ type RequestOptionFunc func(c *http.Request) error
 
 func (o RequestOptionFunc) apply(c *http.Request) error {
 	return o(c)
+}
+
+func WithHeaderSet(key string, value string) RequestOptionFunc {
+	return RequestOptionFunc(func(req *http.Request) error {
+		header := req.Header
+		header[key] = []string{value}
+		return nil
+	})
+}
+
+func WithHeaderAdd(key string, value string) RequestOptionFunc {
+	return RequestOptionFunc(func(req *http.Request) error {
+		header := req.Header
+		header.Add(key, value)
+		return nil
+	})
+}
+
+func WithBasicAuth(username, password string) RequestOptionFunc {
+	return RequestOptionFunc(func(req *http.Request) error {
+		header := req.Header
+		header["Authorization"] = []string{"Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))}
+		return nil
+	})
 }
 
 func WithBearerToken(token string) RequestOptionFunc {
