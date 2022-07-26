@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -98,7 +99,14 @@ func (cg *ConsumerGroup) Start() {
 			// server-side rebalance happens, the consumer session will need to be
 			// recreated to get the new claims
 			if err := cg.Consume(ctx, cg.topics, cg.consumer); err != nil {
-				log.Panicf("Error from consumer: %v", err)
+				// TODO: handle error
+				// log.Panicf("Error from consumer: %v", err)
+				for i := 0; i < 12; i++ {
+					time.Sleep(time.Second * 1)
+					if ctx.Err() != nil {
+						return
+					}
+				}
 			}
 			// check if context was cancelled, signaling that the consumer should stop
 			if ctx.Err() != nil {
