@@ -40,7 +40,7 @@ func TestWorkerPool_Basic(t *testing.T) {
 
 	log.Println("start")
 
-	p := sicore.NewPool(5, 128)
+	p := sicore.NewWorkerPool(5, 128)
 	p.Start()
 
 	for i := 0; i < 256; i++ {
@@ -63,7 +63,7 @@ func TestWorkerPool_Ignore(t *testing.T) {
 
 	log.Println("start")
 
-	p := sicore.NewPool(5, 128)
+	p := sicore.NewWorkerPool(5, 128)
 	p.Start()
 
 	for i := 0; i < 256; i++ {
@@ -85,7 +85,7 @@ func TestWorkerPool_ResultsAndErrors(t *testing.T) {
 
 	log.Println("start")
 
-	p := sicore.NewPoolWithResultsAndErrors(5, 128)
+	p := sicore.NewWorkerPoolWithResultsAndErrors(5, 128)
 	p.Start()
 
 	go func() {
