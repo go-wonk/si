@@ -19,7 +19,7 @@ type WorkerPool struct {
 	errorz     chan error
 }
 
-func NewPool(numWorkers, queueSize int) *WorkerPool {
+func NewWorkerPool(numWorkers, queueSize int) *WorkerPool {
 	return &WorkerPool{
 		numWorkers: numWorkers,
 		queueSize:  queueSize,
@@ -30,7 +30,7 @@ func NewPool(numWorkers, queueSize int) *WorkerPool {
 	}
 }
 
-func NewPoolWithResultsAndErrors(numWorkers, queueSize int) *WorkerPool {
+func NewWorkerPoolWithResultsAndErrors(numWorkers, queueSize int) *WorkerPool {
 	return &WorkerPool{
 		numWorkers: numWorkers,
 		queueSize:  queueSize,
