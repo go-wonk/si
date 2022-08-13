@@ -140,7 +140,7 @@ func setQueries(req *http.Request, queries map[string]string) {
 }
 
 func (hc *HttpClient) request(method string, url string,
-	header http.Header, queries map[string]string, body any) ([]byte, error) {
+	header http.Header, queries map[string]string, body any, opts ...RequestOption) ([]byte, error) {
 
 	var req *http.Request
 	var err error
@@ -165,6 +165,10 @@ func (hc *HttpClient) request(method string, url string,
 		v.apply(req)
 	}
 
+	for _, v := range opts {
+		v.apply(req)
+	}
+
 	respBody, statusCode, err := hc.DoRead(req)
 	if err != nil {
 		return nil, err
@@ -178,7 +182,7 @@ func (hc *HttpClient) request(method string, url string,
 	return respBody, nil
 }
 
-func (hc *HttpClient) requestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any) error {
+func (hc *HttpClient) requestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
 
 	var req *http.Request
 	var err error
@@ -203,6 +207,10 @@ func (hc *HttpClient) requestDecode(method string, url string, header http.Heade
 		v.apply(req)
 	}
 
+	for _, v := range opts {
+		v.apply(req)
+	}
+
 	statusCode, err := hc.DoDecode(req, res)
 	if err != nil {
 		return err
@@ -216,45 +224,45 @@ func (hc *HttpClient) requestDecode(method string, url string, header http.Heade
 	return nil
 }
 
-func (hc *HttpClient) Request(method string, url string, header http.Header, queries map[string]string, body []byte) ([]byte, error) {
-	return hc.request(method, hc.baseUrl+url, header, queries, body)
+func (hc *HttpClient) Request(method string, url string, header http.Header, queries map[string]string, body []byte, opts ...RequestOption) ([]byte, error) {
+	return hc.request(method, hc.baseUrl+url, header, queries, body, opts...)
 }
 
-func (hc *HttpClient) RequestGet(url string, header http.Header, queries map[string]string) ([]byte, error) {
-	return hc.request(http.MethodGet, hc.baseUrl+url, header, queries, nil)
+func (hc *HttpClient) RequestGet(url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
+	return hc.request(http.MethodGet, hc.baseUrl+url, header, queries, nil, opts...)
 }
 
-func (hc *HttpClient) RequestPost(url string, header http.Header, body any) ([]byte, error) {
-	return hc.request(http.MethodPost, hc.baseUrl+url, header, nil, body)
+func (hc *HttpClient) RequestPost(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
+	return hc.request(http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
 }
 
-func (hc *HttpClient) RequestPut(url string, header http.Header, body any) ([]byte, error) {
-	return hc.request(http.MethodPut, hc.baseUrl+url, header, nil, body)
+func (hc *HttpClient) RequestPut(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
+	return hc.request(http.MethodPut, hc.baseUrl+url, header, nil, body, opts...)
 }
 
-func (hc *HttpClient) RequestDelete(url string, header http.Header, body any) ([]byte, error) {
-	return hc.request(http.MethodDelete, hc.baseUrl+url, header, nil, body)
+func (hc *HttpClient) RequestDelete(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
+	return hc.request(http.MethodDelete, hc.baseUrl+url, header, nil, body, opts...)
 }
 
-func (hc *HttpClient) RequestHead(url string, header http.Header) ([]byte, error) {
-	return hc.request(http.MethodHead, hc.baseUrl+url, header, nil, nil)
+func (hc *HttpClient) RequestHead(url string, header http.Header, opts ...RequestOption) ([]byte, error) {
+	return hc.request(http.MethodHead, hc.baseUrl+url, header, nil, nil, opts...)
 }
 
-func (hc *HttpClient) RequestDecode(method string, url string, header http.Header, body any, res any) error {
-	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res)
+func (hc *HttpClient) RequestDecode(method string, url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
 }
-func (hc *HttpClient) RequestGetDecode(url string, header http.Header, queries map[string]string, res any) error {
-	return hc.requestDecode(http.MethodGet, hc.baseUrl+url, header, queries, nil, res)
+func (hc *HttpClient) RequestGetDecode(url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
+	return hc.requestDecode(http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
 }
-func (hc *HttpClient) RequestPostDecode(url string, header http.Header, body any, res any) error {
-	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res)
+func (hc *HttpClient) RequestPostDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
-func (hc *HttpClient) RequestPostReader(url string, header http.Header, body io.Reader) ([]byte, error) {
-	return hc.request(http.MethodPost, hc.baseUrl+url, header, nil, body)
+func (hc *HttpClient) RequestPostReader(url string, header http.Header, body io.Reader, opts ...RequestOption) ([]byte, error) {
+	return hc.request(http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
 }
-func (hc *HttpClient) RequestPostDecodeReader(url string, header http.Header, body io.Reader, res any) error {
-	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res)
+func (hc *HttpClient) RequestPostDecodeReader(url string, header http.Header, body io.Reader, res any, opts ...RequestOption) error {
+	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
 func (hc *HttpClient) RequestPostFile(url string, header http.Header,

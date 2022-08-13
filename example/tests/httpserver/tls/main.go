@@ -13,8 +13,6 @@ import (
 	"net/http/httputil"
 	"strconv"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 var (
@@ -43,10 +41,10 @@ func init() {
 func main() {
 
 	// 라우터, gorilla mux를 쓴다
-	router := mux.NewRouter()
+	router := http.NewServeMux()
 
 	router.HandleFunc("/test/hello", HandleBasic)
-	router.HandleFunc("/test/echo", HandleEcho).Methods(http.MethodPost)
+	router.HandleFunc("/test/echo", HandleEcho)
 
 	tlsConf := &tls.Config{
 		// MinVersion: tls.VersionTLS12,
