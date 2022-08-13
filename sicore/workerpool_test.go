@@ -39,7 +39,7 @@ func (j *mySlowJob) Execute() (any, error) {
 func TestWorkerPool_Basic(t *testing.T) {
 
 	log.Println("start")
-
+	myjobCompleted = 0
 	p := sicore.NewWorkerPool(5, 128)
 	p.Start()
 
@@ -62,6 +62,7 @@ func TestWorkerPool_Basic(t *testing.T) {
 func TestWorkerPool_Ignore(t *testing.T) {
 
 	log.Println("start")
+	myjobCompleted = 0
 
 	p := sicore.NewWorkerPool(5, 128)
 	p.Start()
@@ -84,6 +85,7 @@ func TestWorkerPool_Ignore(t *testing.T) {
 func TestWorkerPool_ResultsAndErrors(t *testing.T) {
 
 	log.Println("start")
+	myjobCompleted = 0
 
 	p := sicore.NewWorkerPoolWithResultsAndErrors(5, 128)
 	p.Start()
