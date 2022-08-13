@@ -2,6 +2,7 @@ package sihttp
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -182,19 +183,19 @@ func (hc *HttpClient) request(method string, url string,
 	return respBody, nil
 }
 
-func (hc *HttpClient) requestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
+func (hc *HttpClient) requestDecode(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
 
 	var req *http.Request
 	var err error
 	if r, ok := body.(io.Reader); ok {
-		req, err = http.NewRequest(method, url, r)
+		req, err = http.NewRequestWithContext(ctx, method, url, r)
 	} else {
 		w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
 		defer sicore.PutWriterAndBuffer(w, buf)
 		if err := w.EncodeFlush(body); err != nil {
 			return err
 		}
-		req, err = http.NewRequest(method, url, buf)
+		req, err = http.NewRequestWithContext(ctx, method, url, buf)
 	}
 	if err != nil {
 		return err
@@ -248,21 +249,33 @@ func (hc *HttpClient) RequestHead(url string, header http.Header, opts ...Reques
 	return hc.request(http.MethodHead, hc.baseUrl+url, header, nil, nil, opts...)
 }
 
-func (hc *HttpClient) RequestDecode(method string, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
+func (hc *HttpClient) RequestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
+	return hc.RequestDecodeContext(context.Background(), http.MethodPost, hc.baseUrl+url, header, queries, body, res, opts...)
+}
+func (hc *HttpClient) RequestDecodeContext(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, method, hc.baseUrl+url, header, queries, body, res, opts...)
 }
 func (hc *HttpClient) RequestGetDecode(url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
-	return hc.requestDecode(http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
+	return hc.RequestGetDecodeContext(context.Background(), hc.baseUrl+url, header, queries, res, opts...)
+}
+func (hc *HttpClient) RequestGetDecodeContext(ctx context.Context, url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
 }
 func (hc *HttpClient) RequestPostDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
+	return hc.RequestPostDecodeContext(context.Background(), hc.baseUrl+url, header, body, res, opts...)
+}
+func (hc *HttpClient) RequestPostDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
 func (hc *HttpClient) RequestPostReader(url string, header http.Header, body io.Reader, opts ...RequestOption) ([]byte, error) {
 	return hc.request(http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
 }
 func (hc *HttpClient) RequestPostDecodeReader(url string, header http.Header, body io.Reader, res any, opts ...RequestOption) error {
-	return hc.requestDecode(http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
+	return hc.RequestPostDecodeReaderContext(context.Background(), hc.baseUrl+url, header, body, res, opts...)
+}
+func (hc *HttpClient) RequestPostDecodeReaderContext(ctx context.Context, url string, header http.Header, body io.Reader, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
 func (hc *HttpClient) RequestPostFile(url string, header http.Header,
