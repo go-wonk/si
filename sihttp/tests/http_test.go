@@ -24,7 +24,7 @@ func TestHttpClientDo(t *testing.T) {
 	}
 	siutils.AssertNotNilFail(t, client)
 
-	hc := sihttp.NewHttpClient(client)
+	hc := sihttp.NewClient(client)
 
 	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/test/hello", nil)
 	siutils.AssertNilFail(t, err)
@@ -200,7 +200,7 @@ func TestHttpClientRequestPostTls(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	data := "hey"
 	urls := []string{"http://127.0.0.1:8080/test/echo", "https://127.0.0.1:8081/test/echo"}
@@ -220,7 +220,7 @@ func TestHttpClientRequestGet(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client, sihttp.WithWriterOpt(sicore.SetJsonEncoder()))
+	client := sihttp.NewClient(client, sihttp.WithWriterOpt(sicore.SetJsonEncoder()))
 
 	url := "http://127.0.0.1:8080/test/hello"
 
@@ -240,7 +240,7 @@ func TestHttpClientRequestPost(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"
@@ -260,7 +260,7 @@ func TestHttpClientRequestPut(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"
@@ -280,7 +280,7 @@ func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client,
+	client := sihttp.NewClient(client,
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()))
 
@@ -307,7 +307,7 @@ func TestHttpClientRequestPostFileData(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	url := "http://127.0.0.1:8080/test/echo"
 
@@ -330,7 +330,7 @@ func TestHttpClientRequestPostReaderFile(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	url := "http://127.0.0.1:8080/test/file/upload"
 
@@ -369,7 +369,7 @@ func TestHttpClientRequestPostFile(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client,
+	client := sihttp.NewClient(client,
 		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmacKey", []byte("1234"))),
 	)
 
@@ -387,7 +387,7 @@ func TestHttpClientRequestGetWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client,
+	client := sihttp.NewClient(client,
 		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmac-hash", []byte("1234"))),
 	)
 
@@ -404,7 +404,7 @@ func TestHttpClientRequestPostWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client,
+	client := sihttp.NewClient(client,
 		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmac-hash", []byte("1234"))),
 	)
 
@@ -426,7 +426,7 @@ func TestHttpClientRequestPostJsonDecodedWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client,
+	client := sihttp.NewClient(client,
 		sihttp.WithRequestHeaderHmac256("hmacKey", []byte("1234")),
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()),
@@ -458,7 +458,7 @@ func TestHttpClientRequestPostJsonDecodedWithBearerToken(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client,
+	client := sihttp.NewClient(client,
 		sihttp.WithRequestOpt(sihttp.WithBearerToken("asdf")),
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()),

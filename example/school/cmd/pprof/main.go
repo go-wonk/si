@@ -32,7 +32,7 @@ var (
 	bookUsc      core.BookUsecase
 
 	defaultClient *http.Client
-	client        *sihttp.HttpClient
+	client        *sihttp.Client
 )
 
 func init() {
@@ -58,7 +58,7 @@ func main() {
 	defer db.Close()
 
 	defaultClient = sihttp.DefaultInsecureClient()
-	client = sihttp.NewHttpClient(defaultClient)
+	client = sihttp.NewClient(defaultClient)
 
 	txBeginner := adaptor.NewTxBeginner(db)
 	studentRepo := adaptor.NewPgStudentRepo(db)

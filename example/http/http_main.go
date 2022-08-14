@@ -28,7 +28,7 @@ func main() {
 		Transport: tr,
 	}
 
-	client := sihttp.NewHttpClient(c)
+	client := sihttp.NewClient(c)
 	res, err := client.RequestPost("http://127.0.0.1:8080/test/echo", nil, "hello")
 	if err != nil {
 		log.Fatal(err)
@@ -37,7 +37,7 @@ func main() {
 
 	fmt.Println(string(res))
 
-	client2 := sihttp.NewHttpClient(c,
+	client2 := sihttp.NewClient(c,
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()))
 	type Student struct {

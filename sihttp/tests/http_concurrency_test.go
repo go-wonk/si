@@ -35,7 +35,7 @@ import (
 // 	return nil
 // }
 
-func request(client *sihttp.HttpClient, method, url string, numRequests int, id int) error {
+func request(client *sihttp.Client, method, url string, numRequests int, id int) error {
 	var err error
 	for j := 0; j < numRequests; j++ {
 
@@ -87,7 +87,7 @@ func TestHttpClient_Concurrency_Request(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	numRoutines := 10
 	numRequests := 100

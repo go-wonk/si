@@ -89,44 +89,53 @@ func WithHeaderHmac256(key string, secret []byte) RequestOptionFunc {
 }
 
 type ClientOption interface {
-	apply(c *HttpClient) error
+	apply(c *Client) error
 }
 
-type ClientOptionFunc func(c *HttpClient) error
+type ClientOptionFunc func(c *Client) error
 
-func (o ClientOptionFunc) apply(c *HttpClient) error {
+func (o ClientOptionFunc) apply(c *Client) error {
 	return o(c)
 }
 
 func WithBaseUrl(baseUrl string) ClientOptionFunc {
-	return ClientOptionFunc(func(c *HttpClient) error {
+	return ClientOptionFunc(func(c *Client) error {
 		c.baseUrl = baseUrl
 		return nil
 	})
 }
+
+// WithDefaultHeaders set Client with defaultHeaders that will be set on every request
+func WithDefaultHeaders(defaultHeaders map[string]string) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) error {
+		c.defaultHeaders = defaultHeaders
+		return nil
+	})
+}
+
 func WithReaderOpt(opt sicore.ReaderOption) ClientOptionFunc {
-	return ClientOptionFunc(func(c *HttpClient) error {
+	return ClientOptionFunc(func(c *Client) error {
 		c.appendReaderOption(opt)
 		return nil
 	})
 }
 
 func WithWriterOpt(opt sicore.WriterOption) ClientOptionFunc {
-	return ClientOptionFunc(func(c *HttpClient) error {
+	return ClientOptionFunc(func(c *Client) error {
 		c.appendWriterOption(opt)
 		return nil
 	})
 }
 
 func WithRequestOpt(opt RequestOption) ClientOptionFunc {
-	return ClientOptionFunc(func(c *HttpClient) error {
+	return ClientOptionFunc(func(c *Client) error {
 		c.appendRequestOption(opt)
 		return nil
 	})
 }
 
 func WithRequestHeaderHmac256(key string, secret []byte) ClientOptionFunc {
-	return ClientOptionFunc(func(c *HttpClient) error {
+	return ClientOptionFunc(func(c *Client) error {
 		c.appendRequestOption(WithHeaderHmac256(key, secret))
 		return nil
 	})
