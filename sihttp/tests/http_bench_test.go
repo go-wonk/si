@@ -49,7 +49,7 @@ func BenchmarkHttpClient_DoRead(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := sihttp.NewHttpClient(client)
+	hc := sihttp.NewClient(client)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -73,7 +73,7 @@ func BenchmarkHttpClient_RequestGet(b *testing.B) {
 	}
 	siutils.AssertNotNilFailB(b, client)
 
-	hc := sihttp.NewHttpClient(client)
+	hc := sihttp.NewClient(client)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -211,7 +211,7 @@ func BenchmarkHttpClient_DefaultPost_WithPoolAndDoRead(b *testing.B) {
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -239,7 +239,7 @@ func BenchmarkHttpClient_RequestPost(b *testing.B) {
 		b.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewHttpClient(client)
+	client := sihttp.NewClient(client)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
