@@ -2,6 +2,7 @@ package sihttp_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -479,5 +480,30 @@ func TestHttpClientRequestPostJsonDecodedWithBearerToken(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 	// assert.EqualValues(t, sendData, string(respBody))
 	fmt.Println(res.String())
+
+}
+
+func TestWithBaseUrl(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewClient(client,
+		sihttp.WithBaseUrl("http://127.0.0.1:8080"),
+	)
+
+	url := "/test/echo"
+
+	student := testmodels.Student{
+		ID:           1,
+		Name:         "wonk",
+		EmailAddress: "wonk@wonk.org",
+	}
+	b, _ := json.Marshal(&student)
+	res, err := client.RequestPost(url, nil, b)
+	siutils.AssertNilFail(t, err)
+
+	expected := `{"id":1,"email_address":"wonk@wonk.org","name":"wonk","borrowed":false}`
+	assert.EqualValues(t, expected, string(res))
 
 }

@@ -45,6 +45,20 @@ m := []BoolTest{}
 _, err := sqldb.QueryStructs(query, &m)
 
 ```
+## Test
+Test flags include the following.
+- `ONLINE_TEST`
+- `LONG_TEST`
+
+```bash
+ONLINE_TEST=1 LONG_TEST=1 go test ./...
+ONLINE_TEST=1 go test -run SKIP -bench . -benchtime 100x -benchmem
+```
+
 ## Versions
+
+### v0.2.1
+- `sihttp`'s struct and interface name changed. 
 ### v0.1.1
 - `siwrap` package has been renamed to `sisql`.
+

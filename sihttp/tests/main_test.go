@@ -15,9 +15,7 @@ import (
 
 var (
 	onlinetest, _ = strconv.ParseBool(os.Getenv("ONLINE_TEST"))
-	// onlinetest, _ = strconv.ParseBool("1")
-	longtest, _ = strconv.ParseBool(os.Getenv("LONG_TEST"))
-	// longtest, _ = strconv.ParseBool("1")
+	longtest, _   = strconv.ParseBool(os.Getenv("LONG_TEST"))
 
 	client *http.Client
 )
@@ -54,9 +52,7 @@ func setup() error {
 }
 
 func shutdown() {
-	// if db != nil {
-	// 	db.Close()
-	// }
+	// do nothing yet
 }
 
 func TestMain(m *testing.M) {
