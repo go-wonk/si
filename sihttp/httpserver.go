@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 )
 
 type Server struct {
@@ -17,16 +16,16 @@ type Server struct {
 	key     string
 }
 
-func NewServer(tlsConfig *tls.Config,
-	addr string, writeTimeOutInSec int, readTimeOutInSec int,
+func NewServer(handler http.Handler, tlsConfig *tls.Config,
+	addr string, writeTimeout, readTimeout time.Duration,
 	pem string, key string) *Server {
 
-	return NewServerCors(tlsConfig, addr, writeTimeOutInSec, readTimeOutInSec, pem, key, nil, nil, nil)
+	return NewServerCors(tlsConfig, addr, writeTimeout, readTimeout, pem, key, nil, nil, nil)
 
 }
 
-func NewServerCors(tlsConfig *tls.Config,
-	addr string, writeTimeOutInSec int, readTimeOutInSec int,
+func NewServerCors(handler http.Handler, tlsConfig *tls.Config,
+	addr string, writeTimeout, readTimeout time.Duration,
 	pem string, key string,
 	allowedOrigins, allowedHeaders, allowedMethods []string) *Server {
 
@@ -36,22 +35,21 @@ func NewServerCors(tlsConfig *tls.Config,
 		Addr:         addr,
 		TLSConfig:    hs.TLSConf,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-		WriteTimeout: time.Duration(writeTimeOutInSec) * time.Second,
-		ReadTimeout:  time.Duration(readTimeOutInSec) * time.Second,
+		WriteTimeout: writeTimeout,
+		ReadTimeout:  readTimeout,
 	}
 	hs.pem = pem
 	hs.key = key
 
-	router := mux.NewRouter()
 	if len(allowedOrigins) == 0 && len(allowedHeaders) == 0 && len(allowedMethods) == 0 {
-		hs.Server.Handler = router
+		hs.Server.Handler = handler
 	} else {
 		corsOrigin := handlers.AllowedOrigins(allowedOrigins)
 		corsHeaders := handlers.AllowedHeaders(allowedHeaders)
 		corsMethods := handlers.AllowedMethods(allowedMethods)
 		// nr := handlers.CORS(corsOrigin, corsHeaders, corsMethods)(hs.Router)
 		cors := handlers.CORS(corsOrigin, corsHeaders, corsMethods)
-		corsHandler := cors(router)
+		corsHandler := cors(handler)
 
 		hs.Server.Handler = corsHandler
 	}
