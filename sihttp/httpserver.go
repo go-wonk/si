@@ -10,27 +10,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type HttpServer struct {
+type Server struct {
 	TLSConf *tls.Config
 	Server  *http.Server
 	pem     string
 	key     string
 }
 
-func NewHttpServer(tlsConfig *tls.Config,
+func NewServer(tlsConfig *tls.Config,
 	addr string, writeTimeOutInSec int, readTimeOutInSec int,
-	pem string, key string) *HttpServer {
+	pem string, key string) *Server {
 
-	return NewHttpServerCors(tlsConfig, addr, writeTimeOutInSec, readTimeOutInSec, pem, key, nil, nil, nil)
+	return NewServerCors(tlsConfig, addr, writeTimeOutInSec, readTimeOutInSec, pem, key, nil, nil, nil)
 
 }
 
-func NewHttpServerCors(tlsConfig *tls.Config,
+func NewServerCors(tlsConfig *tls.Config,
 	addr string, writeTimeOutInSec int, readTimeOutInSec int,
 	pem string, key string,
-	allowedOrigins, allowedHeaders, allowedMethods []string) *HttpServer {
+	allowedOrigins, allowedHeaders, allowedMethods []string) *Server {
 
-	var hs HttpServer
+	var hs Server
 	hs.TLSConf = tlsConfig
 	hs.Server = &http.Server{
 		Addr:         addr,
@@ -59,7 +59,7 @@ func NewHttpServerCors(tlsConfig *tls.Config,
 	return &hs
 }
 
-func (hs *HttpServer) Start() error {
+func (hs *Server) Start() error {
 	var err error
 	if len(hs.pem) > 0 || len(hs.key) > 0 {
 		err = hs.Server.ListenAndServeTLS(hs.pem, hs.key)
@@ -69,7 +69,7 @@ func (hs *HttpServer) Start() error {
 	return err
 }
 
-func (hs *HttpServer) Stop() error {
+func (hs *Server) Stop() error {
 	return hs.Server.Shutdown(context.Background())
 }
 
