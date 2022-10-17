@@ -20,7 +20,7 @@ func NewServer(handler http.Handler, tlsConfig *tls.Config,
 	addr string, writeTimeout, readTimeout time.Duration,
 	pem string, key string) *Server {
 
-	return NewServerCors(tlsConfig, addr, writeTimeout, readTimeout, pem, key, nil, nil, nil)
+	return NewServerCors(handler, tlsConfig, addr, writeTimeout, readTimeout, pem, key, nil, nil, nil)
 
 }
 
