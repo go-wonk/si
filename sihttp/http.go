@@ -226,10 +226,14 @@ func (hc *Client) requestDecode(ctx context.Context, method string, url string, 
 
 	statusCode, err := hc.DoDecode(req, res)
 	if err != nil {
+		if statusCode >= 400 || statusCode < 100 {
+			// TODO: should enable custom logic
+			return fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
+		}
 		return err
 	}
 
-	if statusCode >= 400 {
+	if statusCode >= 400 || statusCode < 100 {
 		// TODO: should enable custom logic
 		return fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
 	}
