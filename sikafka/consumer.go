@@ -85,12 +85,12 @@ func (cg *ConsumerGroup) Toggle() {
 	cg.toggleConsumptionFlow()
 }
 
-func (cg *ConsumerGroup) Start() {
+func (cg *ConsumerGroup) Start() error {
 	var ctx context.Context
 	ctx, cg.cancel = context.WithCancel(context.Background())
 
+	var startErr error = nil
 	var wg sync.WaitGroup
-
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -104,12 +104,14 @@ func (cg *ConsumerGroup) Start() {
 				for i := 0; i < 12; i++ {
 					time.Sleep(time.Second * 1)
 					if ctx.Err() != nil {
+						startErr = ctx.Err()
 						return
 					}
 				}
 			}
 			// check if context was cancelled, signaling that the consumer should stop
 			if ctx.Err() != nil {
+				startErr = ctx.Err()
 				return
 			}
 			// consumer.ready = make(chan bool)
@@ -142,8 +144,13 @@ func (cg *ConsumerGroup) Start() {
 	cg.cancel()
 	wg.Wait()
 	if err := cg.Close(); err != nil {
+		if startErr == nil {
+			startErr = err
+		}
 		log.Panicf("Error closing client: %v", err)
 	}
+
+	return startErr
 }
 
 func (cg *ConsumerGroup) Finish() error {
@@ -152,6 +159,10 @@ func (cg *ConsumerGroup) Finish() error {
 	}
 	cg.cancel()
 	return nil
+}
+
+func (cg *ConsumerGroup) Stop() error {
+	return cg.Finish()
 }
 
 // CgConsumer represents a Sarama consumer group consumer
