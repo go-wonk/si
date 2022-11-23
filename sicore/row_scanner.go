@@ -269,7 +269,7 @@ func (rs *RowScanner) ScanStructs(rows *sql.Rows, output any) (int, error) {
 	return n, nil
 }
 
-// ScanStructs scans `rows` into `output`. `output` should be a slice of structs.
+// ScanStruct scans `rows` into `output`. `output` is a struct.
 func (rs *RowScanner) ScanStruct(rows *sql.Rows, output any) error {
 	rv, err := valueOfAnyPtr(output)
 	if err != nil {
@@ -294,7 +294,6 @@ func (rs *RowScanner) ScanStruct(rows *sql.Rows, output any) error {
 		return err
 	}
 	if rows.Next() {
-
 		// scan the values
 		err = rows.Scan(dest...)
 		if err != nil {
@@ -303,6 +302,8 @@ func (rs *RowScanner) ScanStruct(rows *sql.Rows, output any) error {
 
 		// set values to the struct fields
 		setStructValues(rv, dest, columns, tagNameMap)
+	} else {
+		return sql.ErrNoRows
 	}
 
 	err = rows.Err()
