@@ -55,7 +55,7 @@ func (o *SqlTx) QueryRowContext(ctx context.Context, query string, args ...any) 
 	return o.tx.QueryRowContext(ctx, query, args...)
 }
 
-func (o *SqlTx) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+func (o *SqlTx) Query(query string, args ...any) (*sql.Rows, error) {
 	return o.tx.Query(query, args...)
 }
 
