@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net"
@@ -184,12 +183,12 @@ func (hc *Client) request(ctx context.Context, method string, url string,
 
 	respBody, statusCode, err := hc.DoRead(req)
 	if err != nil {
-		return nil, err
+		return respBody, NewSiHttpError(statusCode, err.Error())
 	}
 
-	if statusCode >= 400 {
+	if statusCode >= 400 || statusCode < 100 {
 		// TODO: should enable custom logic
-		return respBody, fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
+		return respBody, NewSiHttpError(statusCode, http.StatusText(statusCode))
 	}
 
 	return respBody, nil
@@ -226,16 +225,12 @@ func (hc *Client) requestDecode(ctx context.Context, method string, url string, 
 
 	statusCode, err := hc.DoDecode(req, res)
 	if err != nil {
-		if statusCode >= 400 || statusCode < 100 {
-			// TODO: should enable custom logic
-			return fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
-		}
-		return err
+		return NewSiHttpError(statusCode, err.Error())
 	}
 
 	if statusCode >= 400 || statusCode < 100 {
 		// TODO: should enable custom logic
-		return fmt.Errorf("%d %s", statusCode, http.StatusText(statusCode))
+		return NewSiHttpError(statusCode, http.StatusText(statusCode))
 	}
 
 	return nil
