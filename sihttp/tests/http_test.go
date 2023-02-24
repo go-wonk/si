@@ -208,7 +208,7 @@ func TestHttpClientRequestPostTls(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		sendData := fmt.Sprintf("%s-%d", data, i)
 
-		respBody, err := client.RequestPost(urls[i], nil, []byte(sendData))
+		respBody, err := client.Post(urls[i], nil, []byte(sendData))
 		siutils.AssertNilFail(t, err)
 
 		assert.EqualValues(t, sendData, string(respBody))
@@ -229,7 +229,7 @@ func TestHttpClientRequestGet(t *testing.T) {
 	queries["name"] = "wonk"
 	queries["kor"] = "길동"
 
-	respBody, err := client.RequestGet(url, nil, queries)
+	respBody, err := client.Get(url, nil, queries)
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, "hello", string(respBody))
@@ -248,7 +248,7 @@ func TestHttpClientRequestPost(t *testing.T) {
 
 	sendData := fmt.Sprintf("%s-%d", data, 0)
 
-	respBody, err := client.RequestPost(url, nil, []byte(sendData))
+	respBody, err := client.Post(url, nil, []byte(sendData))
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, sendData, string(respBody))
@@ -268,7 +268,7 @@ func TestHttpClientRequestPut(t *testing.T) {
 
 	sendData := fmt.Sprintf("%s-%d", data, 0)
 
-	respBody, err := client.RequestPut(url, nil, []byte(sendData))
+	respBody, err := client.Put(url, nil, []byte(sendData))
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, sendData, string(respBody))
@@ -293,10 +293,10 @@ func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
 		EmailAddress: "wonk@wonk.org",
 	}
 	res := testmodels.Student{}
-	err := client.RequestPostDecode(url, nil, &student, &res)
+	err := client.PostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 
-	err = client.RequestPostDecode(url, nil, &student, &res)
+	err = client.PostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 	// assert.EqualValues(t, sendData, string(respBody))
 	fmt.Println(res.String())
@@ -319,7 +319,7 @@ func TestHttpClientRequestPostFileData(t *testing.T) {
 	header := make(http.Header)
 	header["Content-Type"] = []string{"multipart/form-data"}
 
-	res, err := client.RequestPostReader(url, header, f)
+	res, err := client.PostReader(url, header, f)
 	siutils.AssertNilFail(t, err)
 
 	fmt.Println(string(res))
@@ -358,7 +358,7 @@ func TestHttpClientRequestPostReaderFile(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 
 	// res, err := client.RequestPostFile(url, header, buf)
-	res, err := client.RequestPostReader(url, header, buf)
+	res, err := client.PostReader(url, header, buf)
 	siutils.AssertNilFail(t, err)
 
 	fmt.Println(string(res))
@@ -376,7 +376,7 @@ func TestHttpClientRequestPostFile(t *testing.T) {
 
 	url := "http://127.0.0.1:8080/test/file/upload"
 
-	res, err := client.RequestPostFile(url, nil, nil, "file_to_upload", "./data/testfile.txt")
+	res, err := client.PostFile(url, nil, nil, "file_to_upload", "./data/testfile.txt")
 	siutils.AssertNilFail(t, err)
 
 	fmt.Println(string(res))
@@ -394,7 +394,7 @@ func TestHttpClientRequestGetWithHeaderHmac256(t *testing.T) {
 
 	url := "http://127.0.0.1:8080/test/hello"
 
-	respBody, err := client.RequestGet(url, nil, nil)
+	respBody, err := client.Get(url, nil, nil)
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, "hello", string(respBody))
@@ -414,7 +414,7 @@ func TestHttpClientRequestPostWithHeaderHmac256(t *testing.T) {
 
 	sendData := fmt.Sprintf("%s-%d", data, 0)
 
-	respBody, err := client.RequestPost(url, nil, []byte(sendData))
+	respBody, err := client.Post(url, nil, []byte(sendData))
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, sendData, string(respBody))
@@ -444,10 +444,10 @@ func TestHttpClientRequestPostJsonDecodedWithHeaderHmac256(t *testing.T) {
 		EmailAddress: "wonk@wonk.org",
 	}
 	res := testmodels.Student{}
-	err := client.RequestPostDecode(url, nil, &student, &res)
+	err := client.PostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 
-	err = client.RequestPostDecode(url, nil, &student, &res)
+	err = client.PostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 	// assert.EqualValues(t, sendData, string(respBody))
 	fmt.Println(res.String())
@@ -473,10 +473,10 @@ func TestHttpClientRequestPostJsonDecodedWithBearerToken(t *testing.T) {
 		EmailAddress: "wonk@wonk.org",
 	}
 	res := testmodels.Student{}
-	err := client.RequestPostDecode(url, nil, &student, &res)
+	err := client.PostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 
-	err = client.RequestPostDecode(url, nil, &student, &res)
+	err = client.PostDecode(url, nil, &student, &res)
 	siutils.AssertNilFail(t, err)
 	// assert.EqualValues(t, sendData, string(respBody))
 	fmt.Println(res.String())
@@ -500,7 +500,7 @@ func TestWithBaseUrl(t *testing.T) {
 		EmailAddress: "wonk@wonk.org",
 	}
 	b, _ := json.Marshal(&student)
-	res, err := client.RequestPost(url, nil, b)
+	res, err := client.Post(url, nil, b)
 	siutils.AssertNilFail(t, err)
 
 	expected := `{"id":1,"email_address":"wonk@wonk.org","name":"wonk","borrowed":false}`

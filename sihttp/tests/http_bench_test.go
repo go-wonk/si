@@ -79,7 +79,7 @@ func BenchmarkHttpClient_RequestGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		header := make(http.Header)
 		header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
-		body, err := hc.RequestGet("http://127.0.0.1:8080/test/hello", header, nil)
+		body, err := hc.Get("http://127.0.0.1:8080/test/hello", header, nil)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -253,7 +253,7 @@ func BenchmarkHttpClient_RequestPost(b *testing.B) {
 
 		header := make(http.Header)
 		header["custom_header"] = []string{headerData}
-		_, err := client.RequestPost(url, header, []byte(sendData))
+		_, err := client.Post(url, header, []byte(sendData))
 		siutils.AssertNilFailB(b, err)
 	}
 }
