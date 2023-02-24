@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/v2/sicore"
 )
 
 func Open(driverName string, dataSourceName string, opts ...SqlOption) (*SqlDB, error) {

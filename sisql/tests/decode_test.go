@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/tests/testmodels"
+	"github.com/go-wonk/si/v2/siutils"
+	"github.com/go-wonk/si/v2/tests/testmodels"
 	"github.com/mitchellh/mapstructure"
 )
 

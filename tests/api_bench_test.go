@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 func BenchmarkHttpHandlerReaderWriterTiny(b *testing.B) {

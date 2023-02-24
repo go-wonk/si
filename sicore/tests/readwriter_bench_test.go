@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 // func requestTcp(b *testing.B) {

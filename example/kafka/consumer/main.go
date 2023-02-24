@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"github.com/go-wonk/si/sikafka"
+	"github.com/go-wonk/si/v2/sikafka"
 )
 
 type testMessageHandler struct{}

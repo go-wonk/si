@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-wonk/si/sisql"
-	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/tests/testmodels"
+	"github.com/go-wonk/si/v2/sisql"
+	"github.com/go-wonk/si/v2/siutils"
+	"github.com/go-wonk/si/v2/tests/testmodels"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,7 +68,7 @@ Benchmark on json and mapstructure
 
 goos: windows
 goarch: amd64
-pkg: github.com/go-wonk/si/sisql/tests/sql_test
+pkg: github.com/go-wonk/si/v2/sisql/tests/sql_test
 cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
 BenchmarkSqlDB_QueryIntoAny_Struct-8                 100           1683737 ns/op            7236 B/op        151 allocs/op
 BenchmarkSqlDB_QueryIntoAny_Struct2-8                100           2903963 ns/op           11857 B/op        252 allocs/op
@@ -216,20 +216,20 @@ type Student struct {
 /*
 	goos: darwin
 	goarch: arm64
-	pkg: github.com/go-wonk/si/sisql/tests/sql_test
+	pkg: github.com/go-wonk/si/v2/sisql/tests/sql_test
 	BenchmarkSqlDB_QueryStructsStudent-8   	    1902	    647721 ns/op	    2642 B/op	      63 allocs/op
 	PASS
 
 	goos: windows
 	goarch: amd64
-	pkg: github.com/go-wonk/si/sisql/tests/sql_test
+	pkg: github.com/go-wonk/si/v2/sisql/tests/sql_test
 	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
 	BenchmarkSqlDB_QueryStructsStudent-8         100           8626656 ns/op          992037 B/op      31466 allocs/op
 	PASS
 
 	goos: windows
 	goarch: amd64
-	pkg: github.com/go-wonk/si/sisql/tests/sql_test
+	pkg: github.com/go-wonk/si/v2/sisql/tests/sql_test
 	cpu: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
 	BenchmarkSqlDB_QueryStructsStudent-8         100           7502967 ns/op          747775 B/op      25015 allocs/op
 	PASS

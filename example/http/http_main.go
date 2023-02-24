@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/sihttp"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/sihttp"
 )
 
 func main() {

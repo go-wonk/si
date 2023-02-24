@@ -3,7 +3,7 @@ package adaptor
 import (
 	"database/sql"
 
-	"github.com/go-wonk/si/example/school/core"
+	"github.com/go-wonk/si/v2/example/school/core"
 )
 
 type TxBeginner struct {

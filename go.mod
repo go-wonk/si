@@ -1,4 +1,4 @@
-module github.com/go-wonk/si
+module github.com/go-wonk/si/v2
 
 go 1.18
 

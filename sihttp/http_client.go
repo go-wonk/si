@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/v2/sicore"
 )
 
 // Client is a wrapper of http.Client

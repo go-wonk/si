@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-wonk/si/example/school/adaptor"
-	"github.com/go-wonk/si/example/school/core"
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/sihttp"
+	"github.com/go-wonk/si/v2/example/school/adaptor"
+	"github.com/go-wonk/si/v2/example/school/core"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/sihttp"
 	_ "github.com/lib/pq"
 )
 

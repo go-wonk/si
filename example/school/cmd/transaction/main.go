@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/go-wonk/si/example/school/adaptor"
-	"github.com/go-wonk/si/example/school/core"
+	"github.com/go-wonk/si/v2/example/school/adaptor"
+	"github.com/go-wonk/si/v2/example/school/core"
 	_ "github.com/lib/pq"
 )
 
