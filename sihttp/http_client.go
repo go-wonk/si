@@ -83,12 +83,24 @@ func (hc *Client) Request(method string, url string, header http.Header, queries
 func (hc *Client) RequestContext(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body []byte, opts ...RequestOption) ([]byte, error) {
 	return hc.request(ctx, method, hc.baseUrl+url, header, queries, body, opts...)
 }
+func (hc *Client) RequestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
+	return hc.RequestDecodeContext(context.Background(), http.MethodPost, url, header, queries, body, res, opts...)
+}
+func (hc *Client) RequestDecodeContext(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, method, hc.baseUrl+url, header, queries, body, res, opts...)
+}
 
 func (hc *Client) Get(url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
 	return hc.GetContext(context.Background(), url, header, queries, opts...)
 }
 func (hc *Client) GetContext(ctx context.Context, url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
 	return hc.request(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, opts...)
+}
+func (hc *Client) GetDecode(url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
+	return hc.GetDecodeContext(context.Background(), url, header, queries, res, opts...)
+}
+func (hc *Client) GetDecodeContext(ctx context.Context, url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
 }
 
 func (hc *Client) Post(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
@@ -97,12 +109,24 @@ func (hc *Client) Post(url string, header http.Header, body any, opts ...Request
 func (hc *Client) PostContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.request(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
 }
+func (hc *Client) PostDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.PostDecodeContext(context.Background(), url, header, body, res, opts...)
+}
+func (hc *Client) PostDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
+}
 
 func (hc *Client) Put(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.PutContext(context.Background(), url, header, body, opts...)
 }
 func (hc *Client) PutContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.request(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, opts...)
+}
+func (hc *Client) PutDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.PutDecodeContext(context.Background(), url, header, body, res, opts...)
+}
+func (hc *Client) PutDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.requestDecode(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
 func (hc *Client) Delete(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
@@ -111,47 +135,6 @@ func (hc *Client) Delete(url string, header http.Header, body any, opts ...Reque
 func (hc *Client) DeleteContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.request(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, opts...)
 }
-
-func (hc *Client) Head(url string, header http.Header, opts ...RequestOption) ([]byte, error) {
-	return hc.HeadContext(context.Background(), url, header, opts...)
-}
-func (hc *Client) HeadContext(ctx context.Context, url string, header http.Header, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodHead, hc.baseUrl+url, header, nil, nil, opts...)
-}
-
-func (hc *Client) PostReader(url string, header http.Header, body io.Reader, opts ...RequestOption) ([]byte, error) {
-	return hc.PostReaderContext(context.Background(), url, header, body, opts...)
-}
-func (hc *Client) PostReaderContext(ctx context.Context, url string, header http.Header, body io.Reader, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
-}
-
-func (hc *Client) RequestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
-	return hc.RequestDecodeContext(context.Background(), http.MethodPost, url, header, queries, body, res, opts...)
-}
-func (hc *Client) RequestDecodeContext(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, method, hc.baseUrl+url, header, queries, body, res, opts...)
-}
-func (hc *Client) GetDecode(url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
-	return hc.GetDecodeContext(context.Background(), url, header, queries, res, opts...)
-}
-func (hc *Client) GetDecodeContext(ctx context.Context, url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
-}
-func (hc *Client) PostDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.PostDecodeContext(context.Background(), url, header, body, res, opts...)
-}
-func (hc *Client) PostDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
-}
-
-func (hc *Client) PutDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.PutDecodeContext(context.Background(), url, header, body, res, opts...)
-}
-func (hc *Client) PutDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, res, opts...)
-}
-
 func (hc *Client) DeleteDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.DeleteDecodeContext(context.Background(), url, header, body, res, opts...)
 }
@@ -159,18 +142,17 @@ func (hc *Client) DeleteDecodeContext(ctx context.Context, url string, header ht
 	return hc.requestDecode(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
+func (hc *Client) Head(url string, header http.Header, opts ...RequestOption) ([]byte, error) {
+	return hc.HeadContext(context.Background(), url, header, opts...)
+}
+func (hc *Client) HeadContext(ctx context.Context, url string, header http.Header, opts ...RequestOption) ([]byte, error) {
+	return hc.request(ctx, http.MethodHead, hc.baseUrl+url, header, nil, nil, opts...)
+}
 func (hc *Client) HeadDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.HeadDecodeContext(context.Background(), url, header, body, res, opts...)
 }
 func (hc *Client) HeadDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.requestDecode(ctx, http.MethodHead, hc.baseUrl+url, header, nil, body, res, opts...)
-}
-
-func (hc *Client) PostDecodeReader(url string, header http.Header, body io.Reader, res any, opts ...RequestOption) error {
-	return hc.PostDecodeReaderContext(context.Background(), url, header, body, res, opts...)
-}
-func (hc *Client) PostDecodeReaderContext(ctx context.Context, url string, header http.Header, body io.Reader, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
 }
 
 func (hc *Client) PostFile(url string, header http.Header,

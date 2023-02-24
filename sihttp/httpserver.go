@@ -17,13 +17,19 @@ type Server struct {
 }
 
 func NewServer(handler http.Handler, tlsConfig *tls.Config,
+	addr string, writeTimeout, readTimeout time.Duration) *Server {
+
+	return NewServerCors(handler, tlsConfig, addr, writeTimeout, readTimeout, "", "", nil, nil, nil)
+
+}
+
+func NewServerTls(handler http.Handler, tlsConfig *tls.Config,
 	addr string, writeTimeout, readTimeout time.Duration,
 	pem string, key string) *Server {
 
 	return NewServerCors(handler, tlsConfig, addr, writeTimeout, readTimeout, pem, key, nil, nil, nil)
 
 }
-
 func NewServerCors(handler http.Handler, tlsConfig *tls.Config,
 	addr string, writeTimeout, readTimeout time.Duration,
 	pem string, key string,

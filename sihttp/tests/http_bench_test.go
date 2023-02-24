@@ -19,7 +19,7 @@ func BenchmarkHttpClient_DefaultGet(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -29,7 +29,7 @@ func BenchmarkHttpClient_DefaultGet(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		resp, err := client.Do(request)
+		resp, err := standardClient.Do(request)
 		siutils.AssertNilFailB(b, err)
 
 		body, err := io.ReadAll(resp.Body)
@@ -47,9 +47,9 @@ func BenchmarkHttpClient_DoRead(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
-	hc := sihttp.NewClient(client)
+	hc := sihttp.NewClient(standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -71,9 +71,9 @@ func BenchmarkHttpClient_RequestGet(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
-	hc := sihttp.NewClient(client)
+	hc := sihttp.NewClient(standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -120,7 +120,7 @@ func BenchmarkReuseRequestPost(b *testing.B) {
 		req.Header.Set("custom_header", headerData)
 		// req.URL.RawQuery = "bar=foo"
 
-		resp, err := client.Do(req)
+		resp, err := standardClient.Do(req)
 		if err != nil {
 			b.FailNow()
 		}
@@ -140,7 +140,7 @@ func BenchmarkHttpClient_DefaultPost(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
@@ -156,7 +156,7 @@ func BenchmarkHttpClient_DefaultPost(b *testing.B) {
 
 		request.Header.Set("custom_header", headerData)
 
-		resp, err := client.Do(request)
+		resp, err := standardClient.Do(request)
 		siutils.AssertNilFailB(b, err)
 
 		_, err = io.ReadAll(resp.Body)
@@ -172,7 +172,7 @@ func BenchmarkHttpClient_DefaultPost_WithPool(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
@@ -189,7 +189,7 @@ func BenchmarkHttpClient_DefaultPost_WithPool(b *testing.B) {
 
 		request.Header.Set("custom_header", headerData)
 
-		resp, err := client.Do(request)
+		resp, err := standardClient.Do(request)
 		siutils.AssertNilFailB(b, err)
 
 		_, err = io.ReadAll(resp.Body)
@@ -206,12 +206,12 @@ func BenchmarkHttpClient_DefaultPost_WithPoolAndDoRead(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -239,7 +239,7 @@ func BenchmarkHttpClient_RequestPost(b *testing.B) {
 		b.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl

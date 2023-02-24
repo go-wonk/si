@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -19,15 +20,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHttpClientDo(t *testing.T) {
+func Test_Client_Do(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFail(t, client)
+	siutils.AssertNotNilFail(t, standardClient)
 
-	hc := sihttp.NewClient(client)
+	hc := sihttp.NewClient(standardClient)
 
-	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/test/hello", nil)
+	request, err := http.NewRequest(http.MethodGet, remoteAddr+"/test/hello", nil)
 	siutils.AssertNilFail(t, err)
 
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
@@ -40,6 +41,67 @@ func TestHttpClientDo(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 
 	assert.EqualValues(t, "hello", string(b))
+}
+
+func Test_Client_Post(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewClient(standardClient)
+
+	data := "hey"
+	url := remoteAddr + "/test/echo"
+
+	sendData := fmt.Sprintf("%s-%d", data, 0)
+
+	respBody, err := client.Post(url, nil, []byte(sendData))
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(string(respBody))
+}
+
+func Test_Client_Post_inputReader(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewClient(standardClient)
+
+	data := "hey"
+	url := remoteAddr + "/test/echo"
+
+	sendData := fmt.Sprintf("%s-%d", data, 0)
+
+	respBody, err := client.Post(url, nil, strings.NewReader(sendData))
+	siutils.AssertNilFail(t, err)
+
+	assert.EqualValues(t, sendData, string(respBody))
+	fmt.Println(string(respBody))
+}
+
+func Test_Client_Post_fileData(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+
+	client := sihttp.NewClient(standardClient)
+
+	url := remoteAddr + "/test/echo"
+
+	f, err := os.OpenFile("./data/testfile.txt", os.O_RDONLY, 0777)
+	siutils.AssertNilFail(t, err)
+	defer f.Close()
+
+	header := make(http.Header)
+	header["Content-Type"] = []string{"multipart/form-data"}
+
+	res, err := client.Post(url, header, f)
+	siutils.AssertNilFail(t, err)
+
+	fmt.Println(string(res))
+
 }
 
 func TestCheckRequestState(t *testing.T) {
@@ -60,7 +122,7 @@ func TestCheckRequestState(t *testing.T) {
 
 	sendData := fmt.Sprintf("%s-%d", data, 0)
 	rw.WriteFlush([]byte(sendData))
-	resp, err := client.Do(req)
+	resp, err := standardClient.Do(req)
 	siutils.AssertNilFail(t, err)
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -97,7 +159,7 @@ func TestReuseRequest(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		sendData := fmt.Sprintf("%s-%d", data, i)
 		rw.WriteFlush([]byte(sendData))
-		resp, err := client.Do(req)
+		resp, err := standardClient.Do(req)
 		siutils.AssertNilFail(t, err)
 
 		respBody, err := io.ReadAll(resp.Body)
@@ -135,7 +197,7 @@ func TestReuseRequestInGoroutinePanic(t *testing.T) {
 				req.Header.Set("custom_header", sendData)
 
 				rw.WriteFlush([]byte(sendData))
-				resp, err := client.Do(req)
+				resp, err := standardClient.Do(req)
 				siutils.AssertNilFail(t, err)
 
 				respBody, err := io.ReadAll(resp.Body)
@@ -177,7 +239,7 @@ func TestReuseRequestInGoroutine(t *testing.T) {
 				req.Header.Set("custom_header", sendData)
 
 				rw.WriteFlush([]byte(sendData))
-				resp, err := client.Do(req)
+				resp, err := standardClient.Do(req)
 				siutils.AssertNilFail(t, err)
 
 				respBody, err := io.ReadAll(resp.Body)
@@ -201,7 +263,7 @@ func TestHttpClientRequestPostTls(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	data := "hey"
 	urls := []string{"http://127.0.0.1:8080/test/echo", "https://127.0.0.1:8081/test/echo"}
@@ -221,7 +283,7 @@ func TestHttpClientRequestGet(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client, sihttp.WithWriterOpt(sicore.SetJsonEncoder()))
+	client := sihttp.NewClient(standardClient, sihttp.WithWriterOpt(sicore.SetJsonEncoder()))
 
 	url := "http://127.0.0.1:8080/test/hello"
 
@@ -241,7 +303,7 @@ func TestHttpClientRequestPost(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"
@@ -261,7 +323,7 @@ func TestHttpClientRequestPut(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	data := "hey"
 	url := "http://127.0.0.1:8080/test/echo"
@@ -281,7 +343,7 @@ func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()))
 
@@ -303,35 +365,12 @@ func TestHttpClientRequestPostJsonDecoded(t *testing.T) {
 
 }
 
-func TestHttpClientRequestPostFileData(t *testing.T) {
-	if !onlinetest {
-		t.Skip("skipping online tests")
-	}
-
-	client := sihttp.NewClient(client)
-
-	url := "http://127.0.0.1:8080/test/echo"
-
-	f, err := os.OpenFile("./data/testfile.txt", os.O_RDONLY, 0777)
-	siutils.AssertNilFail(t, err)
-	defer f.Close()
-
-	header := make(http.Header)
-	header["Content-Type"] = []string{"multipart/form-data"}
-
-	res, err := client.PostReader(url, header, f)
-	siutils.AssertNilFail(t, err)
-
-	fmt.Println(string(res))
-
-}
-
 func TestHttpClientRequestPostReaderFile(t *testing.T) {
 	if !onlinetest {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	url := "http://127.0.0.1:8080/test/file/upload"
 
@@ -358,7 +397,7 @@ func TestHttpClientRequestPostReaderFile(t *testing.T) {
 	siutils.AssertNilFail(t, err)
 
 	// res, err := client.RequestPostFile(url, header, buf)
-	res, err := client.PostReader(url, header, buf)
+	res, err := client.Post(url, header, buf)
 	siutils.AssertNilFail(t, err)
 
 	fmt.Println(string(res))
@@ -370,7 +409,7 @@ func TestHttpClientRequestPostFile(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmacKey", []byte("1234"))),
 	)
 
@@ -388,7 +427,7 @@ func TestHttpClientRequestGetWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmac-hash", []byte("1234"))),
 	)
 
@@ -405,7 +444,7 @@ func TestHttpClientRequestPostWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithRequestOpt(sihttp.WithHeaderHmac256("hmac-hash", []byte("1234"))),
 	)
 
@@ -427,7 +466,7 @@ func TestHttpClientRequestPostJsonDecodedWithHeaderHmac256(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithRequestHeaderHmac256("hmacKey", []byte("1234")),
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()),
@@ -459,7 +498,7 @@ func TestHttpClientRequestPostJsonDecodedWithBearerToken(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithRequestOpt(sihttp.WithBearerToken("asdf")),
 		sihttp.WithWriterOpt(sicore.SetJsonEncoder()),
 		sihttp.WithReaderOpt(sicore.SetJsonDecoder()),
@@ -488,7 +527,7 @@ func TestWithBaseUrl(t *testing.T) {
 		t.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client,
+	client := sihttp.NewClient(standardClient,
 		sihttp.WithBaseUrl("http://127.0.0.1:8080"),
 	)
 
