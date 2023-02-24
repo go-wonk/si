@@ -87,7 +87,7 @@ func TestHttpClient_Concurrency_Request(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	numRoutines := 10
 	numRequests := 100
