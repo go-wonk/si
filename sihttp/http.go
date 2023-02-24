@@ -3,45 +3,13 @@ package sihttp
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"io"
 	"mime/multipart"
-	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-wonk/si/sicore"
 )
-
-// DefaultInsecureClient instantiate http.Client with InsecureSkipVerify set to true
-func DefaultInsecureClient() *http.Client {
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	return DefaultClient(tlsConfig)
-}
-
-// DefaultClient instantiate http.Client with input parameter `tlsConfig`
-func DefaultClient(tlsConfig *tls.Config) *http.Client {
-
-	dialer := &net.Dialer{Timeout: 3 * time.Second}
-
-	tr := &http.Transport{
-		MaxIdleConns:       50,
-		IdleConnTimeout:    time.Duration(15) * time.Second,
-		DisableCompression: false,
-		TLSClientConfig:    tlsConfig,
-		DisableKeepAlives:  false,
-		Dial:               dialer.Dial,
-	}
-
-	client := &http.Client{
-		Timeout:   time.Duration(15) * time.Second,
-		Transport: tr,
-	}
-	return client
-}
 
 // Client is a wrapper of http.Client
 type Client struct {

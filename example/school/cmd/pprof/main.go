@@ -57,7 +57,7 @@ func main() {
 	}
 	defer db.Close()
 
-	defaultClient = sihttp.DefaultInsecureClient()
+	defaultClient = sihttp.DefaultInsecureStandardClient()
 	client = sihttp.NewClient(defaultClient)
 
 	txBeginner := adaptor.NewTxBeginner(db)
