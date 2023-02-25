@@ -23,3 +23,16 @@ func (e Error) Error() string {
 	}
 	return fmt.Sprintf("status: %s, body: %s", e.Response.Status, e.Body)
 }
+
+func (e Error) GetStatusCode() int {
+	if e.Response != nil {
+		return e.Response.StatusCode
+	}
+	return http.StatusInternalServerError
+}
+func (e Error) GetStatus() string {
+	if e.Response != nil {
+		return e.Response.Status
+	}
+	return http.StatusText(http.StatusInternalServerError)
+}
