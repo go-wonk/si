@@ -1,6 +1,7 @@
 package sihttp
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 )
@@ -18,10 +19,20 @@ type Error struct {
 // }
 
 func (e Error) Error() string {
+	msg := bytes.Buffer{}
 	if e.Response == nil {
-		return "status: unknown"
+		msg.WriteString("status: unknown")
+	} else {
+		msg.WriteString(fmt.Sprintf("status: %s", e.Response.Status))
 	}
-	return fmt.Sprintf("status: %s, body: %s", e.Response.Status, e.Body)
+
+	if e.Body != nil {
+		if msg.Len() > 0 {
+			msg.WriteString(", ")
+		}
+		msg.WriteString(fmt.Sprintf("body: %s", e.Body))
+	}
+	return msg.String()
 }
 
 func (e Error) GetStatusCode() int {
