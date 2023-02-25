@@ -1,19 +1,25 @@
 package sihttp
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
-type SiHttpError struct {
-	Status  int
-	Message string
+type Error struct {
+	Response *http.Response
+	Body     []byte
 }
 
-func NewSiHttpError(status int, message string) *SiHttpError {
-	return &SiHttpError{
-		Status:  status,
-		Message: message,
+// func NewError(status int, message string) *Error {
+// 	return &Error{
+// 		Status:  status,
+// 		Message: message,
+// 	}
+// }
+
+func (e Error) Error() string {
+	if e.Response == nil {
+		return "status: unknown"
 	}
-}
-
-func (e SiHttpError) Error() string {
-	return fmt.Sprintf("status: %d, message: %s", e.Status, e.Message)
+	return fmt.Sprintf("status: %s, body: %s", e.Response.Status, e.Body)
 }

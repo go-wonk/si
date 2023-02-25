@@ -59,7 +59,7 @@ func BenchmarkHttpClient_DoRead(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, _, err := hc.DoRead(request)
+		body, err := hc.DoRead(request)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -225,7 +225,7 @@ func BenchmarkHttpClient_DefaultPost_WithPoolAndDoRead(b *testing.B) {
 
 		request.Header.Set("custom_header", headerData)
 
-		_, _, err = client.DoRead(request)
+		_, err = client.DoRead(request)
 		siutils.AssertNilFailB(b, err)
 
 		sicore.PutBytesReader(buf)
