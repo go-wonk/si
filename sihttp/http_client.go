@@ -45,36 +45,54 @@ func (hc *Client) Do(request *http.Request) (*http.Response, error) {
 }
 
 // DoRead sends Do request and read all data from response.Body
-func (hc *Client) DoRead(request *http.Request) ([]byte, int, error) {
+func (hc *Client) DoRead(request *http.Request) ([]byte, error) {
 	resp, err := hc.Do(request)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	defer resp.Body.Close()
 
 	r := sicore.GetReader(resp.Body)
 	defer sicore.PutReader(r)
 
 	b, err := r.ReadAll()
-	return b, resp.StatusCode, err
+	resp.Body.Close()
+	if err != nil {
+		return nil, &Error{
+			Response: resp,
+			Body:     b,
+		}
+	}
+	if code := resp.StatusCode; code < 100 || code > 399 {
+		return nil, &Error{
+			Response: resp,
+			Body:     b,
+		}
+	}
+	return b, nil
 }
 
 // DoDecode sends Do request and decode response.Body
-func (hc *Client) DoDecode(request *http.Request, res any) (int, error) {
+func (hc *Client) DoDecode(request *http.Request, res any) error {
 	resp, err := hc.Do(request)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	defer resp.Body.Close()
 
-	r := sicore.GetReader(resp.Body, hc.readerOpts...)
+	bb := sicore.GetBytesBuffer(nil)
+	tr := io.TeeReader(resp.Body, bb)
+	r := sicore.GetReader(tr, hc.readerOpts...)
 	defer sicore.PutReader(r)
 
-	if err = r.Decode(res); err != nil {
-		return resp.StatusCode, err
+	err = r.Decode(res)
+	resp.Body.Close()
+	if err != nil {
+		return &Error{
+			Response: resp,
+			Body:     bb.Bytes(),
+		}
 	}
 
-	return resp.StatusCode, nil
+	return nil
 }
 
 func (hc *Client) Request(method string, url string, header http.Header, queries map[string]string, body []byte, opts ...RequestOption) ([]byte, error) {
@@ -255,14 +273,9 @@ func (hc *Client) request(ctx context.Context, method string, url string,
 		v.apply(req)
 	}
 
-	respBody, statusCode, err := hc.DoRead(req)
+	respBody, err := hc.DoRead(req)
 	if err != nil {
-		return respBody, NewSiHttpError(statusCode, err.Error())
-	}
-
-	if statusCode >= 400 || statusCode < 100 {
-		// TODO: should enable custom logic
-		return respBody, NewSiHttpError(statusCode, http.StatusText(statusCode))
+		return nil, err
 	}
 
 	return respBody, nil
@@ -297,14 +310,9 @@ func (hc *Client) requestDecode(ctx context.Context, method string, url string, 
 		v.apply(req)
 	}
 
-	statusCode, err := hc.DoDecode(req, res)
+	err = hc.DoDecode(req, res)
 	if err != nil {
-		return NewSiHttpError(statusCode, err.Error())
-	}
-
-	if statusCode >= 400 || statusCode < 100 {
-		// TODO: should enable custom logic
-		return NewSiHttpError(statusCode, http.StatusText(statusCode))
+		return err
 	}
 
 	return nil
