@@ -35,15 +35,15 @@ func (e Error) Error() string {
 	return msg.String()
 }
 
-func (e Error) GetStatusCode() int {
+func (e Error) GetStatusCode(defaultStatusCode int) int {
 	if e.Response != nil {
 		return e.Response.StatusCode
 	}
-	return http.StatusInternalServerError
+	return defaultStatusCode
 }
-func (e Error) GetStatus() string {
+func (e Error) GetStatus(defaultStatusCode int) string {
 	if e.Response != nil {
 		return e.Response.Status
 	}
-	return http.StatusText(http.StatusInternalServerError)
+	return http.StatusText(defaultStatusCode)
 }
