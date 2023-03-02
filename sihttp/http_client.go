@@ -92,6 +92,13 @@ func (hc *Client) DoDecode(request *http.Request, res any) error {
 		}
 	}
 
+	if code := resp.StatusCode; code < 100 || code > 399 {
+		return &Error{
+			Response: resp,
+			Body:     bb.Bytes(),
+		}
+	}
+
 	return nil
 }
 
