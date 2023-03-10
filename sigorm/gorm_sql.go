@@ -28,7 +28,7 @@ func OpenMysql(db *sql.DB) (*gorm.DB, error) {
 	return Open(d, &gorm.Config{})
 }
 func OpenMysqlWithConfig(db *sql.DB, config *gorm.Config) (*gorm.DB, error) {
-	d := NewPostgresDialector(postgres.Config{Conn: db})
+	d := NewMysqlDialector(mysql.Config{Conn: db})
 	return Open(d, config)
 }
 func NewMysqlDialector(config mysql.Config) gorm.Dialector {
