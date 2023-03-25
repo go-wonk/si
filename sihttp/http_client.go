@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/go-wonk/si/v2/sicore"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 // Client is a wrapper of http.Client
@@ -42,7 +41,8 @@ func NewClient(client *http.Client, opts ...ClientOption) *Client {
 func (hc *Client) Do(request *http.Request) (*http.Response, error) {
 	hc.setDefaultHeader(request)
 
-	return ctxhttp.Do(request.Context(), hc.client, request)
+	// return ctxhttp.Do(request.Context(), hc.client, request)
+	return hc.client.Do(request)
 }
 
 // DoRead sends Do request and read all data from response.Body
