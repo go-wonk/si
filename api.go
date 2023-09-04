@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/v2/sicore"
 )
 
 // ReadAll reads from r until EOF.

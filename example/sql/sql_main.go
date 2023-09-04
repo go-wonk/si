@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/go-wonk/si/sisql"
+	"github.com/go-wonk/si/v2/sisql"
 	_ "github.com/lib/pq"
 )
 

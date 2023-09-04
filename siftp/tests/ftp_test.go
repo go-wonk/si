@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-wonk/si/siftp"
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/siftp"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 func TestRead(t *testing.T) {

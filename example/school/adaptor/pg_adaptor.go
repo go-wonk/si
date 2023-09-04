@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-wonk/si/example/school/core"
-	"github.com/go-wonk/si/sisql"
+	"github.com/go-wonk/si/v2/example/school/core"
+	"github.com/go-wonk/si/v2/sisql"
 )
 
 type pgStudentRepo struct {

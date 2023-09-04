@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-wonk/si/sihttp"
+	"github.com/go-wonk/si/v2/sihttp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -87,7 +87,7 @@ func TestHttpClient_Concurrency_Request(t *testing.T) {
 		t.Skip("skipping long tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	numRoutines := 10
 	numRequests := 100

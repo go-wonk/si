@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-wonk/si"
-	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/v2"
+	"github.com/go-wonk/si/v2/sicore"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )

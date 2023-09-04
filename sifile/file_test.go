@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 func TestNewFile(t *testing.T) {

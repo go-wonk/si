@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 func TestNilFail(t *testing.T) {

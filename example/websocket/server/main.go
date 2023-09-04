@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-wonk/si/siwebsocket"
+	"github.com/go-wonk/si/v2/siwebsocket"
 	"github.com/gorilla/websocket"
 )
 

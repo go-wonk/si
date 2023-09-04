@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-wonk/si/example/school/adaptor"
-	"github.com/go-wonk/si/example/school/core"
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/sihttp"
+	"github.com/go-wonk/si/v2/example/school/adaptor"
+	"github.com/go-wonk/si/v2/example/school/core"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/sihttp"
 	_ "github.com/lib/pq"
 )
 
@@ -57,7 +57,7 @@ func main() {
 	}
 	defer db.Close()
 
-	defaultClient = sihttp.DefaultInsecureClient()
+	defaultClient = sihttp.DefaultInsecureStandardClient()
 	client = sihttp.NewClient(defaultClient)
 
 	txBeginner := adaptor.NewTxBeginner(db)
@@ -250,7 +250,7 @@ func HandlerSendFile(w http.ResponseWriter, req *http.Request) {
 	for i, name := range fileNames {
 		params := make(map[string]string)
 		params["id"] = strconv.Itoa(i)
-		_, err := client.RequestPostFile("http://127.0.0.1:8080/test/file/upload", nil, params, "file_to_upload", "./data/"+name)
+		_, err := client.PostFile("http://127.0.0.1:8080/test/file/upload", nil, params, "file_to_upload", "./data/"+name)
 		if err != nil {
 			fmt.Println(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -266,7 +266,7 @@ func HandlerRepeatSendFile(w http.ResponseWriter, req *http.Request) {
 		for i, name := range fileNames {
 			params := make(map[string]string)
 			params["id"] = strconv.Itoa(i)
-			_, err := client.RequestPostFile("http://127.0.0.1:8080/test/file/upload", nil, params, "file_to_upload", "./data/"+name)
+			_, err := client.PostFile("http://127.0.0.1:8080/test/file/upload", nil, params, "file_to_upload", "./data/"+name)
 			if err != nil {
 				fmt.Println(err)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

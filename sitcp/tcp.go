@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/v2/sicore"
 )
 
 // DialTimeout is a wrapper of net.DialTimeout.

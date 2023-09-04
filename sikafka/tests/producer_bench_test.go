@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/go-wonk/si/sikafka"
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/sikafka"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 func BenchmarkSyncProducer_Produce(b *testing.B) {

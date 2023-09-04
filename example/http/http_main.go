@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/sihttp"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/sihttp"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	client := sihttp.NewClient(c)
-	res, err := client.RequestPost("http://127.0.0.1:8080/test/echo", nil, "hello")
+	res, err := client.Post("http://127.0.0.1:8080/test/echo", nil, "hello")
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -53,7 +53,7 @@ func main() {
 		Name:         "wonk",
 		Borrowed:     true,
 	}
-	res, err = client2.RequestPost("http://127.0.0.1:8080/test/echo", nil, &s)
+	res, err = client2.Post("http://127.0.0.1:8080/test/echo", nil, &s)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -61,7 +61,7 @@ func main() {
 	fmt.Println(string(res))
 
 	var resStudent Student
-	err = client2.RequestPostDecode("http://127.0.0.1:8080/test/echo", nil, &s, &resStudent)
+	err = client2.PostDecode("http://127.0.0.1:8080/test/echo", nil, &s, &resStudent)
 	if err != nil {
 		log.Fatal(err)
 		return

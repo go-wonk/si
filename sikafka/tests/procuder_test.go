@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-wonk/si/sikafka"
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/sikafka"
+	"github.com/go-wonk/si/v2/siutils"
 )
 
 func TestProducer_Produce(t *testing.T) {

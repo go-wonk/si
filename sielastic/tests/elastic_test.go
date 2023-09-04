@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-wonk/si/sielastic"
-	"github.com/go-wonk/si/siutils"
-	"github.com/go-wonk/si/tests/testmodels"
+	"github.com/go-wonk/si/v2/sielastic"
+	"github.com/go-wonk/si/v2/siutils"
+	"github.com/go-wonk/si/v2/tests/testmodels"
 )
 
 func TestElasticClient_IndexDocument(t *testing.T) {

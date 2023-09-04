@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-wonk/si/sicore"
+	"github.com/go-wonk/si/v2/sicore"
 )
 
 type RequestOption interface {

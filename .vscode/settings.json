@@ -1,6 +1,6 @@
 {
     "go.testEnvVars": {
         "ONLINE_TEST": "1",
-        "LONG_TEST": "1",
+        "LONG_TEST": "0",
     }
 }

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/sihttp"
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/sihttp"
+	"github.com/go-wonk/si/v2/siutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ func BenchmarkHttpClient_DefaultGet(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -29,7 +29,7 @@ func BenchmarkHttpClient_DefaultGet(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		resp, err := client.Do(request)
+		resp, err := standardClient.Do(request)
 		siutils.AssertNilFailB(b, err)
 
 		body, err := io.ReadAll(resp.Body)
@@ -47,9 +47,9 @@ func BenchmarkHttpClient_DoRead(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
-	hc := sihttp.NewClient(client)
+	hc := sihttp.NewClient(standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -59,7 +59,7 @@ func BenchmarkHttpClient_DoRead(b *testing.B) {
 
 		request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-		body, _, err := hc.DoRead(request)
+		body, err := hc.DoRead(request)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -71,15 +71,15 @@ func BenchmarkHttpClient_RequestGet(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
-	hc := sihttp.NewClient(client)
+	hc := sihttp.NewClient(standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		header := make(http.Header)
 		header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
-		body, err := hc.RequestGet("http://127.0.0.1:8080/test/hello", header, nil)
+		body, err := hc.Get("http://127.0.0.1:8080/test/hello", header, nil)
 		siutils.AssertNilFailB(b, err)
 
 		assert.EqualValues(b, "hello", string(body))
@@ -120,7 +120,7 @@ func BenchmarkReuseRequestPost(b *testing.B) {
 		req.Header.Set("custom_header", headerData)
 		// req.URL.RawQuery = "bar=foo"
 
-		resp, err := client.Do(req)
+		resp, err := standardClient.Do(req)
 		if err != nil {
 			b.FailNow()
 		}
@@ -140,7 +140,7 @@ func BenchmarkHttpClient_DefaultPost(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
@@ -156,7 +156,7 @@ func BenchmarkHttpClient_DefaultPost(b *testing.B) {
 
 		request.Header.Set("custom_header", headerData)
 
-		resp, err := client.Do(request)
+		resp, err := standardClient.Do(request)
 		siutils.AssertNilFailB(b, err)
 
 		_, err = io.ReadAll(resp.Body)
@@ -172,7 +172,7 @@ func BenchmarkHttpClient_DefaultPost_WithPool(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
@@ -189,7 +189,7 @@ func BenchmarkHttpClient_DefaultPost_WithPool(b *testing.B) {
 
 		request.Header.Set("custom_header", headerData)
 
-		resp, err := client.Do(request)
+		resp, err := standardClient.Do(request)
 		siutils.AssertNilFailB(b, err)
 
 		_, err = io.ReadAll(resp.Body)
@@ -206,12 +206,12 @@ func BenchmarkHttpClient_DefaultPost_WithPoolAndDoRead(b *testing.B) {
 	if !onlinetest {
 		b.Skip("skipping online tests")
 	}
-	siutils.AssertNotNilFailB(b, client)
+	siutils.AssertNotNilFailB(b, standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -225,7 +225,7 @@ func BenchmarkHttpClient_DefaultPost_WithPoolAndDoRead(b *testing.B) {
 
 		request.Header.Set("custom_header", headerData)
 
-		_, _, err = client.DoRead(request)
+		_, err = client.DoRead(request)
 		siutils.AssertNilFailB(b, err)
 
 		sicore.PutBytesReader(buf)
@@ -239,7 +239,7 @@ func BenchmarkHttpClient_RequestPost(b *testing.B) {
 		b.Skip("skipping online tests")
 	}
 
-	client := sihttp.NewClient(client)
+	client := sihttp.NewClient(standardClient)
 
 	data := strings.Repeat(testData, testDataRepeats)
 	url := testUrl
@@ -253,7 +253,7 @@ func BenchmarkHttpClient_RequestPost(b *testing.B) {
 
 		header := make(http.Header)
 		header["custom_header"] = []string{headerData}
-		_, err := client.RequestPost(url, header, []byte(sendData))
+		_, err := client.Post(url, header, []byte(sendData))
 		siutils.AssertNilFailB(b, err)
 	}
 }

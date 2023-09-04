@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-wonk/si/sicore"
-	"github.com/go-wonk/si/siutils"
+	"github.com/go-wonk/si/v2/sicore"
+	"github.com/go-wonk/si/v2/siutils"
 	"github.com/stretchr/testify/assert"
 )
 
