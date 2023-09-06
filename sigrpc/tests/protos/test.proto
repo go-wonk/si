@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option go_package = "github.com/common/wrapper/tests/protos";
+
+import "google/protobuf/timestamp.proto";
+// import "google/protobuf/any.proto";
+
+service Student {
+  rpc Read (StudentRequest) returns (StudentReply) {}
+}
+
+// The request message containing the user's name.
+message StudentRequest {
+    string name = 1;
+    int64 age = 2;
+}
+
+// The response message containing the greetings
+message StudentEntity {
+    string name = 1;
+    int64 age = 2;
+    google.protobuf.Timestamp dateTime = 3;
+    double doubleValue = 4;
+}
+
+message StudentReply {
+    int64 status = 1;
+    optional string message = 2;
+    optional int64 count = 3;
+    optional int64 offset = 4;
+    optional int64 limit = 5;
+    optional StudentEntity document = 6;
+    repeated StudentEntity documents = 7;
+}

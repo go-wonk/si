@@ -1,0 +1,10 @@
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = localhost
+DNS.2 = dev.woong.org
+DNS.3 = auth.woong.org
+IP.1 = 127.0.0.1
+IP.2 = 192.168.0.92
+IP.3 = 192.168.0.12
