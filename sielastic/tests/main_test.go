@@ -21,7 +21,7 @@ var (
 func setup() error {
 	var err error
 	if onlinetest {
-		client, err = sielastic.DefaultElasticsearchClient("http://testelastichost:9200", "daiso", "daisoasung")
+		client, err = sielastic.DefaultElasticsearchClient("http://testelastichost:9200", "username", "password")
 		if err != nil {
 			return err
 		}
