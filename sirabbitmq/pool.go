@@ -94,6 +94,7 @@ func (p *ConnPool) Close() []error {
 type UnsafeChannelPool struct {
 	poolSize int
 	pool     chan *UnsafeChannel
+	connPool *ConnPool
 }
 
 func NewUnsafeChannelPool(size int, connPool *ConnPool) *UnsafeChannelPool {
@@ -109,6 +110,7 @@ func NewUnsafeChannelPool(size int, connPool *ConnPool) *UnsafeChannelPool {
 	p := &UnsafeChannelPool{
 		poolSize: size,
 		pool:     pool,
+		connPool: connPool,
 	}
 
 	return p
@@ -120,10 +122,15 @@ func (p *UnsafeChannelPool) Get() *UnsafeChannel {
 func (p *UnsafeChannelPool) Put(c *UnsafeChannel) {
 	p.pool <- c
 }
+func (p *UnsafeChannelPool) Close() error {
+	p.connPool.Close()
+	return nil
+}
 
 type ChannelPool struct {
 	poolSize int
 	pool     chan *Channel
+	connPool *ConnPool
 }
 
 func NewChannelPool(size int, connPool *ConnPool) *ChannelPool {
@@ -139,6 +146,7 @@ func NewChannelPool(size int, connPool *ConnPool) *ChannelPool {
 	p := &ChannelPool{
 		poolSize: size,
 		pool:     pool,
+		connPool: connPool,
 	}
 
 	return p
@@ -149,6 +157,10 @@ func (p *ChannelPool) Get() *Channel {
 }
 func (p *ChannelPool) Put(c *Channel) {
 	p.pool <- c
+}
+func (p *ChannelPool) Close() error {
+	p.connPool.Close()
+	return nil
 }
 
 // import (
