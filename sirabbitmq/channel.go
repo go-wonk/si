@@ -384,12 +384,12 @@ func (c *Channel) ConsumeWithMessageHandler(ctx context.Context, queueName strin
 			c.channel.NotifyClose(closeChannel)
 
 		case delivery := <-deliveries:
-			if err := delivery.Ack(false); err != nil {
-				Errorf("failed to acknowledging message: %s\n", err)
-			}
 			route := delivery.ReplyTo
 			if err := handler.Handle(route, delivery.Body); err != nil {
 				Errorf("failed to handle message: %s\n", err.Error())
+			}
+			if err := delivery.Ack(false); err != nil {
+				Errorf("failed to acknowledging message: %s\n", err)
 			}
 		}
 	}
