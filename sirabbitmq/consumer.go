@@ -59,3 +59,21 @@ func (c *Consumer) ConsumeWithMessageHandler(ctx context.Context, queueName stri
 	wg.Wait()
 	return nil
 }
+
+type DynamicConsumer struct {
+	ch *Channel
+}
+
+func NewDynamicConsumer(ch *Channel) *DynamicConsumer {
+	return &DynamicConsumer{
+		ch: ch,
+	}
+}
+
+func (c *DynamicConsumer) Close() error {
+	return c.ch.Close()
+}
+
+func (c *DynamicConsumer) ConsumeWithMessageHandler(ctx context.Context, queueName string, handler MessageHandler) error {
+	return c.ch.ConsumeWithMessageHandler(ctx, queueName, handler)
+}
