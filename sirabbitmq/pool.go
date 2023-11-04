@@ -57,10 +57,10 @@ type ConnPool struct {
 	pool     chan *Conn
 }
 
-func NewConnPool(size int, addr string) *ConnPool {
+func NewConnPool(size int, addr string, prefetch int) *ConnPool {
 	pool := make(chan *Conn, size)
 	for i := 0; i < size; i++ {
-		pool <- NewConn(addr)
+		pool <- NewConn(addr, prefetch)
 	}
 
 	p := &ConnPool{

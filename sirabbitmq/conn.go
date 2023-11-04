@@ -20,6 +20,7 @@ var (
 type Conn struct {
 	id             string
 	addr           string
+	prefetch       int
 	reconnectDelay time.Duration
 
 	// logger          *log.Logger
@@ -33,10 +34,11 @@ type Conn struct {
 
 // NewConn creates a new consumer state instance, and automatically
 // attempts to connect to the server.
-func NewConn(addr string) *Conn {
+func NewConn(addr string, prefetch int) *Conn {
 	conn := Conn{
 		id:             generateId(),
 		addr:           addr,
+		prefetch:       prefetch,
 		reconnectDelay: defaultReconnectDelay,
 		done:           make(chan bool),
 		ready:          make(chan bool),
@@ -134,4 +136,8 @@ func (c *Conn) GetDone() <-chan bool {
 
 func (c *Conn) waitReady() {
 	<-c.ready
+}
+
+func (c *Conn) GetPrefetch() int {
+	return c.prefetch
 }
