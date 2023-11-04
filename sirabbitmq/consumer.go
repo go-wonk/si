@@ -20,7 +20,7 @@ func NewConsumer(addr string, numChannels int, prefetch int) *Consumer {
 		channels:    make([]*Channel, numChannels),
 	}
 
-	consumer.conn = NewConn(addr)
+	consumer.conn = NewConn(addr, prefetch)
 	for i := 0; i < numChannels; i++ {
 		consumer.channels[i] = NewChannelWithPrefetch(consumer.conn, prefetch)
 	}
