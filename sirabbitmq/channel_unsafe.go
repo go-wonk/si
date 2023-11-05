@@ -314,7 +314,7 @@ func (c *UnsafeChannel) ConsumeWithMessageHandler(ctx context.Context, queueName
 				// If the AMQP channel is not ready, it will continue the loop. Next
 				// iteration will enter this case because chClosedCh is closed by the
 				// library
-				Error("failed to consume, trying again...")
+				Error("failed to consume, trying again... " + err.Error())
 				<-time.After(time.Second * 1)
 				continue
 			}
