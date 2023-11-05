@@ -2,6 +2,7 @@ package sirabbitmq
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -21,6 +22,8 @@ type UnsafeChannel struct {
 	prefetch     int
 	prefetchSize int
 	global       bool
+
+	failCount int
 }
 
 // NewChannel creates a new consumer state instance, and automatically
@@ -35,6 +38,7 @@ func NewUnsafeChannel(conn *Conn) *UnsafeChannel {
 		prefetch:     1,
 		prefetchSize: 0,
 		global:       false,
+		failCount:    0,
 	}
 	// runtime.SetFinalizer(&c, func(c *UnsafeChannel) {
 	// 	Info("unsafe channel has been finalized")
@@ -54,6 +58,7 @@ func NewUnsafeChannelWithPrefetch(conn *Conn, prefetch int) *UnsafeChannel {
 		prefetch:     prefetch,
 		prefetchSize: 0,
 		global:       false,
+		failCount:    0,
 	}
 	go c.handleReinit()
 	c.waitReady()
@@ -314,8 +319,12 @@ func (c *UnsafeChannel) ConsumeWithMessageHandler(ctx context.Context, queueName
 				// If the AMQP channel is not ready, it will continue the loop. Next
 				// iteration will enter this case because chClosedCh is closed by the
 				// library
+				c.failCount++
+				if c.failCount > defaultConsumeMaxRetry {
+					return errors.New("max retry has been reached.\n" + amqpErr.Error() + "\n" + err.Error())
+				}
 				Error("failed to consume, trying again... " + err.Error())
-				<-time.After(time.Second * 1)
+				<-time.After(defaultConsumeDelay)
 				continue
 			}
 
@@ -325,12 +334,12 @@ func (c *UnsafeChannel) ConsumeWithMessageHandler(ctx context.Context, queueName
 			c.channel.NotifyClose(closeChannel)
 
 		case delivery := <-deliveries:
-			if err := delivery.Ack(false); err != nil {
-				Errorf("failed to acknowledging message: %s\n", err)
-			}
 			route := delivery.ReplyTo
 			if err := handler.Handle(route, delivery.Body); err != nil {
 				Errorf("failed to handle message: %s\n", err.Error())
+			}
+			if err := delivery.Ack(false); err != nil {
+				Errorf("failed to acknowledging message: %s\n", err)
 			}
 		}
 	}
