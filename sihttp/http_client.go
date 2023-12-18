@@ -259,12 +259,16 @@ func (hc *Client) request(ctx context.Context, method string, url string,
 	if r, ok := body.(io.Reader); ok {
 		req, err = http.NewRequestWithContext(ctx, method, url, r)
 	} else {
-		w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
-		defer sicore.PutWriterAndBuffer(w, buf)
-		if err := w.EncodeFlush(body); err != nil {
-			return nil, err
+		if body != nil {
+			w, buf := sicore.GetWriterAndBuffer(hc.writerOpts...)
+			defer sicore.PutWriterAndBuffer(w, buf)
+			if err := w.EncodeFlush(body); err != nil {
+				return nil, err
+			}
+			req, err = http.NewRequestWithContext(ctx, method, url, buf)
+		} else {
+			req, err = http.NewRequestWithContext(ctx, method, url, nil)
 		}
-		req, err = http.NewRequestWithContext(ctx, method, url, buf)
 	}
 	if err != nil {
 		return nil, err
