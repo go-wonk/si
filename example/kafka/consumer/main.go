@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/go-wonk/si/v2/sikafka"
 )
 

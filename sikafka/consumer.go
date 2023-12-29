@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func DefaultConsumerGroup(brokers []string, group string, version string, assignor string, oldest bool) (sarama.ConsumerGroup, error) {
@@ -24,11 +24,11 @@ func DefaultConsumerGroup(brokers []string, group string, version string, assign
 
 	switch assignor {
 	case "sticky":
-		config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
+		config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategySticky()
 	case "roundrobin":
-		config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRoundRobin
+		config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
 	case "range":
-		config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRange
+		config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRange()
 	default:
 		return nil, errors.New("invalid assignor " + assignor)
 	}
