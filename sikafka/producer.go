@@ -3,7 +3,7 @@ package sikafka
 import (
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func DefaultAsyncProducer(brokers []string) (sarama.AsyncProducer, error) {
