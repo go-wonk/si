@@ -13,6 +13,13 @@ import (
 	"github.com/IBM/sarama"
 )
 
+func ConsumerGroupWithConfig(config *sarama.Config, brokers []string, group string) (sarama.ConsumerGroup, error) {
+
+	client, err := sarama.NewConsumerGroup(brokers, group, config)
+
+	return client, err
+}
+
 func DefaultConsumerGroup(brokers []string, group string, version string, assignor string, oldest bool) (sarama.ConsumerGroup, error) {
 	config := sarama.NewConfig()
 
