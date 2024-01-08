@@ -206,7 +206,11 @@ func (consumer *CgConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 	// https://github.com/Shopify/sarama/blob/main/consumer_group.go#L27-L29
 	for {
 		select {
-		case message := <-claim.Messages():
+		case message, ok := <-claim.Messages():
+			if !ok {
+				log.Println("message channel was closed")
+				return nil
+			}
 			// log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 			if err := consumer.msgHandler.Handle(message); err == nil {
 				session.MarkMessage(message, "")
