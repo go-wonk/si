@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-wonk/si/v2/sicore"
 )
@@ -17,6 +18,9 @@ type Client struct {
 	baseUrl        string
 	defaultHeaders map[string]string
 
+	retryAttempts int
+	retryDelay    time.Duration
+
 	requestOpts []RequestOption
 	writerOpts  []sicore.WriterOption
 	readerOpts  []sicore.ReaderOption
@@ -25,7 +29,9 @@ type Client struct {
 // NewClient returns Client
 func NewClient(client *http.Client, opts ...ClientOption) *Client {
 	c := &Client{
-		client: client,
+		client:        client,
+		retryAttempts: 0,
+		retryDelay:    20 * time.Millisecond,
 	}
 	for _, o := range opts {
 		if o == nil {
@@ -106,79 +112,194 @@ func (hc *Client) DoDecode(request *http.Request, res any) error {
 func (hc *Client) Request(method string, url string, header http.Header, queries map[string]string, body []byte, opts ...RequestOption) ([]byte, error) {
 	return hc.RequestContext(context.Background(), method, url, header, queries, body, opts...)
 }
+
 func (hc *Client) RequestContext(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body []byte, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, method, hc.baseUrl+url, header, queries, body, opts...)
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, method, hc.baseUrl+url, header, queries, body, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
 }
 func (hc *Client) RequestDecode(method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
 	return hc.RequestDecodeContext(context.Background(), http.MethodPost, url, header, queries, body, res, opts...)
 }
 func (hc *Client) RequestDecodeContext(ctx context.Context, method string, url string, header http.Header, queries map[string]string, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, method, hc.baseUrl+url, header, queries, body, res, opts...)
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, method, hc.baseUrl+url, header, queries, body, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
 }
 
 func (hc *Client) Get(url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
 	return hc.GetContext(context.Background(), url, header, queries, opts...)
 }
 func (hc *Client) GetContext(ctx context.Context, url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, opts...)
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
 }
 func (hc *Client) GetDecode(url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
 	return hc.GetDecodeContext(context.Background(), url, header, queries, res, opts...)
 }
 func (hc *Client) GetDecodeContext(ctx context.Context, url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, http.MethodGet, hc.baseUrl+url, header, queries, nil, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
 }
 
 func (hc *Client) Post(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.PostContext(context.Background(), url, header, body, opts...)
 }
 func (hc *Client) PostContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
 }
 func (hc *Client) PostDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.PostDecodeContext(context.Background(), url, header, body, res, opts...)
 }
 func (hc *Client) PostDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, http.MethodPost, hc.baseUrl+url, header, nil, body, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
 }
 
 func (hc *Client) Put(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.PutContext(context.Background(), url, header, body, opts...)
 }
 func (hc *Client) PutContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, opts...)
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
 }
 func (hc *Client) PutDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.PutDecodeContext(context.Background(), url, header, body, res, opts...)
 }
 func (hc *Client) PutDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, res, opts...)
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, http.MethodPut, hc.baseUrl+url, header, nil, body, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
 }
 
 func (hc *Client) Delete(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.DeleteContext(context.Background(), url, header, body, opts...)
 }
 func (hc *Client) DeleteContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, opts...)
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
 }
 func (hc *Client) DeleteDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.DeleteDecodeContext(context.Background(), url, header, body, res, opts...)
 }
 func (hc *Client) DeleteDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, res, opts...)
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
 }
 
 func (hc *Client) Head(url string, header http.Header, opts ...RequestOption) ([]byte, error) {
 	return hc.HeadContext(context.Background(), url, header, opts...)
 }
 func (hc *Client) HeadContext(ctx context.Context, url string, header http.Header, opts ...RequestOption) ([]byte, error) {
-	return hc.request(ctx, http.MethodHead, hc.baseUrl+url, header, nil, nil, opts...)
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, http.MethodHead, hc.baseUrl+url, header, nil, nil, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
 }
 func (hc *Client) HeadDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
 	return hc.HeadDecodeContext(context.Background(), url, header, body, res, opts...)
 }
 func (hc *Client) HeadDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.requestDecode(ctx, http.MethodHead, hc.baseUrl+url, header, nil, body, res, opts...)
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, http.MethodHead, hc.baseUrl+url, header, nil, body, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
 }
 
 func (hc *Client) PostFile(url string, header http.Header,
@@ -355,4 +476,19 @@ func setQueries(req *http.Request, queries map[string]string) {
 		}
 		req.URL.RawQuery = q.Encode()
 	}
+}
+
+func (hc *Client) isRetryError(err error) bool {
+	if err == nil {
+		return false
+	}
+	switch t := err.(type) {
+	case *Error:
+		status := t.GetStatusCode(http.StatusInternalServerError)
+		if status == http.StatusUnauthorized {
+			time.Sleep(hc.retryDelay)
+			return true
+		}
+	}
+	return false
 }
