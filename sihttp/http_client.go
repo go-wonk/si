@@ -238,6 +238,39 @@ func (hc *Client) PutDecodeContext(ctx context.Context, url string, header http.
 	return err
 }
 
+func (hc *Client) Patch(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
+	return hc.PatchContext(context.Background(), url, header, body, opts...)
+}
+
+func (hc *Client) PatchContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
+	var res []byte
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		res, err = hc.request(ctx, http.MethodPatch, hc.baseUrl+url, header, nil, body, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return res, err
+}
+func (hc *Client) PatchDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	return hc.PatchDecodeContext(context.Background(), url, header, body, res, opts...)
+}
+func (hc *Client) PatchDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
+	var err error
+	for i := 0; i <= hc.retryAttempts; i++ {
+		err = hc.requestDecode(ctx, http.MethodPatch, hc.baseUrl+url, header, nil, body, res, opts...)
+		if err != nil && hc.isRetryError(err) {
+			continue
+		} else {
+			break
+		}
+	}
+	return err
+}
+
 func (hc *Client) Delete(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
 	return hc.DeleteContext(context.Background(), url, header, body, opts...)
 }
