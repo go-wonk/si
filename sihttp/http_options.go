@@ -157,3 +157,10 @@ func WithRequestHeaderHmac256(key string, secret []byte) ClientOptionFunc {
 		return nil
 	})
 }
+
+func WithRetryAttempts(attempts int) ClientOptionFunc {
+	return ClientOptionFunc(func(c *Client) error {
+		c.retryAttempts = attempts
+		return nil
+	})
+}
