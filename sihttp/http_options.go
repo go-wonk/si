@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-wonk/si/v2/sicore"
+	"golang.org/x/oauth2"
 )
 
 type RequestOption interface {
@@ -50,6 +51,22 @@ func WithBearerToken(token string) RequestOptionFunc {
 			return nil
 		}
 		header["Authorization"] = []string{"Bearer " + token}
+		return nil
+	})
+}
+
+func WithTokenSource(tokenSource oauth2.TokenSource) RequestOptionFunc {
+	return RequestOptionFunc(func(req *http.Request) error {
+		token, err := tokenSource.Token()
+		if err != nil {
+			return err
+		}
+		header := req.Header
+		if _, ok := header["Authorization"]; ok {
+			// skip
+			return nil
+		}
+		header["Authorization"] = []string{token.TokenType + " " + token.AccessToken}
 		return nil
 	})
 }
