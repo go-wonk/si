@@ -64,3 +64,30 @@ func TestConsumerGroup(t *testing.T) {
 	assert.EqualValues(t, "this-is-a-test-message", consumedMessage)
 	siutils.AssertNilFail(t, cg.Finish())
 }
+
+func TestConsumerGroupStartWith(t *testing.T) {
+	if !onlinetest {
+		t.Skip("skipping online tests")
+	}
+	defClient, err := sikafka.DefaultConsumerGroup([]string{"testkafkahost:9092"}, "tp-consumer-test-grp1", "3.1.0", "range", true)
+	siutils.AssertNilFail(t, err)
+
+	consumer := sikafka.NewCgConsumer(&messageHandler{})
+	cg := sikafka.NewConsumerGroup(defClient, consumer, []string{"tp-consumer-test"})
+	consumerLoaded := make(chan bool, 1)
+	go func() {
+		cg.StartWith(consumerLoaded)
+	}()
+
+	<-consumerLoaded
+
+	err = produce("test-key", "this-is-a-test-message")
+	if !assert.Nil(t, err) {
+		cg.Finish()
+		t.FailNow()
+	}
+
+	time.Sleep(3 * time.Second)
+	assert.EqualValues(t, "this-is-a-test-message", consumedMessage)
+	siutils.AssertNilFail(t, cg.Finish())
+}

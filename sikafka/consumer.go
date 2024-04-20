@@ -92,7 +92,7 @@ func (cg *ConsumerGroup) Toggle() {
 	cg.toggleConsumptionFlow()
 }
 
-func (cg *ConsumerGroup) Start() error {
+func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
 	var ctx context.Context
 	ctx, cg.cancel = context.WithCancel(context.Background())
 
@@ -127,6 +127,7 @@ func (cg *ConsumerGroup) Start() error {
 	}(&wg)
 
 	cg.consumer.WaitReady() // Await till the consumer has been set up
+	loaded <- true
 	log.Println("Sarama consumer up and running")
 
 	// sigusr1 := make(chan os.Signal, 1)
@@ -158,6 +159,12 @@ func (cg *ConsumerGroup) Start() error {
 	}
 
 	return startErr
+}
+
+func (cg *ConsumerGroup) Start() error {
+	consumerLoaded := make(chan bool, 1)
+	defer close(consumerLoaded)
+	return cg.StartWith(consumerLoaded)
 }
 
 func (cg *ConsumerGroup) Finish() error {
