@@ -271,14 +271,14 @@ func (hc *Client) PatchDecodeContext(ctx context.Context, url string, header htt
 	return err
 }
 
-func (hc *Client) Delete(url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
-	return hc.DeleteContext(context.Background(), url, header, body, opts...)
+func (hc *Client) Delete(url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
+	return hc.DeleteContext(context.Background(), url, header, queries, opts...)
 }
-func (hc *Client) DeleteContext(ctx context.Context, url string, header http.Header, body any, opts ...RequestOption) ([]byte, error) {
+func (hc *Client) DeleteContext(ctx context.Context, url string, header http.Header, queries map[string]string, opts ...RequestOption) ([]byte, error) {
 	var res []byte
 	var err error
 	for i := 0; i <= hc.retryAttempts; i++ {
-		res, err = hc.request(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, opts...)
+		res, err = hc.request(ctx, http.MethodDelete, hc.baseUrl+url, header, queries, nil, opts...)
 		if err != nil && hc.isRetryError(err) {
 			continue
 		} else {
@@ -287,13 +287,13 @@ func (hc *Client) DeleteContext(ctx context.Context, url string, header http.Hea
 	}
 	return res, err
 }
-func (hc *Client) DeleteDecode(url string, header http.Header, body any, res any, opts ...RequestOption) error {
-	return hc.DeleteDecodeContext(context.Background(), url, header, body, res, opts...)
+func (hc *Client) DeleteDecode(url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
+	return hc.DeleteDecodeContext(context.Background(), url, header, queries, res, opts...)
 }
-func (hc *Client) DeleteDecodeContext(ctx context.Context, url string, header http.Header, body any, res any, opts ...RequestOption) error {
+func (hc *Client) DeleteDecodeContext(ctx context.Context, url string, header http.Header, queries map[string]string, res any, opts ...RequestOption) error {
 	var err error
 	for i := 0; i <= hc.retryAttempts; i++ {
-		err = hc.requestDecode(ctx, http.MethodDelete, hc.baseUrl+url, header, nil, body, res, opts...)
+		err = hc.requestDecode(ctx, http.MethodDelete, hc.baseUrl+url, header, queries, nil, res, opts...)
 		if err != nil && hc.isRetryError(err) {
 			continue
 		} else {
