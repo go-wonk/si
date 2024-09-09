@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/IBM/sarama"
 )
@@ -76,18 +75,6 @@ func NewConsumerGroup(cg sarama.ConsumerGroup, consumer Consumer, topics []strin
 	}
 }
 
-func (cg *ConsumerGroup) toggleConsumptionFlow() {
-	if cg.isPaused {
-		cg.ResumeAll()
-		log.Println("Resuming consumption")
-	} else {
-		cg.PauseAll()
-		log.Println("Pausing consumption")
-	}
-
-	cg.isPaused = !cg.isPaused
-}
-
 func (cg *ConsumerGroup) Toggle() {
 	cg.toggleConsumptionFlow()
 }
@@ -106,15 +93,11 @@ func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
 			// server-side rebalance happens, the consumer session will need to be
 			// recreated to get the new claims
 			if err := cg.Consume(ctx, cg.topics, cg.consumer); err != nil {
-				// TODO: handle error
-				// log.Panicf("Error from consumer: %v", err)
-				for i := 0; i < 12; i++ {
-					time.Sleep(time.Second * 1)
-					if ctx.Err() != nil {
-						startErr = ctx.Err()
-						return
-					}
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+					startErr = err
+					return
 				}
+				log.Panicf("Error from consumer: %v\n", err)
 			}
 			// check if context was cancelled, signaling that the consumer should stop
 			if ctx.Err() != nil {
@@ -128,10 +111,10 @@ func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
 
 	cg.consumer.WaitReady() // Await till the consumer has been set up
 	loaded <- true
-	log.Println("Sarama consumer up and running")
+	log.Println("Sarama consumer group is up and running")
 
-	// sigusr1 := make(chan os.Signal, 1)
-	// signal.Notify(sigusr1, syscall.SIGUSR1)
+	sigusr1 := make(chan os.Signal, 1)
+	signal.Notify(sigusr1, syscall.SIGUSR1)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
@@ -145,8 +128,8 @@ func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
 		case <-sigterm:
 			log.Println("terminating: via signal")
 			keepRunning = false
-			// case <-sigusr1:
-			// 	cg.toggleConsumptionFlow()
+		case <-sigusr1:
+			cg.toggleConsumptionFlow()
 		}
 	}
 	cg.cancel()
@@ -177,6 +160,18 @@ func (cg *ConsumerGroup) Finish() error {
 
 func (cg *ConsumerGroup) Stop() error {
 	return cg.Finish()
+}
+
+func (cg *ConsumerGroup) toggleConsumptionFlow() {
+	if cg.isPaused {
+		cg.ResumeAll()
+		log.Println("Resuming consumption")
+	} else {
+		cg.PauseAll()
+		log.Println("Pausing consumption")
+	}
+
+	cg.isPaused = !cg.isPaused
 }
 
 // CgConsumer represents a Sarama consumer group consumer
