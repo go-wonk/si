@@ -20,7 +20,8 @@ func RetryableSyncProducer(brokers []string, version, topic string) (*SyncProduc
 	config.Producer.Idempotent = true
 	config.Producer.Retry.Max = 10
 	config.Producer.Retry.BackoffFunc = func(retries int, maxRetries int) time.Duration {
-		// return time.Duration(retries) * 100 * time.Millisecond // linear
+		// linear
+		// return time.Duration(retries) * 100 * time.Millisecond
 
 		// exponential
 		v := (1 << retries) * 100 * time.Millisecond
@@ -38,14 +39,17 @@ func RetryableSyncProducer(brokers []string, version, topic string) (*SyncProduc
 	config.Net.MaxOpenRequests = 1
 	config.Metadata.Retry.Max = 10
 	config.Metadata.Retry.BackoffFunc = func(retries int, maxRetries int) time.Duration {
+		// linear
 		// return time.Duration(retries) * 100 * time.Millisecond
+
+		// exponential
 		v := (1 << retries) * 100 * time.Millisecond
 		if v > 10000*time.Millisecond {
 			v = 10000 * time.Millisecond
 		}
 		return v
 	}
-	config.Metadata.RefreshFrequency = 1 * time.Minute
+	config.Metadata.RefreshFrequency = 5 * time.Minute
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
 	if err != nil {
@@ -53,7 +57,7 @@ func RetryableSyncProducer(brokers []string, version, topic string) (*SyncProduc
 	}
 
 	return NewSyncProducer(producer, topic,
-		WithSyncProducerOptionRetyMax(5)), nil
+		WithSyncProducerOptionRetyMax(2)), nil
 }
 
 // Deprecated
