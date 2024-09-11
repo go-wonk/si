@@ -57,7 +57,7 @@ func (sp *SyncProducer) produce(message *sarama.ProducerMessage) (int32, int64, 
 	var offset int64
 
 	attempts := 0
-	wait := 100 * time.Millisecond
+	wait := 1000 * time.Millisecond
 	for attempts < int(sp.retryMax) {
 		attempts++
 		partition, offset, err = sp.SendMessage(message)
