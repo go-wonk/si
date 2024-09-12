@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/IBM/sarama"
 )
@@ -30,11 +31,11 @@ func DefaultConsumerGroup(brokers []string, group string, version string, assign
 
 	switch assignor {
 	case "sticky":
-		config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategySticky()
+		config.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategySticky()}
 	case "roundrobin":
-		config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
+		config.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRoundRobin()}
 	case "range":
-		config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRange()
+		config.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRange()}
 	default:
 		return nil, errors.New("invalid assignor " + assignor)
 	}
@@ -42,6 +43,23 @@ func DefaultConsumerGroup(brokers []string, group string, version string, assign
 	if oldest {
 		config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	}
+
+	config.Consumer.Group.Session.Timeout = time.Duration(60) * time.Second
+	config.Consumer.Group.Heartbeat.Interval = time.Duration(60/3) * time.Second
+	config.Consumer.Group.Rebalance.Retry.Max = 10
+	config.Consumer.Group.Rebalance.Retry.Backoff = 6 * time.Second
+
+	config.Metadata.Retry.Max = 10
+	config.Metadata.Retry.BackoffFunc = func(retries int, maxRetries int) time.Duration {
+		v := (1 << retries) * 250 * time.Millisecond
+		if v > 10000*time.Millisecond {
+			v = 10000 * time.Millisecond
+		}
+		return v
+	}
+
+	// TODO: consumer starts rebalancing right after started, and it freezes
+	config.Metadata.RefreshFrequency = 5 * time.Minute
 
 	client, err := sarama.NewConsumerGroup(brokers, group, config)
 
@@ -53,7 +71,7 @@ type Consumer interface {
 	Cleanup(sarama.ConsumerGroupSession) error
 	ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error
 	MakeReady()
-	WaitReady()
+	WaitReady() <-chan bool
 	CloseReady()
 }
 
@@ -80,38 +98,65 @@ func (cg *ConsumerGroup) Toggle() {
 }
 
 func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
-	var ctx context.Context
-	ctx, cg.cancel = context.WithCancel(context.Background())
+	var consumerCtx context.Context
+	consumerCtx, cg.cancel = context.WithCancel(context.Background())
 
-	var startErr error = nil
+	stopCh := make(chan bool)
+
+	var consumerErr error = nil
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
+
+		attempts := 0
+		retryMax := 5
 		for {
+			attempts++
+
 			// `Consume` should be called inside an infinite loop, when a
 			// server-side rebalance happens, the consumer session will need to be
 			// recreated to get the new claims
-			if err := cg.Consume(ctx, cg.topics, cg.consumer); err != nil {
-				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					startErr = err
+			log.Println("consumer group: trying to consume...")
+			if err := cg.Consume(consumerCtx, cg.topics, cg.consumer); err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) || attempts >= retryMax {
+					log.Println("consumer error: " + err.Error())
+					consumerErr = err
+					cg.cancel()
+					close(stopCh)
 					return
 				}
-				log.Panicf("Error from consumer: %v\n", err)
+				if consumerCtx.Err() != nil {
+					consumerErr = consumerCtx.Err()
+					cg.cancel()
+					close(stopCh)
+					return
+				}
+
+				log.Println("consumer error: retrying: " + err.Error())
+				time.Sleep(time.Second * 3)
+				continue
+				// log.Panicf("Error from consumer: %v\n", err)
 			}
 			// check if context was cancelled, signaling that the consumer should stop
-			if ctx.Err() != nil {
-				startErr = ctx.Err()
+			if consumerCtx.Err() != nil {
+				consumerErr = consumerCtx.Err()
+				cg.cancel()
+				close(stopCh)
 				return
 			}
-			// consumer.ready = make(chan bool)
+
 			cg.consumer.MakeReady()
+			attempts = 0
 		}
 	}(&wg)
 
-	cg.consumer.WaitReady() // Await till the consumer has been set up
+	select {
+	case <-stopCh:
+	case <-cg.consumer.WaitReady(): // Await till the consumer has been set up
+		log.Println("sarama: consumer group is up and running")
+	}
 	loaded <- true
-	log.Println("Sarama consumer group is up and running")
 
 	sigusr1 := make(chan os.Signal, 1)
 	signal.Notify(sigusr1, syscall.SIGUSR1)
@@ -122,7 +167,7 @@ func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
 	keepRunning := true
 	for keepRunning {
 		select {
-		case <-ctx.Done():
+		case <-consumerCtx.Done():
 			log.Println("terminating: context cancelled")
 			keepRunning = false
 		case <-sigterm:
@@ -135,13 +180,13 @@ func (cg *ConsumerGroup) StartWith(loaded chan bool) error {
 	cg.cancel()
 	wg.Wait()
 	if err := cg.Close(); err != nil {
-		if startErr == nil {
-			startErr = err
+		log.Println("consumer error: failed to close client: " + err.Error())
+		if consumerErr == nil {
+			consumerErr = err
 		}
-		log.Panicf("Error closing client: %v", err)
 	}
 
-	return startErr
+	return consumerErr
 }
 
 func (cg *ConsumerGroup) Start() error {
@@ -231,8 +276,8 @@ func (c *CgConsumer) MakeReady() {
 	c.ready = make(chan bool)
 }
 
-func (c *CgConsumer) WaitReady() {
-	<-c.ready
+func (c *CgConsumer) WaitReady() <-chan bool {
+	return c.ready
 }
 
 func (c *CgConsumer) CloseReady() {
